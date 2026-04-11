@@ -184,13 +184,14 @@ public class CfeXmlBuilderTests
     }
 
     [Fact]
-    public void Generar_XmlActualizaXmlSinFirmarEnCfe()
+    public void Generar_XmlGenerado_EsXmlBienFormado()
     {
         var cfe = CriarCfeCompleto();
         var xml = _builder.Generar(cfe);
 
-        // El XML generado debe coincidir con lo que retorna el método
-        Assert.Equal(xml, xml); // just checking it doesn't throw
-        Assert.NotNull(xml);
+        // Verificar que el XML comienza con declaración XML y contiene el elemento raíz
+        Assert.StartsWith("<?xml", xml.TrimStart());
+        Assert.Contains("<CFE", xml);
+        Assert.NotEmpty(xml);
     }
 }

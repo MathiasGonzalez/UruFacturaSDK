@@ -216,11 +216,15 @@ public class DgiSoapClient : IDisposable
 
     private HttpClient CrearHttpClient()
     {
-        var handler = new HttpClientHandler
+        var handler = new HttpClientHandler();
+
+        // Solo deshabilitar la validación SSL en Homologación para facilitar el testing.
+        // En Producción se utiliza la validación estándar del sistema operativo.
+        if (_config.Ambiente == Enums.Ambiente.Homologacion)
         {
-            ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        };
+            handler.ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+        }
 
         if (!string.IsNullOrWhiteSpace(_config.RutaCertificado)
             && File.Exists(_config.RutaCertificado))
