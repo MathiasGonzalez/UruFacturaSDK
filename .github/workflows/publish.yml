@@ -1,4 +1,4 @@
-name: Publish NuGet
+name: Pack NuGet
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - 'v*'
 
 jobs:
-  publish:
-    name: Pack & Publish
+  pack:
+    name: Pack & Upload Artifact
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,9 +42,9 @@ jobs:
           -p:Version=${{ steps.version.outputs.VERSION }}
           --output ./nupkg
 
-      - name: Publish to NuGet.org
-        run: >
-          dotnet nuget push ./nupkg/*.nupkg
-          --api-key ${{ secrets.NUGET_API_KEY }}
-          --source https://api.nuget.org/v3/index.json
-          --skip-duplicate
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package-${{ steps.version.outputs.VERSION }}
+          path: ./nupkg/*.nupkg
+          retention-days: 30
