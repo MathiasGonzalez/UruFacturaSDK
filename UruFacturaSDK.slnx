@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/UruFacturaSDK/UruFacturaSDK.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UruFacturaSDK.Tests/UruFacturaSDK.Tests.csproj" />
+  </Folder>
+</Solution>
