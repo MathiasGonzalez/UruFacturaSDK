@@ -268,6 +268,9 @@ public class Cfe
                 errors.Add($"Línea {i + 1}: PrecioUnitario no puede ser negativo.");
         }
 
+        if (Moneda != Moneda.PesoUruguayo && TipoCambio is null or <= 0)
+            errors.Add("TipoCambio es obligatorio y debe ser mayor a cero cuando la moneda no es Peso Uruguayo.");
+
         // Notas de corrección requieren referencias
         var tiposCorreccion = new[]
         {
