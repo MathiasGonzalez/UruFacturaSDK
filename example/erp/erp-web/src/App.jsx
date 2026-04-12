@@ -35,13 +35,20 @@ export default function App() {
   }
 
   async function fetchCfeTypes() {
-    const res = await fetch('/api/cfe-types')
-    setCfeTypes(await res.json())
+    try {
+      const res = await fetch('/api/cfe-types')
+      if (res.ok) setCfeTypes(await res.json())
+    } catch { /* API not ready yet */ }
   }
 
   async function fetchConfigStatus() {
-    const res = await fetch('/api/config/status')
-    setConfigStatus(await res.json())
+    try {
+      const res = await fetch('/api/config/status')
+      if (res.ok) setConfigStatus(await res.json())
+      else setConfigStatus({ ok: false, ambiente: '?', issues: [`Error HTTP ${res.status}`] })
+    } catch (e) {
+      setConfigStatus({ ok: false, ambiente: '?', issues: [`No se pudo conectar a la API: ${e.message}`] })
+    }
   }
 
   function setField(key, value) {
@@ -113,7 +120,7 @@ export default function App() {
 
   // Derive label from cfeTypes list (populated from API)
   function tipoCfeLabel(value) {
-    return cfeTypes.find(t => t.value === value)?.label ?? String(value)
+    return cfeTypes.find(t => t.value === Number(value))?.label ?? String(value)
   }
 
   return (
@@ -130,9 +137,12 @@ export default function App() {
 
           <label style={lbl}>Tipo CFE</label>
           <select value={form.tipoCfe} onChange={e => setField('tipoCfe', e.target.value)} style={inp}>
-            {cfeTypes.map(t => (
-              <option key={t.value} value={t.value}>{t.label} ({t.value})</option>
-            ))}
+            {cfeTypes.length === 0
+              ? <option value="">Cargando tipos…</option>
+              : cfeTypes.map(t => (
+                  <option key={t.value} value={t.value}>{t.label} ({t.value})</option>
+                ))
+            }
           </select>
 
           <label style={lbl}>Número</label>

@@ -106,6 +106,9 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
 
     foreach (var r in req.Referencias ?? [])
     {
+        if (!Enum.IsDefined(typeof(TipoCfe), r.TipoCfe))
+            return Results.BadRequest(new { detail = $"TipoCfe de referencia inválido: {r.TipoCfe}" });
+
         cfe.Referencias.Add(new RefCfe
         {
             TipoCfe = (TipoCfe)r.TipoCfe,
