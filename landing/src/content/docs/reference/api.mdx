@@ -23,19 +23,19 @@ using var client = new UruFacturaClient(config);
 
 | Método | Retorna | Descripción |
 |--------|---------|-------------|
-| `CrearETicket()` | `ETicket` | e-Ticket (CFE 101) |
-| `CrearNotaCreditoETicket()` | `NotaCreditoETicket` | Nota de Crédito e-Ticket (102) |
-| `CrearNotaDebitoETicket()` | `NotaDebitoETicket` | Nota de Débito e-Ticket (103) |
-| `CrearEFactura()` | `EFactura` | e-Factura (111) |
-| `CrearNotaCreditoEFactura()` | `NotaCreditoEFactura` | Nota de Crédito e-Factura (112) |
-| `CrearNotaDebitoEFactura()` | `NotaDebitoEFactura` | Nota de Débito e-Factura (113) |
-| `CrearEFacturaExportacion()` | `EFacturaExportacion` | e-Factura Exportación (121) |
-| `CrearNotaCreditoExportacion()` | `NotaCreditoExportacion` | NC Exportación (122) |
-| `CrearNotaDebitoExportacion()` | `NotaDebitoExportacion` | ND Exportación (123) |
-| `CrearERemito()` | `ERemito` | e-Remito (181) |
-| `CrearNotaCreditoERemito()` | `NotaCreditoERemito` | NC e-Remito (182) |
-| `CrearEResguardo()` | `EResguardo` | e-Resguardo (151) |
-| `CrearERemitoDespachante()` | `ERemitoDespachante` | e-Remito Despachante (131) |
+| `CrearETicket()` | `Cfe` | e-Ticket (CFE 101) |
+| `CrearNotaCreditoETicket()` | `Cfe` | Nota de Crédito e-Ticket (102) |
+| `CrearNotaDebitoETicket()` | `Cfe` | Nota de Débito e-Ticket (103) |
+| `CrearEFactura()` | `Cfe` | e-Factura (111) |
+| `CrearNotaCreditoEFactura()` | `Cfe` | Nota de Crédito e-Factura (112) |
+| `CrearNotaDebitoEFactura()` | `Cfe` | Nota de Débito e-Factura (113) |
+| `CrearEFacturaExportacion()` | `Cfe` | e-Factura Exportación (121) |
+| `CrearNotaCreditoEFacturaExportacion()` | `Cfe` | NC e-Factura Exportación (122) |
+| `CrearNotaDebitoEFacturaExportacion()` | `Cfe` | ND e-Factura Exportación (123) |
+| `CrearERemitoDespachante()` | `Cfe` | e-Remito Despachante (131) |
+| `CrearEResguardo()` | `Cfe` | e-Resguardo (151) |
+| `CrearERemito()` | `Cfe` | e-Remito (181) |
+| `CrearNotaCreditoERemito()` | `Cfe` | NC e-Remito (182) |
 
 ### Métodos de operación
 
@@ -44,7 +44,7 @@ using var client = new UruFacturaClient(config);
 | `GenerarYFirmar` | `string GenerarYFirmar(Cfe cfe)` | Genera XML y lo firma con XAdES-BES. Retorna el XML firmado. |
 | `EnviarCfeAsync` | `Task<RespuestaDgi> EnviarCfeAsync(Cfe cfe)` | Genera, firma y envía el CFE a DGI. |
 | `ConsultarEstadoCfeAsync` | `Task<RespuestaDgi> ConsultarEstadoCfeAsync(Cfe cfe)` | Consulta el estado de un CFE ya enviado. |
-| `EnviarReporteDiarioAsync` | `Task<ResultadoReporte> EnviarReporteDiarioAsync(DateTime fecha, IEnumerable<Cfe> cfes)` | Envía el reporte diario a DGI. |
+| `EnviarReporteDiarioAsync` | `Task<RespuestaReporteDiario> EnviarReporteDiarioAsync(DateTime fecha, IEnumerable<Cfe> cfes)` | Envía el reporte diario a DGI. |
 | `GenerarPdfA4` | `byte[] GenerarPdfA4(Cfe cfe)` | Genera representación impresa A4 en PDF. |
 | `GenerarPdfTermico` | `byte[] GenerarPdfTermico(Cfe cfe)` | Genera representación térmica 80mm en PDF. |
 
@@ -86,8 +86,8 @@ Clase base de todos los comprobantes. No se instancia directamente — usá los 
 
 | Propiedad | Tipo | Descripción |
 |-----------|------|-------------|
-| `Numero` | `int` | Número del comprobante (dentro del rango CAE) |
-| `FechaEmision` | `DateTime` | Fecha de emisión (default: `DateTime.Now`) |
+| `Numero` | `long` | Número del comprobante (dentro del rango CAE) |
+| `FechaEmision` | `DateTime` | Fecha de emisión (default: `DateTime.Today`) |
 | `Detalle` | `List<LineaDetalle>` | Líneas de detalle del comprobante |
 | `Referencias` | `List<RefCfe>` | Referencias a comprobantes (para NC/ND) |
 
@@ -101,8 +101,10 @@ Representa una línea de ítem en el comprobante.
 | `NombreItem` | `string` | ✅ | Descripción del producto o servicio |
 | `Cantidad` | `decimal` | ✅ | Cantidad |
 | `PrecioUnitario` | `decimal` | ✅ | Precio unitario sin IVA |
-| `IndFactIva` | `TipoIva` | ✅ | Indicador de IVA (Basico, Minimo, Exento) |
-| `Descuento` | `decimal?` | — | Porcentaje de descuento |
+| `IndFactIva` | `TipoIva` | ✅ | Indicador de IVA (Basico, Minimo, Exento, Suspendido) |
+| `DescuentoMonto` | `decimal` | — | Monto de descuento por línea (sin IVA) |
+| `DescuentoPorcentaje` | `decimal?` | — | Porcentaje de descuento |
+| `RecargoMonto` | `decimal` | — | Monto de recargo por línea (sin IVA) |
 
 ### `Receptor`
 
@@ -110,10 +112,14 @@ Datos del receptor del comprobante (requerido para e-Factura).
 
 | Propiedad | Tipo | Requerido | Descripción |
 |-----------|------|-----------|-------------|
-| `RutReceptor` | `string` | ✅ | RUT del receptor (12 dígitos) |
-| `RazonSocial` | `string` | ✅ | Razón social del receptor |
-| `Domicilio` | `string` | ✅ | Domicilio del receptor |
-| `Ciudad` | `string` | ✅ | Ciudad del receptor |
+| `Documento` | `string?` | ✅ | RUT u otro documento del receptor |
+| `TipoDocumento` | `int` | ✅ | Tipo de documento (2=RUT, 3=Cédula, etc.) |
+| `RazonSocial` | `string?` | ✅ | Razón social del receptor |
+| `Direccion` | `string?` | — | Domicilio del receptor |
+| `Ciudad` | `string?` | — | Ciudad del receptor |
+| `Departamento` | `string?` | — | Departamento del receptor |
+| `Pais` | `string?` | — | País del receptor (para exportación) |
+| `Email` | `string?` | — | Email del receptor |
 
 ### `Cae`
 
@@ -123,8 +129,8 @@ Constancia de Autorización de Emisión.
 |-----------|------|-----------|-------------|
 | `NroSerie` | `string` | ✅ | Número de serie del CAE |
 | `TipoCfe` | `TipoCfe` | ✅ | Tipo de CFE al que aplica |
-| `RangoDesde` | `int` | ✅ | Primer número autorizado |
-| `RangoHasta` | `int` | ✅ | Último número autorizado |
+| `RangoDesde` | `long` | ✅ | Primer número autorizado |
+| `RangoHasta` | `long` | ✅ | Último número autorizado |
 | `FechaVencimiento` | `DateTime` | ✅ | Fecha de vencimiento del CAE |
 
 ### `RefCfe`
@@ -135,9 +141,9 @@ Referencia a otro comprobante (usado en notas de crédito/débito).
 |-----------|------|-------------|
 | `TipoCfe` | `TipoCfe` | Tipo del CFE referenciado |
 | `Serie` | `string` | Serie del CFE referenciado |
-| `NroCfe` | `int` | Número del CFE referenciado |
+| `NroCfe` | `long` | Número del CFE referenciado |
 | `FechaCfe` | `DateTime` | Fecha del CFE referenciado |
-| `Razon` | `string` | Motivo de la nota de crédito/débito |
+| `Razon` | `string?` | Motivo de la nota de crédito/débito |
 
 ### `RespuestaDgi`
 
@@ -189,9 +195,10 @@ public enum TipoCfe
 ```csharp
 public enum TipoIva
 {
-    Basico, // 22%
-    Minimo, // 10%
-    Exento, // 0%
+    Exento     = 1, // Sin IVA
+    Minimo     = 2, // IVA 10%
+    Basico     = 3, // IVA 22%
+    Suspendido = 4, // IVA suspendido
 }
 ```
 
@@ -204,7 +211,12 @@ Gestiona los CAEs registrados en el cliente. Accedido a través de `client.Cae`.
 | Método | Firma | Descripción |
 |--------|-------|-------------|
 | `RegistrarCae` | `void RegistrarCae(Cae cae)` | Registra un nuevo CAE |
-| `ObtenerAdvertencias` | `IEnumerable<string> ObtenerAdvertencias()` | Retorna advertencias de vencimiento/agotamiento |
+| `RegistrarCaes` | `void RegistrarCaes(IEnumerable<Cae> caes)` | Registra múltiples CAEs |
+| `ObtenerProximoNumero` | `(Cae, long) ObtenerProximoNumero(TipoCfe tipoCfe)` | Retorna el próximo número disponible e incrementa el contador |
+| `ObtenerCaeActivo` | `Cae? ObtenerCaeActivo(TipoCfe tipoCfe)` | Retorna el CAE activo para el tipo indicado |
+| `ObtenerAdvertencias` | `IReadOnlyList<string> ObtenerAdvertencias()` | Retorna advertencias de vencimiento/agotamiento |
+| `ObtenerTodosLosCaes` | `IReadOnlyList<Cae> ObtenerTodosLosCaes()` | Retorna todos los CAEs registrados |
+| `ObtenerCaesActivos` | `IReadOnlyList<Cae> ObtenerCaesActivos()` | Retorna los CAEs vigentes con números disponibles |
 | `ResumenEstado` | `string ResumenEstado()` | Texto con el estado de todos los CAEs |
 
 ---
@@ -214,7 +226,8 @@ Gestiona los CAEs registrados en el cliente. Accedido a través de `client.Cae`.
 | Excepción | Descripción |
 |-----------|-------------|
 | `UruFacturaException` | Excepción base del SDK |
-| `CaeVencidoException` | El CAE configurado está vencido |
-| `CaeAgotadoException` | El rango del CAE está agotado |
-| `FirmaException` | Error al firmar el XML (certificado inválido o inaccesible) |
-| `DgiException` | Error en la comunicación con DGI |
+| `CaeException` | Error relacionado con el CAE (vencido, agotado, no encontrado) |
+| `FirmaDigitalException` | Error al firmar el XML (certificado inválido o inaccesible) |
+| `DgiCommunicationException` | Error en la comunicación con DGI |
+| `CfeValidationException` | El CFE contiene errores de validación (propiedad `Errors` con detalle) |
+| `PdfGenerationException` | Error al generar el PDF del comprobante |

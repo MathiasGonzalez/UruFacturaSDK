@@ -194,4 +194,73 @@ public class CfeXmlBuilderTests
         Assert.Contains("<CFE", xml);
         Assert.NotEmpty(xml);
     }
+
+    // --- DGI Compatibility ---
+
+    [Fact]
+    public void Generar_MntBruto_EsCero_PreciosNetos()
+    {
+        var cfe = CriarCfeCompleto();
+        var xml = _builder.Generar(cfe);
+
+        // MntBruto=0 significa que los precios en <Detalle> son netos (sin IVA).
+        // MntBruto=1 indicaría precios brutos (con IVA incluido), lo cual sería incorrecto.
+        Assert.Contains("<MntBruto>0</MntBruto>", xml);
+        Assert.DoesNotContain("<MntBruto>1</MntBruto>", xml);
+    }
+
+    [Fact]
+    public void Generar_MonedaDolar_TipoMonedaUsaCodigoAlfa()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Moneda = Moneda.DolarAmericano;
+        cfe.TipoCambio = 42.5m;
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<TipoMoneda>USD</TipoMoneda>", xml);
+        Assert.DoesNotContain("<TipoMoneda>840</TipoMoneda>", xml);
+        Assert.Contains("<TpoCambio>42.5000</TpoCambio>", xml);
+    }
+
+    [Fact]
+    public void Generar_MonedaEuro_TipoMonedaUsaCodigoAlfa()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Moneda = Moneda.Euro;
+        cfe.TipoCambio = 50.0m;
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<TipoMoneda>EUR</TipoMoneda>", xml);
+    }
+
+    [Fact]
+    public void Generar_MonedaPeso_OmiteTipoMoneda()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Moneda = Moneda.PesoUruguayo;
+        var xml = _builder.Generar(cfe);
+
+        Assert.DoesNotContain("TipoMoneda", xml);
+        Assert.DoesNotContain("TpoCambio", xml);
+    }
+
+    [Fact]
+    public void Validar_MonedaExtranjeraSinTipoCambio_RetornaError()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Moneda = Moneda.DolarAmericano;
+        // TipoCambio = null → debe dar error
+        var errores = cfe.Validar();
+        Assert.Contains(errores, e => e.Contains("TipoCambio"));
+    }
+
+    [Fact]
+    public void Validar_MonedaExtranjeraConTipoCambio_NoRetornaErrorMoneda()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Moneda = Moneda.DolarAmericano;
+        cfe.TipoCambio = 42.5m;
+        var errores = cfe.Validar();
+        Assert.DoesNotContain(errores, e => e.Contains("TipoCambio"));
+    }
 }

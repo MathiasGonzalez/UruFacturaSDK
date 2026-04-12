@@ -120,11 +120,23 @@ public class Cfe
     public DateTime FechaEmision { get; set; } = DateTime.Today;
 
     // --- Emisor (completado por SDK desde configuración) ---
+
+    /// <summary>RUT del emisor (sin puntos ni guión, 12 dígitos).</summary>
     public string RutEmisor { get; set; } = string.Empty;
+
+    /// <summary>Razón social del emisor.</summary>
     public string RazonSocialEmisor { get; set; } = string.Empty;
+
+    /// <summary>Nombre comercial del emisor (opcional).</summary>
     public string? NombreComercialEmisor { get; set; }
+
+    /// <summary>Domicilio fiscal del emisor.</summary>
     public string DomicilioFiscalEmisor { get; set; } = string.Empty;
+
+    /// <summary>Ciudad del emisor.</summary>
     public string CiudadEmisor { get; set; } = string.Empty;
+
+    /// <summary>Departamento del emisor.</summary>
     public string DepartamentoEmisor { get; set; } = string.Empty;
 
     // --- Receptor ---
@@ -155,11 +167,22 @@ public class Cfe
 
     // --- Totales calculados ---
 
+    /// <summary>Monto neto exento de IVA.</summary>
     public decimal MontoNetoExento { get; set; }
+
+    /// <summary>Monto neto gravado a IVA mínimo (10%).</summary>
     public decimal MontoNetoMinimo { get; set; }
+
+    /// <summary>Monto neto gravado a IVA básico (22%).</summary>
     public decimal MontoNetoBasico { get; set; }
+
+    /// <summary>Monto de IVA mínimo (10% sobre <see cref="MontoNetoMinimo"/>).</summary>
     public decimal IvaMinimo { get; set; }
+
+    /// <summary>Monto de IVA básico (22% sobre <see cref="MontoNetoBasico"/>).</summary>
     public decimal IvaBasico { get; set; }
+
+    /// <summary>Monto total del comprobante (netos + IVA).</summary>
     public decimal MontoTotal { get; set; }
 
     // --- Estado / firma ---
@@ -244,6 +267,9 @@ public class Cfe
             if (linea.PrecioUnitario < 0)
                 errors.Add($"Línea {i + 1}: PrecioUnitario no puede ser negativo.");
         }
+
+        if (Moneda != Moneda.PesoUruguayo && TipoCambio is null or <= 0)
+            errors.Add("TipoCambio es obligatorio y debe ser mayor a cero cuando la moneda no es Peso Uruguayo.");
 
         // Notas de corrección requieren referencias
         var tiposCorreccion = new[]

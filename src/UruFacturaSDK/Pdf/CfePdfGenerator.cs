@@ -3,6 +3,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using SkiaSharp;
 using UruFacturaSDK.Configuration;
+using UruFacturaSDK.Enums;
 using UruFacturaSDK.Exceptions;
 using UruFacturaSDK.Models;
 using ZXing;
@@ -40,7 +41,7 @@ public class CfePdfGenerator
     {
         try
         {
-            var qrBytes = GenerarQrCode(cfe);
+            var qrBytes = GenerarQrCode(cfe, _config.Ambiente);
             var document = new CfeDocumentoA4(cfe, _config, qrBytes);
             return document.GeneratePdf();
         }
@@ -59,7 +60,7 @@ public class CfePdfGenerator
     {
         try
         {
-            var qrBytes = GenerarQrCode(cfe);
+            var qrBytes = GenerarQrCode(cfe, _config.Ambiente);
             var document = new CfeDocumentoTermico(cfe, _config, qrBytes);
             return document.GeneratePdf();
         }
@@ -72,10 +73,21 @@ public class CfePdfGenerator
     /// <summary>
     /// Genera el código QR del CFE según normativa DGI.
     /// El contenido del QR es la URL de consulta con los datos del comprobante.
+    /// Usa el ambiente de <b>Producción</b> por defecto.
     /// </summary>
-    public static byte[] GenerarQrCode(Cfe cfe)
+    /// <param name="cfe">El CFE.</param>
+    public static byte[] GenerarQrCode(Cfe cfe) =>
+        GenerarQrCode(cfe, Ambiente.Produccion);
+
+    /// <summary>
+    /// Genera el código QR del CFE según normativa DGI.
+    /// El contenido del QR es la URL de consulta con los datos del comprobante.
+    /// </summary>
+    /// <param name="cfe">El CFE.</param>
+    /// <param name="ambiente">Ambiente de operación (Homologación o Producción).</param>
+    public static byte[] GenerarQrCode(Cfe cfe, Ambiente ambiente)
     {
-        var contenidoQr = ConstruirContenidoQr(cfe);
+        var contenidoQr = ConstruirContenidoQr(cfe, ambiente);
 
         var writer = new BarcodeWriterPixelData
         {
@@ -101,10 +113,14 @@ public class CfePdfGenerator
         return data.ToArray();
     }
 
-    private static string ConstruirContenidoQr(Cfe cfe)
+    private static string ConstruirContenidoQr(Cfe cfe, Ambiente ambiente)
     {
         // Formato de URL de verificación DGI Uruguay
-        return $"https://efactura.dgi.gub.uy/efactura/valida?" +
+        var baseUrl = ambiente == Ambiente.Produccion
+            ? "https://efactura.dgi.gub.uy/efactura/valida"
+            : "https://efacturahomologacion.dgi.gub.uy/efactura/valida";
+
+        return $"{baseUrl}?" +
                $"ruc={Uri.EscapeDataString(cfe.RutEmisor)}" +
                $"&tipoCfe={(int)cfe.Tipo}" +
                $"&serie={Uri.EscapeDataString(cfe.Serie ?? string.Empty)}" +

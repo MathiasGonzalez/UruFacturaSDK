@@ -88,10 +88,10 @@ public class CfeXmlBuilder
         WriteElement(w, "Nro", cfe.Numero.ToString());
         WriteElement(w, "FchEmis", cfe.FechaEmision.ToString("yyyy-MM-dd"));
         WriteElement(w, "FmaPago", ((int)cfe.FormaPago).ToString());
-        WriteElement(w, "MntBruto", "1");
+        WriteElement(w, "MntBruto", "0"); // precios netos (sin IVA) en el detalle
         if (cfe.Moneda != Moneda.PesoUruguayo)
         {
-            WriteElement(w, "TipoMoneda", cfe.Moneda.ToString());
+            WriteElement(w, "TipoMoneda", ObtenerCodigoMoneda(cfe.Moneda));
             if (cfe.TipoCambio.HasValue)
                 WriteElement(w, "TpoCambio", cfe.TipoCambio.Value.ToString("F4"));
         }
@@ -213,4 +213,16 @@ public class CfeXmlBuilder
         w.WriteString(value);
         w.WriteEndElement();
     }
+
+    /// <summary>
+    /// Retorna el código ISO 4217 alfabético de 3 letras que usa la DGI
+    /// para el elemento <c>TipoMoneda</c> (sólo para monedas distintas al peso uruguayo).
+    /// </summary>
+    private static string ObtenerCodigoMoneda(Moneda moneda) => moneda switch
+    {
+        Moneda.DolarAmericano => "USD",
+        Moneda.Euro           => "EUR",
+        _ => throw new ArgumentOutOfRangeException(nameof(moneda),
+                 $"Moneda '{moneda}' sin código ISO 4217 definido."),
+    };
 }
