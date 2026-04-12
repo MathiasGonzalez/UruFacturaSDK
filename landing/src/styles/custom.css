@@ -3,6 +3,9 @@
   --sl-color-accent-low: #003366;
   --sl-color-accent: #0057b8;
   --sl-color-accent-high: #4da6ff;
+}
+
+:root[data-theme='dark'] {
   --sl-color-white: #ffffff;
   --sl-color-gray-1: #eceef2;
   --sl-color-gray-2: #c0c2c7;
@@ -21,7 +24,7 @@
 
 /* Hero section enhancements */
 .hero {
-  border-bottom: 1px solid var(--sl-color-gray-5);
+  border-bottom: 1px solid var(--sl-color-hairline);
   padding-bottom: 2rem;
 }
 
@@ -51,9 +54,9 @@
 
 .feature-card {
   padding: 1.5rem;
-  border: 1px solid var(--sl-color-gray-5);
+  border: 1px solid var(--sl-color-hairline-light);
   border-radius: 8px;
-  background: var(--sl-color-gray-6);
+  background: var(--sl-color-bg-sidebar);
 }
 
 .feature-card h3 {

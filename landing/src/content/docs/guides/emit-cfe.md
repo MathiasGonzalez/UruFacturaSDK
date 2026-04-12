@@ -178,4 +178,4 @@ catch (HttpRequestException ex)
 }
 ```
 
-Ver [Códigos de respuesta DGI](/reference/dgi-codes/) para la lista completa de códigos.
+Ver [Códigos de respuesta DGI](../reference/dgi-codes/) para la lista completa de códigos.

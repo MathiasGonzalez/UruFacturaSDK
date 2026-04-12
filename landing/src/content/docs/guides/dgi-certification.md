@@ -200,7 +200,7 @@ var config = new UruFacturaConfig
 | `11` | ❌ Error en la firma digital |
 | `99` | ❌ Error interno del servidor DGI |
 
-Ver [Códigos DGI completos](/reference/dgi-codes/) para más detalles.
+Ver [Códigos DGI completos](../reference/dgi-codes/) para más detalles.
 
 ---
 

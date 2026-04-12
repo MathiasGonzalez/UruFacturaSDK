@@ -261,9 +261,9 @@ Antes de ir a producción, verificá:
 
 ## ¿Necesitás ayuda?
 
-- 📖 [Documentación completa](/getting-started/installation/)
+- 📖 [Documentación completa](../getting-started/installation/)
 - 💬 [Issues en GitHub](https://github.com/MathiasGonzalez/UruFacturaSDK/issues)
-- 🔍 [API Reference](/reference/api/)
+- 🔍 [API Reference](../reference/api/)
 
 <Aside type="tip">
   Si encontrás una operación que hacías en tu sistema anterior y no sabés cómo replicarla en UruFactura SDK, abrí un issue en GitHub con el caso de uso — lo documentamos y, si es necesario, lo incorporamos al SDK.
