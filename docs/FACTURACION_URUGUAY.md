@@ -87,9 +87,10 @@ var efactura = client.CrearEFactura();
 efactura.Numero = 42;
 efactura.Receptor = new Receptor
 {
-    RutReceptor   = "210012345678",
-    RazonSocial   = "Importadora Sur S.A.",
-    DomicilioFiscal = "Rambla República de Chile 4030",
+    Documento       = "210012345678",
+    TipoDocumento   = 2, // RUT
+    RazonSocial     = "Importadora Sur S.A.",
+    Direccion       = "Rambla República de Chile 4030",
 };
 efactura.Detalle.Add(new LineaDetalle
 {
@@ -156,8 +157,8 @@ var exportacion = client.CrearEFacturaExportacion();
 exportacion.Numero = 8;
 exportacion.Receptor = new Receptor
 {
-    RazonSocial     = "TechCorp LLC",
-    DomicilioFiscal = "500 Main St, Austin TX, USA",
+    RazonSocial = "TechCorp LLC",
+    Direccion   = "500 Main St, Austin TX, USA",
     // Sin RUT (receptor extranjero)
 };
 exportacion.Detalle.Add(new LineaDetalle
@@ -246,7 +247,7 @@ Console.WriteLine(resultado.Exitoso
 | **Monotributistas** | No están obligados a emitir CFE; pueden emitir factura papel o adherirse voluntariamente. |
 | **IRAE vs IRPF** | Las empresas que tributan IRAE son las principales obligadas; los profesionales independientes (IRPF Cat. II) también deben emitir CFE según su facturación. |
 | **IVA incluido** | Los precios al público suelen publicarse con IVA incluido. El SDK trabaja con precios **sin IVA**; el sistema calcula el monto del impuesto automáticamente. |
-| **Moneda extranjera** | Los CFE pueden emitirse en USD u otras monedas; el tipo de cambio del BCV debe registrarse en el comprobante. |
+| **Moneda extranjera** | Los CFE pueden emitirse en USD u otras monedas; el tipo de cambio del BCU debe registrarse en el comprobante. |
 | **Conservación** | Los XML firmados deben conservarse **mínimo 5 años** según el Código Tributario. |
 | **Anulación** | Los CFE no se anulan; se corrigen emitiendo una **Nota de Crédito** que referencia el comprobante original. |
 
