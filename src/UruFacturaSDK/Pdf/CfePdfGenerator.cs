@@ -73,10 +73,19 @@ public class CfePdfGenerator
     /// <summary>
     /// Genera el código QR del CFE según normativa DGI.
     /// El contenido del QR es la URL de consulta con los datos del comprobante.
+    /// Usa el ambiente de <b>Producción</b> por defecto.
+    /// </summary>
+    /// <param name="cfe">El CFE.</param>
+    public static byte[] GenerarQrCode(Cfe cfe) =>
+        GenerarQrCode(cfe, Ambiente.Produccion);
+
+    /// <summary>
+    /// Genera el código QR del CFE según normativa DGI.
+    /// El contenido del QR es la URL de consulta con los datos del comprobante.
     /// </summary>
     /// <param name="cfe">El CFE.</param>
     /// <param name="ambiente">Ambiente de operación (Homologación o Producción).</param>
-    public static byte[] GenerarQrCode(Cfe cfe, Ambiente ambiente = Ambiente.Produccion)
+    public static byte[] GenerarQrCode(Cfe cfe, Ambiente ambiente)
     {
         var contenidoQr = ConstruirContenidoQr(cfe, ambiente);
 

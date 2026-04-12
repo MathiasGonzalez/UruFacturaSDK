@@ -86,13 +86,16 @@ public class CfeFirmante : IDisposable
             var xadesObject = CrearObjetoXades(signedXml);
             signedXml.AddObject(xadesObject);
 
-            // XAdES-BES requiere una Reference a SignedProperties en el SignedInfo
+            // XAdES-BES requiere una Reference a SignedProperties en el SignedInfo.
+            // Se agrega C14N como transform explícito para garantizar interoperabilidad
+            // con validadores externos (el digest se calcula sobre el XML canonicalizado).
             var spReference = new Reference
             {
                 Uri = "#SignedProperties",
                 Type = "http://uri.etsi.org/01903#SignedProperties",
                 DigestMethod = SignedXml.XmlDsigSHA256Url,
             };
+            spReference.AddTransform(new XmlDsigC14NTransform());
             signedXml.AddReference(spReference);
 
             signedXml.SignedInfo!.SignatureMethod = SignedXml.XmlDsigRSASHA256Url;
