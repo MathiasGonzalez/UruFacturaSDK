@@ -2,6 +2,9 @@
 
 **La vía rápida hacia la Facturación Electrónica en Uruguay**
 
+[![CI](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml)
+[![Pack NuGet](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml)
+[![Deploy Landing](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 

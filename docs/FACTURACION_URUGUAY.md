@@ -1,0 +1,267 @@
+# Facturación Electrónica en Uruguay — Guía Concisa
+
+Referencia rápida sobre el sistema de Comprobantes Fiscales Electrónicos (CFE) regulado por la **DGI** (Dirección General Impositiva), con ejemplos prácticos por tipo de empresa y operación.
+
+---
+
+## Marco normativo
+
+| Norma | Descripción |
+|---|---|
+| Resolución DGI 798/012 | Marco general de la facturación electrónica |
+| Decreto 36/020 | Ampliación de obligados a emitir CFE |
+| Decreto 230/021 | Calendario de adhesión obligatoria por facturación |
+| e-CFE v2.x | Esquema XML vigente publicado por DGI |
+
+La **adhesión es obligatoria** para contribuyentes IRAE según su facturación anual. Las empresas no alcanzadas pueden adherirse voluntariamente.
+
+---
+
+## Comprobantes disponibles (CFE)
+
+| Código | Tipo | Uso |
+|--------|------|-----|
+| **101** | e-Ticket | Venta a consumidor final (sin RUT del receptor) |
+| **102** | Nota de Crédito e-Ticket | Anulación / devolución de e-Ticket |
+| **103** | Nota de Débito e-Ticket | Ajuste en más sobre e-Ticket |
+| **111** | e-Factura | Venta a empresa o profesional con RUT |
+| **112** | Nota de Crédito e-Factura | Anulación / devolución de e-Factura |
+| **113** | Nota de Débito e-Factura | Ajuste en más sobre e-Factura |
+| **121** | e-Factura de Exportación | Operaciones de exportación de bienes/servicios |
+| **181** | e-Remito | Traslado de mercadería sin transferencia de dominio |
+| **151** | e-Resguardo | Retención de impuestos |
+
+> La diferencia principal entre **e-Ticket** y **e-Factura** es si el receptor tiene o no RUT. Las empresas siempre deben exigir e-Factura para poder descontar el IVA compras.
+
+---
+
+## Tasas de IVA vigentes
+
+| Tasa | Aplicación |
+|------|-----------|
+| **22 %** (básica) | Bienes y servicios en general |
+| **10 %** (mínima) | Alimentos de la canasta básica, medicamentos, servicios médicos |
+| **0 %** (exento) | Arrendamientos de inmuebles, servicios educativos, exportaciones |
+
+---
+
+## Ejemplos por tipo de empresa
+
+### 1. Comercio minorista (venta a consumidor final)
+
+**Escenario:** ferretería vende materiales a una persona física sin RUT.
+
+```csharp
+// e-Ticket → consumidor final, sin datos del receptor
+var eticket = client.CrearETicket();
+eticket.Numero = 125;
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Pintura látex 20L",
+    Cantidad       = 2,
+    PrecioUnitario = 890m,           // precio sin IVA
+    IndFactIva     = TipoIva.Basico, // 22 %
+});
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 2,
+    NombreItem     = "Rodillo 23cm",
+    Cantidad       = 1,
+    PrecioUnitario = 150m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+var respuesta = await client.EnviarCfeAsync(eticket);
+```
+
+---
+
+### 2. Servicios profesionales (empresa a empresa)
+
+**Escenario:** estudio contable factura honorarios mensuales a una S.A.
+
+```csharp
+// e-Factura → receptor con RUT, puede deducir IVA
+var efactura = client.CrearEFactura();
+efactura.Numero = 42;
+efactura.Receptor = new Receptor
+{
+    Documento       = "210012345678",
+    TipoDocumento   = 2, // RUT
+    RazonSocial     = "Importadora Sur S.A.",
+    Direccion       = "Rambla República de Chile 4030",
+};
+efactura.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Honorarios contables — Mayo 2025",
+    Cantidad       = 1,
+    PrecioUnitario = 15000m,
+    IndFactIva     = TipoIva.Basico, // 22 %
+});
+
+var respuesta = await client.EnviarCfeAsync(efactura);
+```
+
+---
+
+### 3. Supermercado / alimentos con IVA diferenciado
+
+**Escenario:** minimarket vende productos con tasas mixtas (básica y mínima).
+
+```csharp
+var eticket = client.CrearETicket();
+eticket.Numero = 501;
+
+// Producto con IVA básico (22 %)
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Detergente 1L",
+    Cantidad       = 3,
+    PrecioUnitario = 85m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+// Producto con IVA mínimo (10 %) — canasta básica
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 2,
+    NombreItem     = "Aceite girasol 900ml",
+    Cantidad       = 2,
+    PrecioUnitario = 120m,
+    IndFactIva     = TipoIva.Minimo,
+});
+
+// Producto exento — medicamento
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 3,
+    NombreItem     = "Ibuprofeno 400mg x20",
+    Cantidad       = 1,
+    PrecioUnitario = 210m,
+    IndFactIva     = TipoIva.Exento,
+});
+```
+
+---
+
+### 4. Empresa exportadora
+
+**Escenario:** software factory cobra a cliente del exterior por desarrollo a medida.
+
+```csharp
+// e-Factura de Exportación → IVA 0 %, requiere datos del receptor extranjero
+var exportacion = client.CrearEFacturaExportacion();
+exportacion.Numero = 8;
+exportacion.Receptor = new Receptor
+{
+    RazonSocial = "TechCorp LLC",
+    Direccion   = "500 Main St, Austin TX, USA",
+    // Sin RUT (receptor extranjero)
+};
+exportacion.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Desarrollo de software — Sprint 12",
+    Cantidad       = 1,
+    PrecioUnitario = 8000m,          // USD, moneda configurada aparte
+    IndFactIva     = TipoIva.Exento, // exportación → 0 %
+});
+```
+
+---
+
+### 5. Nota de crédito (devolución parcial)
+
+**Escenario:** cliente devuelve una unidad de un e-Ticket anterior.
+
+```csharp
+var nc = client.CrearNotaCreditoETicket();
+nc.Numero = 15;
+nc.Referencias.Add(new RefCfe
+{
+    TipoCfe  = TipoCfe.ETicket,
+    Serie    = "A",
+    NroCfe   = 125,                          // número del comprobante original
+    FechaCfe = new DateTime(2025, 5, 10),
+    Razon    = "Devolución — producto dañado",
+});
+nc.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Pintura látex 20L (devolución)",
+    Cantidad       = 1,
+    PrecioUnitario = 890m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+var respuesta = await client.EnviarCfeAsync(nc);
+```
+
+---
+
+### 6. Traslado de mercadería (e-Remito)
+
+**Escenario:** distribuidora traslada productos entre depósitos propios.
+
+```csharp
+var remito = client.CrearERemito();
+remito.Numero = 33;
+// El e-Remito no incluye precios; describe el traslado físico
+remito.Detalle.Add(new LineaDetalle
+{
+    NroLinea    = 1,
+    NombreItem  = "Cajas producto X",
+    Cantidad    = 50,
+    IndFactIva  = TipoIva.Exento,
+});
+```
+
+---
+
+## Reporte Diario
+
+La DGI exige enviar un **Reporte Diario** al finalizar cada jornada con todos los CFE emitidos, aunque sea uno solo.
+
+```csharp
+var resultado = await client.EnviarReporteDiarioAsync(
+    DateTime.Today,
+    new[] { eticket1, eticket2, efactura1 }
+);
+
+Console.WriteLine(resultado.Exitoso
+    ? "✅ Reporte diario enviado"
+    : $"❌ Error: {resultado.Mensaje}");
+```
+
+> Automatizá este envío con un job nocturno (ej: Hangfire, un Worker Service de .NET, o una GitHub Action programada).
+
+---
+
+## Consideraciones fiscales clave
+
+| Punto | Detalle |
+|---|---|
+| **Monotributistas** | No están obligados a emitir CFE; pueden emitir factura papel o adherirse voluntariamente. |
+| **IRAE vs IRPF** | Las empresas que tributan IRAE son las principales obligadas; los profesionales independientes (IRPF Cat. II) también deben emitir CFE según su facturación. |
+| **IVA incluido** | Los precios al público suelen publicarse con IVA incluido. El SDK trabaja con precios **sin IVA**; el sistema calcula el monto del impuesto automáticamente. |
+| **Moneda extranjera** | Los CFE pueden emitirse en USD u otras monedas; el tipo de cambio del BCU debe registrarse en el comprobante. |
+| **Conservación** | Los XML firmados deben conservarse **mínimo 5 años** según el Código Tributario. |
+| **Anulación** | Los CFE no se anulan; se corrigen emitiendo una **Nota de Crédito** que referencia el comprobante original. |
+
+---
+
+## Recursos oficiales
+
+| Recurso | Enlace |
+|---|---|
+| DGI — Factura Electrónica | [dgi.gub.uy/factura-electronica](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,) |
+| Esquemas XML CFE | Disponibles en el portal DGI en línea → Gestión CFE |
+| Resolución 798/012 | [dgi.gub.uy/normativa](https://www.dgi.gub.uy/wdgi/page?2,principal,ampliacion-normativa-resoluciones,O,es,0,PAG;CONC;1175;1;D;resolucion-798-012;0;PAG) |
+| AGESIC — CA habilitadas | [agesic.gub.uy](https://www.agesic.gub.uy/) |
+
+---
+
+> Ver también: [CERTIFICACION_DGI.md](CERTIFICACION_DGI.md) para el proceso completo de homologación y puesta en producción.
