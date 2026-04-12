@@ -22,6 +22,46 @@ app.UseCors();
 // Endpoints
 // -----------------------------------------------------------------------
 
+// Returns all supported CFE types.
+app.MapGet("/api/cfe-types", () =>
+    Enum.GetValues<TipoCfe>()
+        .Select(t => new { value = (int)t, label = t.ToString() })
+        .OrderBy(t => t.value));
+
+// Returns the current UruFactura configuration status so the frontend can
+// show whether the environment is properly set up before attempting to sign.
+app.MapGet("/api/config/status", (IConfiguration config) =>
+{
+    var section = config.GetSection("UruFactura");
+    var ufConfig = section.Get<UruFacturaConfig>() ?? new UruFacturaConfig();
+
+    var issues = new List<string>();
+
+    if (string.IsNullOrWhiteSpace(ufConfig.RutEmisor))
+        issues.Add("RutEmisor no configurado.");
+    if (string.IsNullOrWhiteSpace(ufConfig.RazonSocialEmisor))
+        issues.Add("RazonSocialEmisor no configurado.");
+    if (string.IsNullOrWhiteSpace(ufConfig.DomicilioFiscal))
+        issues.Add("DomicilioFiscal no configurado.");
+    if (string.IsNullOrWhiteSpace(ufConfig.RutaCertificado))
+        issues.Add("RutaCertificado no configurado.");
+    else if (!File.Exists(ufConfig.RutaCertificado))
+        issues.Add($"Certificado no encontrado: {ufConfig.RutaCertificado}");
+    if (string.IsNullOrWhiteSpace(ufConfig.PasswordCertificado))
+        issues.Add("PasswordCertificado no configurado.");
+
+    return new
+    {
+        ok = issues.Count == 0,
+        ambiente = ufConfig.Ambiente.ToString(),
+        rutEmisor = ufConfig.RutEmisor,
+        razonSocial = ufConfig.RazonSocialEmisor,
+        certificado = ufConfig.RutaCertificado,
+        certificadoExiste = !string.IsNullOrWhiteSpace(ufConfig.RutaCertificado) && File.Exists(ufConfig.RutaCertificado),
+        issues,
+    };
+});
+
 app.MapGet("/api/invoices", async (AppDbContext db) =>
     await db.Invoices.OrderByDescending(i => i.FechaEmision).ToListAsync());
 
@@ -31,9 +71,20 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
 
     using var client = new UruFacturaClient(ufConfig);
 
-    var cfe = req.TipoCfe == (int)TipoCfe.EFactura
-        ? client.CrearEFactura()
-        : client.CrearETicket();
+    var tipo = (TipoCfe)req.TipoCfe;
+
+    var cfe = tipo switch
+    {
+        TipoCfe.ETicket                        => client.CrearETicket(),
+        TipoCfe.NotaCreditoETicket             => client.CrearNotaCreditoETicket(),
+        TipoCfe.NotaDebitoETicket              => client.CrearNotaDebitoETicket(),
+        TipoCfe.EFactura                       => client.CrearEFactura(),
+        TipoCfe.NotaCreditoEFactura            => client.CrearNotaCreditoEFactura(),
+        TipoCfe.NotaDebitoEFactura             => client.CrearNotaDebitoEFactura(),
+        TipoCfe.EFacturaExportacion            => client.CrearEFacturaExportacion(),
+        TipoCfe.ERemito                        => client.CrearERemito(),
+        _                                      => throw new ArgumentException($"Tipo de CFE no soportado: {tipo}"),
+    };
 
     cfe.Numero = req.Numero;
 
@@ -50,6 +101,18 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
             Cantidad = l.Cantidad,
             PrecioUnitario = l.PrecioUnitario,
             IndFactIva = (TipoIva)l.IndFactIva,
+        });
+    }
+
+    foreach (var r in req.Referencias ?? [])
+    {
+        cfe.Referencias.Add(new RefCfe
+        {
+            TipoCfe = (TipoCfe)r.TipoCfe,
+            Serie = r.Serie ?? string.Empty,
+            NroCfe = r.NroCfe,
+            FechaCfe = r.FechaCfe,
+            Razon = r.Razon,
         });
     }
 
@@ -114,10 +177,18 @@ record CreateInvoiceRequest(
     long Numero,
     string? RutReceptor,
     string? NombreReceptor,
-    List<LineaDetalleDto> Detalle);
+    List<LineaDetalleDto> Detalle,
+    List<RefCfeDto>? Referencias = null);
 
 record LineaDetalleDto(
     string NombreItem,
     decimal Cantidad,
     decimal PrecioUnitario,
     int IndFactIva);
+
+record RefCfeDto(
+    int TipoCfe,
+    string? Serie,
+    long NroCfe,
+    DateTime FechaCfe,
+    string? Razon);

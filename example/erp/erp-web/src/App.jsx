@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 
-const TIPO_CFE = { 101: 'e-Ticket', 111: 'e-Factura' }
 const TIPO_IVA = { 1: 'Exento', 2: 'IVA Mínimo 10%', 3: 'IVA Básico 22%' }
 
 const defaultLine = () => ({ nombreItem: '', cantidad: 1, precioUnitario: 0, indFactIva: 3 })
@@ -13,17 +12,36 @@ const defaultForm = () => ({
   detalle: [defaultLine()],
 })
 
+// Status badge colours
+const statusColor = { ok: '#16a34a', warn: '#d97706', error: '#dc2626' }
+
 export default function App() {
+  const [cfeTypes, setCfeTypes] = useState([])
+  const [configStatus, setConfigStatus] = useState(null)
   const [invoices, setInvoices] = useState([])
   const [form, setForm] = useState(defaultForm())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    fetchCfeTypes()
+    fetchConfigStatus()
+  }, [])
 
   async function load() {
     const res = await fetch('/api/invoices')
     setInvoices(await res.json())
+  }
+
+  async function fetchCfeTypes() {
+    const res = await fetch('/api/cfe-types')
+    setCfeTypes(await res.json())
+  }
+
+  async function fetchConfigStatus() {
+    const res = await fetch('/api/config/status')
+    setConfigStatus(await res.json())
   }
 
   function setField(key, value) {
@@ -93,18 +111,28 @@ export default function App() {
     URL.revokeObjectURL(url)
   }
 
-  return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 1100, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ marginBottom: 24 }}>ERP Demo – UruFactura SDK</h1>
+  // Derive label from cfeTypes list (populated from API)
+  function tipoCfeLabel(value) {
+    return cfeTypes.find(t => t.value === value)?.label ?? String(value)
+  }
 
-      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        {/* Form */}
-        <form onSubmit={submit} style={{ minWidth: 380, flex: '0 0 auto' }}>
+  return (
+    <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 1160, margin: '0 auto', padding: 24 }}>
+      <h1 style={{ marginBottom: 16 }}>ERP Demo – UruFactura SDK</h1>
+
+      {/* ── Config status banner ── */}
+      <ConfigStatusBanner status={configStatus} onRefresh={fetchConfigStatus} />
+
+      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap', marginTop: 24 }}>
+        {/* ── Form ── */}
+        <form onSubmit={submit} style={{ minWidth: 400, flex: '0 0 auto' }}>
           <h2>Nueva Factura</h2>
 
           <label style={lbl}>Tipo CFE</label>
           <select value={form.tipoCfe} onChange={e => setField('tipoCfe', e.target.value)} style={inp}>
-            {Object.entries(TIPO_CFE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {cfeTypes.map(t => (
+              <option key={t.value} value={t.value}>{t.label} ({t.value})</option>
+            ))}
           </select>
 
           <label style={lbl}>Número</label>
@@ -139,7 +167,7 @@ export default function App() {
           ))}
           <button type="button" onClick={addLine} style={{ marginBottom: 12, cursor: 'pointer' }}>+ Línea</button>
 
-          {error && <p style={{ color: 'red', margin: '8px 0' }}>{error}</p>}
+          {error && <p style={{ color: statusColor.error, margin: '8px 0' }}>{error}</p>}
 
           <br />
           <button type="submit" disabled={loading}
@@ -148,7 +176,7 @@ export default function App() {
           </button>
         </form>
 
-        {/* Invoice list */}
+        {/* ── Invoice list ── */}
         <div style={{ flex: 1, minWidth: 320 }}>
           <h2>Comprobantes ({invoices.length})</h2>
           {invoices.length === 0
@@ -165,7 +193,7 @@ export default function App() {
                   {invoices.map(inv => (
                     <tr key={inv.id} style={{ borderBottom: '1px solid #ddd' }}>
                       <td style={td}>{inv.id}</td>
-                      <td style={td}>{TIPO_CFE[inv.tipoCfe] ?? inv.tipoCfe}</td>
+                      <td style={td}>{tipoCfeLabel(inv.tipoCfe)}</td>
                       <td style={td}>{inv.numero}</td>
                       <td style={td}>{inv.fechaEmision?.slice(0, 10)}</td>
                       <td style={td}>{inv.nombreReceptor ?? '—'}</td>
@@ -182,6 +210,44 @@ export default function App() {
             )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function ConfigStatusBanner({ status, onRefresh }) {
+  if (!status) return <p style={{ color: '#888' }}>Verificando configuración…</p>
+
+  const color = status.ok ? statusColor.ok : statusColor.error
+  const bg = status.ok ? '#f0fdf4' : '#fef2f2'
+  const border = status.ok ? '#bbf7d0' : '#fecaca'
+
+  return (
+    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 6, padding: '12px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 18 }}>{status.ok ? '✅' : '❌'}</span>
+        <strong style={{ color }}>
+          {status.ok ? 'Ambiente configurado correctamente' : 'Configuración incompleta'}
+        </strong>
+        <span style={{ fontSize: 13, color: '#555', marginLeft: 4 }}>
+          Ambiente: <b>{status.ambiente}</b>
+          {status.rutEmisor && <> · RUT: <b>{status.rutEmisor}</b></>}
+          {status.razonSocial && <> · <b>{status.razonSocial}</b></>}
+          {status.certificado && (
+            <> · Certificado: <b style={{ color: status.certificadoExiste ? statusColor.ok : statusColor.error }}>
+              {status.certificadoExiste ? 'encontrado ✓' : 'NO encontrado ✗'}
+            </b></>
+          )}
+        </span>
+        <button onClick={onRefresh}
+          style={{ marginLeft: 'auto', fontSize: 12, cursor: 'pointer', padding: '2px 10px' }}>
+          ↻ Verificar
+        </button>
+      </div>
+      {status.issues?.length > 0 && (
+        <ul style={{ margin: '8px 0 0 28px', padding: 0, fontSize: 13, color: statusColor.error }}>
+          {status.issues.map((issue, i) => <li key={i}>{issue}</li>)}
+        </ul>
+      )}
     </div>
   )
 }

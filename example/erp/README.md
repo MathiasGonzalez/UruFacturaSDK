@@ -57,6 +57,8 @@ Abre el dashboard de Aspire para ver las URLs exactas.
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
+| GET    | `/api/cfe-types` | Lista todos los tipos de CFE soportados |
+| GET    | `/api/config/status` | Estado de la configuración del ambiente |
 | GET    | `/api/invoices` | Lista todos los comprobantes |
 | POST   | `/api/invoices` | Crea y firma un nuevo CFE |
 | GET    | `/api/invoices/{id}/pdf` | Descarga el PDF A4 del comprobante |
@@ -76,12 +78,15 @@ Abre el dashboard de Aspire para ver las URLs exactas.
       "precioUnitario": 5000,
       "indFactIva": 3
     }
-  ]
+  ],
+  "referencias": []
 }
 ```
 
-`tipoCfe`: `101` = e-Ticket · `111` = e-Factura  
+`tipoCfe` valores soportados: todos los valores del enum `TipoCfe` (ver `GET /api/cfe-types`)  
 `indFactIva`: `1` = Exento · `2` = IVA Mínimo 10% · `3` = IVA Básico 22%
+
+Para notas de crédito/débito incluye el array `referencias` con los CFE referenciados.
 
 ## Notas
 
