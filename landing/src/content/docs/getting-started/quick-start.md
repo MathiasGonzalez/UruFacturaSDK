@@ -270,6 +270,6 @@ else
 
 import { LinkCard } from '@astrojs/starlight/components';
 
-<LinkCard title="Gestión de CAE" description="Cómo monitorear y renovar CAEs antes de que venzan." href="/guides/cae-management/" />
-<LinkCard title="Certificación DGI" description="Proceso de homologación y habilitación en producción." href="/guides/dgi-certification/" />
-<LinkCard title="Migración desde otro proveedor" description="¿Venís de otra solución? Esta guía es para vos." href="/migration/from-other-providers/" />
+<LinkCard title="Gestión de CAE" description="Cómo monitorear y renovar CAEs antes de que venzan." href="/UruFacturaSDK/guides/cae-management/" />
+<LinkCard title="Certificación DGI" description="Proceso de homologación y habilitación en producción." href="/UruFacturaSDK/guides/dgi-certification/" />
+<LinkCard title="Migración desde otro proveedor" description="¿Venís de otra solución? Esta guía es para vos." href="/UruFacturaSDK/migration/from-other-providers/" />
