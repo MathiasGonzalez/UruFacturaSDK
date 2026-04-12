@@ -1,0 +1,115 @@
+---
+title: Generar PDFs
+description: Cómo generar representaciones impresas de CFEs en A4 y formato térmico
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+UruFactura SDK incluye un generador de PDFs que produce representaciones impresas de CFEs según la normativa DGI, incluyendo código QR y sellos de seguridad.
+
+---
+
+## Formatos disponibles
+
+| Formato | Método | Uso recomendado |
+|---------|--------|-----------------|
+| **A4** | `GenerarPdfA4(cfe)` | Email, archivo digital, impresora de oficina |
+| **Térmico 80mm** | `GenerarPdfTermico(cfe)` | Impresora de punto de venta (ticket) |
+
+---
+
+## Generar PDF A4
+
+```csharp
+var eticket = client.CrearETicket();
+// ... configurar el e-ticket ...
+
+// Enviar primero (o solo generar y firmar si no querés enviar)
+await client.EnviarCfeAsync(eticket);
+
+// Generar PDF A4
+byte[] pdfA4 = client.GenerarPdfA4(eticket);
+
+// Guardar en disco
+await File.WriteAllBytesAsync($"eticket_{eticket.Numero:D8}.pdf", pdfA4);
+```
+
+---
+
+## Generar PDF Térmico (80mm)
+
+```csharp
+byte[] pdfTermico = client.GenerarPdfTermico(eticket);
+await File.WriteAllBytesAsync($"eticket_{eticket.Numero:D8}_termico.pdf", pdfTermico);
+```
+
+---
+
+## Generar ambos formatos
+
+```csharp
+var (pdfA4, pdfTermico) = (
+    client.GenerarPdfA4(eticket),
+    client.GenerarPdfTermico(eticket)
+);
+
+await Task.WhenAll(
+    File.WriteAllBytesAsync($"facturas/{eticket.Numero:D8}.pdf", pdfA4),
+    File.WriteAllBytesAsync($"tickets/{eticket.Numero:D8}_80mm.pdf", pdfTermico)
+);
+```
+
+---
+
+## Enviar PDF por email (ASP.NET Core)
+
+```csharp
+public class FacturaService
+{
+    private readonly UruFacturaClient _client;
+    private readonly IEmailService _emailService;
+
+    public async Task EmitirYEnviarAsync(string emailCliente, LineaDetalle[] detalle)
+    {
+        var eticket = _client.CrearETicket();
+        eticket.Numero = await ObtenerProximoNumeroAsync();
+
+        foreach (var linea in detalle)
+            eticket.Detalle.Add(linea);
+
+        var respuesta = await _client.EnviarCfeAsync(eticket);
+
+        if (!respuesta.Exitoso)
+            throw new InvalidOperationException($"DGI rechazó el CFE: {respuesta.Mensaje}");
+
+        byte[] pdf = _client.GenerarPdfA4(eticket);
+
+        await _emailService.SendAsync(new EmailMessage
+        {
+            To         = emailCliente,
+            Subject    = $"Tu e-Ticket #{eticket.Numero}",
+            Body       = "Adjuntamos tu comprobante fiscal electrónico.",
+            Attachment = new EmailAttachment
+            {
+                FileName    = $"eticket_{eticket.Numero:D8}.pdf",
+                ContentType = "application/pdf",
+                Data        = pdf,
+            },
+        });
+    }
+}
+```
+
+---
+
+## Guardar en Azure Blob Storage
+
+```csharp
+var blobClient = containerClient.GetBlobClient($"facturas/{eticket.Numero:D8}.pdf");
+using var stream = new MemoryStream(pdfA4);
+await blobClient.UploadAsync(stream, overwrite: true);
+```
+
+<Aside type="tip">
+  Guardá tanto el **PDF** como el **XML firmado** en almacenamiento durable. DGI exige conservar los XML por al menos 5 años.
+</Aside>

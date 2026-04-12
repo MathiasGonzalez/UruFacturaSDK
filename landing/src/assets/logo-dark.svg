@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
+  <rect x="0" y="8" width="24" height="24" rx="4" fill="#4da6ff"/>
+  <text x="6" y="25" font-family="monospace" font-size="16" font-weight="bold" fill="white">U</text>
+  <text x="32" y="27" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4da6ff">UruFactura</text>
+  <text x="148" y="27" font-family="system-ui, sans-serif" font-size="18" font-weight="300" fill="#aaa">SDK</text>
+</svg>

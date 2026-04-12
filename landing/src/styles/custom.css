@@ -1,0 +1,62 @@
+/* UruFactura SDK - Custom Theme Colors */
+:root {
+  --sl-color-accent-low: #003366;
+  --sl-color-accent: #0057b8;
+  --sl-color-accent-high: #4da6ff;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #eceef2;
+  --sl-color-gray-2: #c0c2c7;
+  --sl-color-gray-3: #888b96;
+  --sl-color-gray-4: #545861;
+  --sl-color-gray-5: #353841;
+  --sl-color-gray-6: #24272f;
+  --sl-color-black: #17181c;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #d0e4ff;
+  --sl-color-accent: #0057b8;
+  --sl-color-accent-high: #003a8c;
+}
+
+/* Hero section enhancements */
+.hero {
+  border-bottom: 1px solid var(--sl-color-gray-5);
+  padding-bottom: 2rem;
+}
+
+/* Badge styling for CFE types table */
+.cfe-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+}
+
+/* Code block enhancements */
+.expressive-code {
+  border-radius: 8px;
+}
+
+/* Feature grid */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 8px;
+  background: var(--sl-color-gray-6);
+}
+
+.feature-card h3 {
+  margin-top: 0;
+  color: var(--sl-color-accent-high);
+}
