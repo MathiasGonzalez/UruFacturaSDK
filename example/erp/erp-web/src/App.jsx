@@ -323,7 +323,9 @@ function CreateCfeTab({ cfeTypes, onCreated }) {
 
   const setField = (key, val) => setForm(f => ({ ...f, [key]: val }))
   const setLine  = (i, key, val) => setForm(f => {
-    const d = [...f.detalle]; d[i] = { ...d[i], [key]: val }; return { ...f, detalle: d }
+    const d = [...f.detalle]
+    d[i] = { ...d[i], [key]: val }
+    return { ...f, detalle: d }
   })
   const addLine    = () => setForm(f => ({ ...f, detalle: [...f.detalle, defaultLine()] }))
   const removeLine = i  => setForm(f => ({ ...f, detalle: f.detalle.filter((_, x) => x !== i) }))
@@ -800,6 +802,16 @@ function DemoTimeline({ state }) {
   )
 }
 
+// Maps a numeric TipoCfe value to its C# enum member name for use in code snippets.
+function tipoCfeEnumName(value) {
+  const labels = {
+    101: 'ETicket', 102: 'NotaCreditoETicket', 103: 'NotaDebitoETicket',
+    111: 'EFactura', 112: 'NotaCreditoEFactura', 113: 'NotaDebitoEFactura',
+    121: 'EFacturaExportacion', 181: 'ERemito',
+  }
+  return labels[value] ?? 'ETicket'
+}
+
 function DemoExplanation({ state, meta, cancelMeta, cancelTipoCfe, invoice, cancelInvoice }) {
   const card = { background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, padding: 20 }
 
@@ -851,7 +863,7 @@ function DemoExplanation({ state, meta, cancelMeta, cancelTipoCfe, invoice, canc
         El XML firmado quedó almacenado. Para anularlo DGI exige emitir una
         &nbsp;<strong>{cancelMeta.label}</strong> referenciando este CFE.
       </div>
-      <CodeBlock code={`// Anulación:\nvar nc = ${cancelMeta.sdkMethod};\nnc.Referencias.Add(new RefCfe {\n    TipoCfe = TipoCfe.${Object.keys(CFE_META).find(k => Number(k) === invoice?.tipoCfe) ? Object.entries(CFE_META).find(([k]) => Number(k) === invoice?.tipoCfe)?.[1]?.label?.replace(/\s/g,'') : 'ETicket'},\n    NroCfe  = ${invoice?.numero},\n    Razon   = "Anulación de comprobante",\n});\nclient.GenerarYFirmar(nc);`} />
+      <CodeBlock code={`// Anulación:\nvar nc = ${cancelMeta.sdkMethod};\nnc.Referencias.Add(new RefCfe {\n    TipoCfe = TipoCfe.${tipoCfeEnumName(invoice?.tipoCfe)},\n    NroCfe  = ${invoice?.numero},\n    Razon   = "Anulación de comprobante",\n});\nclient.GenerarYFirmar(nc);`} />
     </div>
   )
 
