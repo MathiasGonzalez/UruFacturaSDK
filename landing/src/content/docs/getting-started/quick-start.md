@@ -1,0 +1,275 @@
+---
+title: Uso Rápido
+description: Emitir tu primer CFE con UruFactura SDK en minutos
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+En esta guía vas a enviar tu primer e-Ticket a DGI (en ambiente de homologación) paso a paso.
+
+## Flujo completo de un CFE
+
+```
+Configurar → Registrar CAE → Crear CFE → Generar XML → Firmar → Enviar → PDF
+```
+
+---
+
+## Paso 1: Setup inicial
+
+```csharp
+using UruFacturaSDK;
+using UruFacturaSDK.Models;
+using UruFacturaSDK.Enums;
+
+var config = new UruFacturaConfig
+{
+    RutEmisor           = "210000000012",
+    RazonSocialEmisor   = "Mi Empresa S.A.",
+    DomicilioFiscal     = "Av. 18 de Julio 1234",
+    Ciudad              = "Montevideo",
+    Departamento        = "Montevideo",
+    Ambiente            = Ambiente.Homologacion,
+    RutaCertificado     = "/ruta/al/certificado.p12",
+    PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
+};
+
+using var client = new UruFacturaClient(config);
+```
+
+---
+
+## Paso 2: Registrar el CAE
+
+El CAE define el rango de numeración autorizado por DGI para cada tipo de CFE.
+
+```csharp
+client.Cae.RegistrarCae(new Cae
+{
+    NroSerie         = "CAE2025001",
+    TipoCfe          = TipoCfe.ETicket,
+    RangoDesde       = 1,
+    RangoHasta       = 1000,
+    FechaVencimiento = new DateTime(2026, 12, 31),
+});
+```
+
+---
+
+## Paso 3: Crear el comprobante
+
+<Tabs>
+  <TabItem label="e-Ticket simple">
+  ```csharp
+  var eticket = client.CrearETicket();
+  eticket.Numero = 1;
+
+  eticket.Detalle.Add(new LineaDetalle
+  {
+      NroLinea       = 1,
+      NombreItem     = "Servicio de consultoría",
+      Cantidad       = 1,
+      PrecioUnitario = 5000m,
+      IndFactIva     = TipoIva.Basico,
+  });
+  ```
+  </TabItem>
+  <TabItem label="e-Factura con receptor">
+  ```csharp
+  var efactura = client.CrearEFactura();
+  efactura.Numero = 1;
+
+  efactura.Receptor = new Receptor
+  {
+      RutReceptor   = "210000000013",
+      RazonSocial   = "Empresa Compradora S.A.",
+      Domicilio     = "Bulevar España 2345",
+      Ciudad        = "Montevideo",
+  };
+
+  efactura.Detalle.Add(new LineaDetalle
+  {
+      NroLinea       = 1,
+      NombreItem     = "Producto A",
+      Cantidad       = 10,
+      PrecioUnitario = 500m,
+      IndFactIva     = TipoIva.Basico,
+  });
+
+  efactura.Detalle.Add(new LineaDetalle
+  {
+      NroLinea       = 2,
+      NombreItem     = "Producto B",
+      Cantidad       = 5,
+      PrecioUnitario = 200m,
+      IndFactIva     = TipoIva.Minimo,
+  });
+  ```
+  </TabItem>
+  <TabItem label="Nota de Crédito">
+  ```csharp
+  var nc = client.CrearNotaCreditoETicket();
+  nc.Numero = 1;
+
+  // Referenciar el comprobante original
+  nc.Referencias.Add(new RefCfe
+  {
+      TipoCfe  = TipoCfe.ETicket,
+      Serie    = "A",
+      NroCfe   = 42,
+      FechaCfe = new DateTime(2025, 6, 15),
+      Razon    = "Devolución de mercadería",
+  });
+
+  nc.Detalle.Add(new LineaDetalle
+  {
+      NroLinea       = 1,
+      NombreItem     = "Devolución - Producto X",
+      Cantidad       = 2,
+      PrecioUnitario = 300m,
+      IndFactIva     = TipoIva.Basico,
+  });
+  ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Paso 4: Enviar a DGI
+
+```csharp
+var respuesta = await client.EnviarCfeAsync(eticket);
+
+if (respuesta.Exitoso)
+{
+    Console.WriteLine($"✅ Aceptado: {respuesta.Mensaje}");
+}
+else
+{
+    Console.WriteLine($"❌ Rechazado [{respuesta.Codigo}]: {respuesta.Mensaje}");
+}
+```
+
+<Aside type="tip">
+  El código `00` significa aceptado. El código `01` es aceptado con observaciones (también válido). Ver [Códigos DGI](/reference/dgi-codes/) para la lista completa.
+</Aside>
+
+---
+
+## Paso 5: Generar representación impresa (PDF)
+
+```csharp
+// PDF A4 (para envío por email o archivo)
+byte[] pdfA4 = client.GenerarPdfA4(eticket);
+await File.WriteAllBytesAsync("eticket_001_a4.pdf", pdfA4);
+
+// PDF Térmico 80mm (para impresión en punto de venta)
+byte[] pdfTermico = client.GenerarPdfTermico(eticket);
+await File.WriteAllBytesAsync("eticket_001_termico.pdf", pdfTermico);
+```
+
+---
+
+## Envío del Reporte Diario
+
+DGI exige enviar un reporte diario con todos los CFE emitidos en la jornada.
+
+```csharp
+var resultado = await client.EnviarReporteDiarioAsync(
+    DateTime.Today,
+    new[] { eticket }
+);
+
+Console.WriteLine($"Reporte diario: {resultado.Respuesta.Mensaje}");
+```
+
+<Aside type="caution">
+  El Reporte Diario es **obligatorio** incluso si solo emitiste un CFE. No enviarlo puede generar infracciones ante DGI.
+</Aside>
+
+---
+
+## Consultar estado de un CFE
+
+```csharp
+var estado = await client.ConsultarEstadoCfeAsync(eticket);
+Console.WriteLine($"Estado DGI: {estado.Mensaje}");
+```
+
+---
+
+## Código completo de ejemplo
+
+```csharp
+using UruFacturaSDK;
+using UruFacturaSDK.Models;
+using UruFacturaSDK.Enums;
+
+// Configurar
+var config = new UruFacturaConfig
+{
+    RutEmisor           = "210000000012",
+    RazonSocialEmisor   = "Mi Empresa S.A.",
+    DomicilioFiscal     = "Av. 18 de Julio 1234",
+    Ciudad              = "Montevideo",
+    Departamento        = "Montevideo",
+    Ambiente            = Ambiente.Homologacion,
+    RutaCertificado     = "/ruta/certificado.p12",
+    PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
+};
+
+using var client = new UruFacturaClient(config);
+
+// Registrar CAE
+client.Cae.RegistrarCae(new Cae
+{
+    NroSerie         = "CAE2025001",
+    TipoCfe          = TipoCfe.ETicket,
+    RangoDesde       = 1,
+    RangoHasta       = 1000,
+    FechaVencimiento = new DateTime(2026, 12, 31),
+});
+
+// Crear e-Ticket
+var eticket = client.CrearETicket();
+eticket.Numero = 1;
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Consultoría técnica",
+    Cantidad       = 3,
+    PrecioUnitario = 2000m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+// Enviar
+var respuesta = await client.EnviarCfeAsync(eticket);
+
+if (respuesta.Exitoso)
+{
+    // Guardar PDF
+    byte[] pdf = client.GenerarPdfA4(eticket);
+    await File.WriteAllBytesAsync($"eticket_{eticket.Numero:D8}.pdf", pdf);
+
+    // Enviar reporte diario
+    await client.EnviarReporteDiarioAsync(DateTime.Today, new[] { eticket });
+
+    Console.WriteLine("✅ Proceso completado exitosamente.");
+}
+else
+{
+    Console.Error.WriteLine($"❌ Error: {respuesta.Mensaje}");
+}
+```
+
+---
+
+## Próximos pasos
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+<LinkCard title="Gestión de CAE" description="Cómo monitorear y renovar CAEs antes de que venzan." href="/guides/cae-management/" />
+<LinkCard title="Certificación DGI" description="Proceso de homologación y habilitación en producción." href="/guides/dgi-certification/" />
+<LinkCard title="Migración desde otro proveedor" description="¿Venís de otra solución? Esta guía es para vos." href="/migration/from-other-providers/" />

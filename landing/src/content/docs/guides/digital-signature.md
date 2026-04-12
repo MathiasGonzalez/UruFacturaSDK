@@ -1,0 +1,121 @@
+---
+title: Firma Digital
+description: Cómo funciona la firma XAdES-BES en UruFactura SDK
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## ¿Qué es la firma digital en CFE?
+
+DGI exige que cada comprobante fiscal electrónico esté firmado digitalmente usando el estándar **XAdES-BES** (XML Advanced Electronic Signatures - Basic Electronic Signature). Esta firma garantiza la autenticidad e integridad del documento XML.
+
+El SDK maneja **toda la complejidad de la firma de forma automática**. Solo necesitás configurar la ruta y contraseña del certificado.
+
+---
+
+## Certificados soportados
+
+El SDK acepta certificados digitales en formato:
+
+- **`.p12`** (PKCS#12)
+- **`.pfx`** (Personal Information Exchange — equivalente a `.p12` en Windows)
+
+El certificado debe estar emitido por una **Autoridad Certificante reconocida por AGESIC** y vinculado al RUT del emisor.
+
+### Proveedores de certificados en Uruguay
+
+| Proveedor | Sitio |
+|-----------|-------|
+| ABITAB | [abitab.com.uy](https://www.abitab.com.uy/) |
+| Correo Uruguayo | [correo.com.uy](https://www.correo.com.uy/) |
+| CertiSur | [certisur.com](https://www.certisur.com/) |
+
+---
+
+## Firma automática al enviar
+
+Cuando llamás a `EnviarCfeAsync`, el SDK:
+
+1. Genera el XML del CFE
+2. Firma el XML con XAdES-BES usando el certificado configurado
+3. Envuelve el XML firmado en el sobre SOAP
+4. Envía la solicitud al endpoint DGI
+
+```csharp
+// La firma ocurre automáticamente aquí
+var respuesta = await client.EnviarCfeAsync(eticket);
+```
+
+---
+
+## Firmar sin enviar
+
+Si necesitás el XML firmado para archivarlo o enviarlo por otro canal:
+
+```csharp
+string xmlFirmado = client.GenerarYFirmar(eticket);
+
+// Guardar para archivo obligatorio
+await File.WriteAllTextAsync(
+    $"xml/eticket_{eticket.Numero:D8}.xml",
+    xmlFirmado,
+    System.Text.Encoding.UTF8
+);
+```
+
+<Aside type="note">
+  DGI exige conservar los XML firmados por al menos **5 años**. Considerá implementar un sistema de archivo automático.
+</Aside>
+
+---
+
+## Validar el certificado antes de operar
+
+Antes de emitir comprobantes en producción, verificá que el certificado es válido:
+
+```csharp
+try
+{
+    using var client = new UruFacturaClient(config);
+    // Si el certificado es inválido, el constructor lanzará una excepción
+    Console.WriteLine("✅ Certificado cargado correctamente");
+}
+catch (UruFacturaException ex) when (ex.Message.Contains("certificado"))
+{
+    Console.Error.WriteLine($"❌ Error con el certificado: {ex.Message}");
+}
+```
+
+---
+
+## Gestión segura del certificado
+
+<Aside type="caution">
+  El archivo `.p12` / `.pfx` y su contraseña son equivalentes a la "firma del escribano". Protegelos con el mismo cuidado que una clave bancaria.
+</Aside>
+
+### Recomendaciones de seguridad
+
+1. **No subas el archivo `.p12` al repositorio.** Agregalo a `.gitignore`:
+   ```
+   *.p12
+   *.pfx
+   ```
+
+2. **Usá variables de entorno para la contraseña:**
+   ```csharp
+   PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!
+   ```
+
+3. **En producción, almacená el certificado en un gestor de secretos:**
+   - Azure Key Vault (certificados)
+   - AWS Secrets Manager
+   - HashiCorp Vault
+
+4. **Rotá el certificado antes de su vencimiento.** Los certificados generalmente vencen cada 1 a 3 años.
+
+5. **Usá permisos restrictivos en el archivo del certificado:**
+   ```bash
+   chmod 600 /ruta/certificado.p12
+   chown app:app /ruta/certificado.p12
+   ```

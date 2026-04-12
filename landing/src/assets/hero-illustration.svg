@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <!-- Background document -->
+  <rect x="80" y="20" width="160" height="200" rx="10" fill="#1e3a5f" opacity="0.8"/>
+  <rect x="100" y="45" width="120" height="8" rx="4" fill="#4da6ff" opacity="0.7"/>
+  <rect x="100" y="65" width="100" height="6" rx="3" fill="#4da6ff" opacity="0.4"/>
+  <rect x="100" y="80" width="90" height="6" rx="3" fill="#4da6ff" opacity="0.4"/>
+  <rect x="100" y="95" width="110" height="6" rx="3" fill="#4da6ff" opacity="0.4"/>
+
+  <!-- QR code placeholder -->
+  <rect x="100" y="115" width="50" height="50" rx="4" fill="#0057b8" opacity="0.6"/>
+  <rect x="105" y="120" width="15" height="15" rx="2" fill="white" opacity="0.8"/>
+  <rect x="125" y="120" width="15" height="15" rx="2" fill="white" opacity="0.8"/>
+  <rect x="105" y="140" width="15" height="15" rx="2" fill="white" opacity="0.8"/>
+  <rect x="125" y="140" width="15" height="15" rx="2" fill="white" opacity="0.4"/>
+
+  <!-- Checkmark / seal -->
+  <circle cx="290" cy="100" r="45" fill="#0057b8" opacity="0.15"/>
+  <circle cx="290" cy="100" r="35" fill="#0057b8" opacity="0.3"/>
+  <path d="M272 100 L285 113 L310 88" stroke="#4da6ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Code lines -->
+  <rect x="20" y="160" width="140" height="8" rx="4" fill="#4da6ff" opacity="0.5"/>
+  <rect x="20" y="178" width="120" height="6" rx="3" fill="#4da6ff" opacity="0.3"/>
+  <rect x="20" y="194" width="100" height="6" rx="3" fill="#4da6ff" opacity="0.3"/>
+
+  <!-- Uruguay flag colors accent -->
+  <rect x="310" y="200" width="60" height="8" rx="4" fill="#0057b8" opacity="0.6"/>
+  <rect x="310" y="215" width="60" height="8" rx="4" fill="white" opacity="0.3"/>
+</svg>

@@ -1,0 +1,170 @@
+---
+title: UruFactura SDK
+description: La vía rápida hacia la Facturación Electrónica en Uruguay. SDK .NET open-source para integración con DGI.
+template: splash
+hero:
+  tagline: SDK .NET open-source para Facturación Electrónica en Uruguay 🇺🇾
+  title: |
+    UruFactura
+    <span class="sl-hidden">SDK</span>
+    <span style="color: var(--sl-color-accent)">SDK</span>
+  image:
+    file: ../../assets/hero-illustration.svg
+  actions:
+    - text: Comenzar ahora
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: Ver en GitHub
+      link: https://github.com/MathiasGonzalez/UruFacturaSDK
+      icon: external
+      variant: secondary
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem, Badge, Aside } from '@astrojs/starlight/components';
+
+## ¿Por qué UruFactura SDK?
+
+<CardGrid stagger>
+  <Card title="Simplicidad ante todo" icon="pencil">
+    Olvidate de lidiar con SOAP, XML y estructuras complejas. Creá un e-Ticket con pocas líneas de C#.
+  </Card>
+  <Card title="Firma Digital incluida" icon="approve-check-circle">
+    Módulo integrado para firma XAdES-BES con certificados `.p12` / `.pfx` — sin dependencias externas.
+  </Card>
+  <Card title="Todos los tipos de CFE" icon="document">
+    e-Ticket, e-Factura, e-Remito, Exportación, Notas de Crédito/Débito, e-Resguardo y más.
+  </Card>
+  <Card title="PDFs listos para imprimir" icon="laptop">
+    Generá representaciones impresas A4 y térmicas (80mm) con QR y sellos de seguridad DGI.
+  </Card>
+</CardGrid>
+
+---
+
+## Instalación en 30 segundos
+
+<Tabs>
+  <TabItem label=".NET CLI">
+  ```bash
+  dotnet add package UruFacturaSDK
+  ```
+  </TabItem>
+  <TabItem label="Package Manager">
+  ```powershell
+  Install-Package UruFacturaSDK
+  ```
+  </TabItem>
+  <TabItem label="PackageReference">
+  ```xml
+  <PackageReference Include="UruFacturaSDK" Version="*" />
+  ```
+  </TabItem>
+</Tabs>
+
+---
+
+## Tu primer e-Ticket
+
+```csharp
+using UruFacturaSDK;
+using UruFacturaSDK.Models;
+using UruFacturaSDK.Enums;
+
+// 1. Configurar el cliente
+var config = new UruFacturaConfig
+{
+    RutEmisor           = "210000000012",
+    RazonSocialEmisor   = "Mi Empresa S.A.",
+    DomicilioFiscal     = "Av. 18 de Julio 1234",
+    Ciudad              = "Montevideo",
+    Departamento        = "Montevideo",
+    Ambiente            = Ambiente.Homologacion,
+    RutaCertificado     = "/ruta/al/certificado.p12",
+    PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
+};
+
+using var client = new UruFacturaClient(config);
+
+// 2. Registrar CAE
+client.Cae.RegistrarCae(new Cae
+{
+    NroSerie         = "CAE2025001",
+    TipoCfe          = TipoCfe.ETicket,
+    RangoDesde       = 1,
+    RangoHasta       = 1000,
+    FechaVencimiento = new DateTime(2026, 12, 31),
+});
+
+// 3. Crear y enviar e-Ticket
+var eticket = client.CrearETicket();
+eticket.Numero = 1;
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Servicio de consultoría",
+    Cantidad       = 1,
+    PrecioUnitario = 5000m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+var respuesta = await client.EnviarCfeAsync(eticket);
+
+if (respuesta.Exitoso)
+{
+    Console.WriteLine($"✅ CFE aceptado: {respuesta.Mensaje}");
+    byte[] pdf = client.GenerarPdfA4(eticket);
+    await File.WriteAllBytesAsync("eticket_001.pdf", pdf);
+}
+```
+
+<Aside type="tip">
+  ¿Venís de otro proveedor o solución casera? Consultá la [Guía de Migración](/guides/from-other-providers/) para ver cómo hacer la transición.
+</Aside>
+
+---
+
+## Tipos de CFE soportados
+
+| Código | Tipo | Estado |
+|--------|------|--------|
+| 101 | e-Ticket | ✅ Soportado |
+| 102 | Nota de Crédito e-Ticket | ✅ Soportado |
+| 103 | Nota de Débito e-Ticket | ✅ Soportado |
+| 111 | e-Factura | ✅ Soportado |
+| 112 | Nota de Crédito e-Factura | ✅ Soportado |
+| 113 | Nota de Débito e-Factura | ✅ Soportado |
+| 121 | e-Factura de Exportación | ✅ Soportado |
+| 122 | Nota de Crédito Exportación | ✅ Soportado |
+| 123 | Nota de Débito Exportación | ✅ Soportado |
+| 131 | e-Remito Despachante | ✅ Soportado |
+| 151 | e-Resguardo | ✅ Soportado |
+| 181 | e-Remito | ✅ Soportado |
+| 182 | Nota de Crédito e-Remito | ✅ Soportado |
+
+---
+
+## Listo para explorar
+
+<CardGrid>
+  <LinkCard
+    title="Guía de Inicio Rápido"
+    description="Instalación, configuración y tu primer CFE en minutos."
+    href="/getting-started/quick-start/"
+  />
+  <LinkCard
+    title="Migrar desde otro proveedor"
+    description="Guía paso a paso para migrar desde soluciones propietarias o SOAP directo."
+    href="/migration/from-other-providers/"
+  />
+  <LinkCard
+    title="Certificación DGI"
+    description="Todo lo que necesitás saber para pasar a producción con DGI."
+    href="/guides/dgi-certification/"
+  />
+  <LinkCard
+    title="API Reference"
+    description="Documentación completa de clases, métodos y modelos del SDK."
+    href="/reference/api/"
+  />
+</CardGrid>

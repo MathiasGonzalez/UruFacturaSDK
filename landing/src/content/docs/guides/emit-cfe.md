@@ -1,0 +1,181 @@
+---
+title: Emitir CFEs
+description: Cómo crear y enviar comprobantes fiscales electrónicos con UruFactura SDK
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+## Tipos de comprobantes disponibles
+
+El SDK provee métodos de fábrica en `UruFacturaClient` para crear cada tipo de CFE:
+
+| Método | CFE generado | Código DGI |
+|--------|-------------|------------|
+| `CrearETicket()` | e-Ticket | 101 |
+| `CrearNotaCreditoETicket()` | Nota de Crédito e-Ticket | 102 |
+| `CrearNotaDebitoETicket()` | Nota de Débito e-Ticket | 103 |
+| `CrearEFactura()` | e-Factura | 111 |
+| `CrearNotaCreditoEFactura()` | Nota de Crédito e-Factura | 112 |
+| `CrearNotaDebitoEFactura()` | Nota de Débito e-Factura | 113 |
+| `CrearEFacturaExportacion()` | e-Factura de Exportación | 121 |
+| `CrearERemito()` | e-Remito | 181 |
+| `CrearEResguardo()` | e-Resguardo | 151 |
+
+---
+
+## e-Ticket (CFE 101)
+
+El e-Ticket es el comprobante más común para ventas al consumidor final (sin identificación del receptor).
+
+```csharp
+var eticket = client.CrearETicket();
+eticket.Numero = 1;                           // Número del comprobante
+eticket.FechaEmision = DateTime.Now;          // Opcional, por defecto DateTime.Now
+
+// Agregar líneas de detalle
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Servicio de consultoría",
+    Cantidad       = 2,
+    PrecioUnitario = 3500m,
+    IndFactIva     = TipoIva.Basico,           // 22%
+});
+
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 2,
+    NombreItem     = "Viáticos",
+    Cantidad       = 1,
+    PrecioUnitario = 1000m,
+    IndFactIva     = TipoIva.Exento,          // Sin IVA
+});
+
+var respuesta = await client.EnviarCfeAsync(eticket);
+```
+
+---
+
+## e-Factura (CFE 111)
+
+La e-Factura requiere identificar al receptor (empresa o persona).
+
+```csharp
+var efactura = client.CrearEFactura();
+efactura.Numero = 1;
+
+// Datos del receptor (obligatorio para e-Factura)
+efactura.Receptor = new Receptor
+{
+    RutReceptor = "210000000013",
+    RazonSocial = "Empresa Compradora S.A.",
+    Domicilio   = "Bulevar España 2345",
+    Ciudad      = "Montevideo",
+};
+
+efactura.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Licencia de software anual",
+    Cantidad       = 1,
+    PrecioUnitario = 50000m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+var respuesta = await client.EnviarCfeAsync(efactura);
+```
+
+---
+
+## Notas de Crédito y Débito
+
+Las notas de corrección deben referenciar el CFE original.
+
+```csharp
+var notaCredito = client.CrearNotaCreditoETicket();
+notaCredito.Numero = 1;
+
+// Referenciar el comprobante que se está corrigiendo
+notaCredito.Referencias.Add(new RefCfe
+{
+    TipoCfe  = TipoCfe.ETicket,
+    Serie    = "A",
+    NroCfe   = 42,                            // Número del CFE original
+    FechaCfe = new DateTime(2025, 6, 15),
+    Razon    = "Devolución parcial de mercadería",
+});
+
+notaCredito.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Devolución - Producto X",
+    Cantidad       = 2,
+    PrecioUnitario = 500m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+var respuesta = await client.EnviarCfeAsync(notaCredito);
+```
+
+---
+
+## Tipos de IVA disponibles
+
+El enum `TipoIva` define cómo se calcula el IVA de cada línea:
+
+| Valor | Tasa | Uso común |
+|-------|------|-----------|
+| `TipoIva.Basico` | 22% | Servicios y bienes generales |
+| `TipoIva.Minimo` | 10% | Alimentos de primera necesidad |
+| `TipoIva.Exento` | 0% | Bienes y servicios exonerados |
+
+---
+
+## Generar XML manualmente (sin enviar)
+
+Si necesitás el XML firmado para archivarlo o procesarlo por separado:
+
+```csharp
+string xmlFirmado = client.GenerarYFirmar(eticket);
+
+// Guardar el XML
+await File.WriteAllTextAsync($"eticket_{eticket.Numero:D8}.xml", xmlFirmado);
+```
+
+<Aside type="note">
+  El método `EnviarCfeAsync` internamente llama a `GenerarYFirmar` antes de enviar. No es necesario llamarlo por separado salvo que lo necesites explícitamente.
+</Aside>
+
+---
+
+## Manejo de errores
+
+```csharp
+try
+{
+    var respuesta = await client.EnviarCfeAsync(eticket);
+
+    switch (respuesta.Codigo)
+    {
+        case "00":
+            Console.WriteLine("✅ Aceptado");
+            break;
+        case "01":
+            Console.WriteLine($"⚠️ Aceptado con observaciones: {respuesta.Mensaje}");
+            break;
+        default:
+            Console.WriteLine($"❌ Rechazado [{respuesta.Codigo}]: {respuesta.Mensaje}");
+            break;
+    }
+}
+catch (UruFacturaException ex)
+{
+    Console.Error.WriteLine($"Error del SDK: {ex.Message}");
+}
+catch (HttpRequestException ex)
+{
+    Console.Error.WriteLine($"Error de red: {ex.Message}");
+}
+```
+
+Ver [Códigos de respuesta DGI](/reference/dgi-codes/) para la lista completa de códigos.

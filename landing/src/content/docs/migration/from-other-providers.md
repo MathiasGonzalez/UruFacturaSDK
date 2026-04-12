@@ -1,0 +1,270 @@
+---
+title: Migrar desde otro proveedor
+description: Guía para migrar desde soluciones propietarias, SOAP directo o librerías de terceros a UruFactura SDK
+---
+
+import { Tabs, TabItem, Aside, Steps, Card, CardGrid } from '@astrojs/starlight/components';
+
+Esta guía te ayuda a migrar a UruFactura SDK desde diferentes puntos de partida, ya sea que estés usando una solución propietaria, integrando SOAP directamente, o usando otra librería.
+
+---
+
+## ¿Por qué migrar a UruFactura SDK?
+
+<CardGrid>
+  <Card title="Sin dependencias de vendors" icon="approve-check-circle">
+    100% open-source y MIT. No hay licencias, suscripciones ni lock-in con ningún proveedor.
+  </Card>
+  <Card title="API idiomática en C#" icon="pencil">
+    Objetos tipados, métodos async/await, DI-friendly. No más SOAP ni XML manual.
+  </Card>
+  <Card title="Mantenido con .NET 10" icon="rocket">
+    Soporte para las últimas versiones de .NET. Sin librerías legacy ni WCF.
+  </Card>
+  <Card title="Todo incluido" icon="document">
+    XML, firma digital, SOAP, CAE, PDFs. Una sola dependencia.
+  </Card>
+</CardGrid>
+
+---
+
+## Migración desde SOAP/XML directo
+
+Si actualmente construís los XML y llamadas SOAP a mano:
+
+### Antes (SOAP directo)
+
+```csharp
+// ❌ Antes: construir XML manualmente y llamar SOAP
+var xml = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<CFE xmlns=""http://www.dgi.gub.uy/wdgi/CFEv1"">
+  <eTck>
+    <TmstFirma>{DateTime.UtcNow:o}</TmstFirma>
+    <Encabezado>
+      <IdDoc>
+        <TipoCFE>101</TipoCFE>
+        <Serie>A</Serie>
+        <Nro>1</Nro>
+        ...
+      </IdDoc>
+    </Encabezado>
+    ...
+  </eTck>
+</CFE>";
+
+// Firmar XML con XmlDsig... (código extenso)
+var soapEnvelope = WrapInSoapEnvelope(signedXml);
+var response = await httpClient.PostAsync(dgiEndpoint, soapContent);
+// Parsear respuesta SOAP manualmente...
+```
+
+### Después (UruFactura SDK)
+
+```csharp
+// ✅ Después: API de alto nivel
+var eticket = client.CrearETicket();
+eticket.Numero = 1;
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Servicio",
+    Cantidad       = 1,
+    PrecioUnitario = 1000m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+var respuesta = await client.EnviarCfeAsync(eticket);
+```
+
+---
+
+## Migración desde una solución ERP propietaria
+
+Si estás migrando desde un módulo de facturación electrónica de un ERP (Biscuit, Pragma, ContaPyme, etc.):
+
+### Conceptos equivalentes
+
+| Tu sistema actual | UruFactura SDK |
+|------------------|----------------|
+| Comprobante / Documento | `Cfe` (base) + `ETicket`, `EFactura`, etc. |
+| Línea de artículo / ítem | `LineaDetalle` |
+| Proveedor / Receptor | `Receptor` |
+| Rango CAE / Talonario | `Cae` con `RangoDesde` / `RangoHasta` |
+| Estado del comprobante | `RespuestaDgi.Exitoso` + `RespuestaDgi.Codigo` |
+| Representación impresa | `client.GenerarPdfA4()` / `GenerarPdfTermico()` |
+
+### Estrategia de migración
+
+<Steps>
+
+1. **Mantener ambos sistemas en paralelo**
+
+   No apagues el sistema anterior hasta validar el nuevo en homologación.
+
+2. **Mapear los tipos de CFE**
+
+   ```csharp
+   // Mapeo desde tu sistema a TipoCfe
+   TipoCfe MapearTipo(string tipoSistemaAnterior) => tipoSistemaAnterior switch
+   {
+       "TICKET"     => TipoCfe.ETicket,
+       "FACTURA"    => TipoCfe.EFactura,
+       "NC_TICKET"  => TipoCfe.NotaCreditoETicket,
+       "NC_FACTURA" => TipoCfe.NotaCreditoEFactura,
+       _            => throw new ArgumentException($"Tipo desconocido: {tipoSistemaAnterior}")
+   };
+   ```
+
+3. **Adaptar la estructura de datos**
+
+   ```csharp
+   // Convertir entidad de tu sistema a LineaDetalle del SDK
+   static LineaDetalle ConvertirLinea(MiLineaFactura linea, int nroLinea) =>
+       new LineaDetalle
+       {
+           NroLinea       = nroLinea,
+           NombreItem     = linea.DescripcionProducto,
+           Cantidad       = linea.Cantidad,
+           PrecioUnitario = linea.PrecioUnitario,
+           IndFactIva     = linea.EsExento ? TipoIva.Exento
+                          : linea.IvaMinimo ? TipoIva.Minimo
+                          : TipoIva.Basico,
+       };
+   ```
+
+4. **Implementar una capa de servicio**
+
+   ```csharp
+   public class FacturacionService
+   {
+       private readonly UruFacturaClient _client;
+
+       public async Task<ResultadoEmision> EmitirAsync(ComprobanteDTO dto)
+       {
+           var cfe = dto.Tipo switch
+           {
+               "TICKET"  => (Cfe)_client.CrearETicket(),
+               "FACTURA" => _client.CrearEFactura(),
+               _         => throw new ArgumentException($"Tipo no soportado: {dto.Tipo}")
+           };
+
+           cfe.Numero = dto.Numero;
+
+           if (cfe is EFactura efactura && dto.Receptor != null)
+           {
+               efactura.Receptor = new Receptor
+               {
+                   RutReceptor = dto.Receptor.Rut,
+                   RazonSocial = dto.Receptor.Nombre,
+                   Domicilio   = dto.Receptor.Direccion,
+                   Ciudad      = dto.Receptor.Ciudad,
+               };
+           }
+
+           int nroLinea = 1;
+           foreach (var linea in dto.Lineas)
+               cfe.Detalle.Add(ConvertirLinea(linea, nroLinea++));
+
+           var respuesta = await _client.EnviarCfeAsync(cfe);
+
+           return new ResultadoEmision
+           {
+               Exitoso = respuesta.Exitoso,
+               Codigo  = respuesta.Codigo,
+               Mensaje = respuesta.Mensaje,
+               PdfA4   = respuesta.Exitoso ? _client.GenerarPdfA4(cfe) : null,
+           };
+       }
+   }
+   ```
+
+5. **Probar en homologación**
+
+   Reproducí los escenarios más comunes de tu operación: ventas simples, notas de crédito, exportación.
+
+6. **Migrar los CAEs**
+
+   Solicitá nuevos CAEs en DGI o trasladá los existentes. Registralos con:
+
+   ```csharp
+   client.Cae.RegistrarCae(new Cae { ... });
+   ```
+
+7. **Cambiar a producción**
+
+   ```csharp
+   Ambiente = Ambiente.Produccion
+   ```
+
+</Steps>
+
+---
+
+## Migración desde otra librería .NET
+
+Si estás usando otra librería .NET de facturación electrónica uruguaya:
+
+<Tabs>
+  <TabItem label="Equivalencia de métodos">
+
+  | Operación | Librería genérica | UruFactura SDK |
+  |-----------|-----------------|----------------|
+  | Crear comprobante | `new Comprobante(tipo)` | `client.CrearETicket()` |
+  | Agregar ítem | `comprobante.AddItem(...)` | `cfe.Detalle.Add(new LineaDetalle {...})` |
+  | Firmar XML | `firma.Sign(xml, cert)` | Automático en `EnviarCfeAsync` |
+  | Enviar a DGI | `soap.Send(xml)` | `await client.EnviarCfeAsync(cfe)` |
+  | Generar PDF | `pdf.Render(comprobante)` | `client.GenerarPdfA4(cfe)` |
+  | Estado CFE | `soap.ConsultarEstado(id)` | `await client.ConsultarEstadoCfeAsync(cfe)` |
+
+  </TabItem>
+  <TabItem label="Manejo de respuestas">
+
+  ```csharp
+  // UruFactura SDK — respuesta tipada
+  var respuesta = await client.EnviarCfeAsync(cfe);
+
+  // respuesta.Exitoso: bool
+  // respuesta.Codigo: string ("00", "01", "05", ...)
+  // respuesta.Mensaje: string (descripción DGI)
+
+  if (respuesta.Exitoso)
+  {
+      // CFE aceptado (código 00 o 01)
+  }
+  else
+  {
+      // Revisar respuesta.Codigo y respuesta.Mensaje
+  }
+  ```
+
+  </TabItem>
+</Tabs>
+
+---
+
+## Lista de verificación para la migración
+
+Antes de ir a producción, verificá:
+
+- [ ] **Certificado digital** cargado y funcionando en el nuevo sistema
+- [ ] **CAEs registrados** para todos los tipos de CFE a emitir
+- [ ] **Ambiente de homologación** testeado con los tipos de CFE que usás
+- [ ] **Reporte Diario** enviado exitosamente en las pruebas
+- [ ] **PDFs** generados y verificados visualmente
+- [ ] **Manejo de errores** implementado (rechazos DGI, errores de red)
+- [ ] **Archivo de XMLs** configurado (almacenamiento durable, 5+ años)
+- [ ] **Monitoreo de CAEs** implementado (alertas de vencimiento/agotamiento)
+- [ ] **Secretos del certificado** en gestión segura (variables de entorno / Key Vault)
+- [ ] **Ambiente cambiado a Producción** antes del go-live
+
+---
+
+## ¿Necesitás ayuda?
+
+- 📖 [Documentación completa](/getting-started/installation/)
+- 💬 [Issues en GitHub](https://github.com/MathiasGonzalez/UruFacturaSDK/issues)
+- 🔍 [API Reference](/reference/api/)
+
+<Aside type="tip">
+  Si encontrás una operación que hacías en tu sistema anterior y no sabés cómo replicarla en UruFactura SDK, abrí un issue en GitHub con el caso de uso — lo documentamos y, si es necesario, lo incorporamos al SDK.
+</Aside>

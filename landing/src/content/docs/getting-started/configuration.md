@@ -1,0 +1,130 @@
+---
+title: Configuración
+description: Referencia de todas las opciones de UruFacturaConfig
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## `UruFacturaConfig`
+
+La clase `UruFacturaConfig` es el punto central de configuración del SDK. Se pasa al constructor de `UruFacturaClient`.
+
+```csharp
+var config = new UruFacturaConfig
+{
+    // ... propiedades
+};
+using var client = new UruFacturaClient(config);
+```
+
+---
+
+## Propiedades
+
+### Identificación del emisor
+
+| Propiedad | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `RutEmisor` | `string` | ✅ | RUT del emisor — 12 dígitos sin puntos ni guión (ej: `"210000000012"`) |
+| `RazonSocialEmisor` | `string` | ✅ | Razón social del emisor tal como figura en DGI |
+| `DomicilioFiscal` | `string` | ✅ | Domicilio fiscal del emisor |
+| `Ciudad` | `string` | ✅ | Ciudad del domicilio fiscal |
+| `Departamento` | `string` | ✅ | Departamento del domicilio fiscal |
+
+### Certificado digital
+
+| Propiedad | Tipo | Requerido | Descripción |
+|-----------|------|-----------|-------------|
+| `RutaCertificado` | `string` | ✅ | Ruta absoluta o relativa al archivo `.p12` / `.pfx` |
+| `PasswordCertificado` | `string` | ✅ | Contraseña del certificado digital |
+
+<Aside type="caution">
+  **Seguridad:** Nunca escribas `PasswordCertificado` directamente en el código. Usá variables de entorno (`Environment.GetEnvironmentVariable`), .NET User Secrets, o un servicio como Azure Key Vault / AWS Secrets Manager.
+</Aside>
+
+### Ambiente
+
+| Propiedad | Tipo | Valor por defecto | Descripción |
+|-----------|------|-------------------|-------------|
+| `Ambiente` | `Ambiente` | `Ambiente.Homologacion` | Define el endpoint DGI a usar |
+
+Valores del enum `Ambiente`:
+
+| Valor | Endpoint DGI |
+|-------|-------------|
+| `Ambiente.Homologacion` | `https://efacturahomologacion.dgi.gub.uy/ePresentacionSoap/service` |
+| `Ambiente.Produccion` | `https://efactura.dgi.gub.uy/ePresentacionSoap/service` |
+
+---
+
+## Ejemplo completo
+
+```csharp
+var config = new UruFacturaConfig
+{
+    // Identificación
+    RutEmisor           = "210000000012",
+    RazonSocialEmisor   = "Mi Empresa S.A.",
+    DomicilioFiscal     = "Av. 18 de Julio 1234, Apto. 201",
+    Ciudad              = "Montevideo",
+    Departamento        = "Montevideo",
+
+    // Certificado (desde variables de entorno en producción)
+    RutaCertificado     = Environment.GetEnvironmentVariable("CERT_PATH")
+                          ?? "/ruta/por/defecto/certificado.p12",
+    PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
+
+    // Ambiente
+    Ambiente = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Production"
+               ? Ambiente.Produccion
+               : Ambiente.Homologacion,
+};
+```
+
+---
+
+## Configuración con .NET Options Pattern
+
+Para proyectos ASP.NET Core, es recomendable usar el patrón de opciones:
+
+```csharp
+// appsettings.json
+{
+  "UruFactura": {
+    "RutEmisor": "210000000012",
+    "RazonSocialEmisor": "Mi Empresa S.A.",
+    "DomicilioFiscal": "Av. 18 de Julio 1234",
+    "Ciudad": "Montevideo",
+    "Departamento": "Montevideo",
+    "Ambiente": "Homologacion",
+    "RutaCertificado": "/ruta/al/certificado.p12"
+  }
+}
+```
+
+```csharp
+// Program.cs
+builder.Services.Configure<UruFacturaConfig>(
+    builder.Configuration.GetSection("UruFactura")
+);
+
+// La contraseña viene de secretos seguros, no del appsettings
+builder.Services.PostConfigure<UruFacturaConfig>(config =>
+{
+    config.PasswordCertificado = builder.Configuration["UruFactura:PasswordCertificado"]
+        ?? Environment.GetEnvironmentVariable("CERT_PASSWORD")
+        ?? throw new InvalidOperationException("Certificado no configurado");
+});
+
+builder.Services.AddSingleton<UruFacturaClient>(sp =>
+{
+    var config = sp.GetRequiredService<IOptions<UruFacturaConfig>>().Value;
+    return new UruFacturaClient(config);
+});
+```
+
+<Aside type="tip">
+  En producción, usá [.NET User Secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) para desarrollo local y variables de entorno (o Key Vault) en el servidor.
+</Aside>

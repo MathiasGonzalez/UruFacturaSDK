@@ -1,0 +1,211 @@
+---
+title: Certificación DGI
+description: Proceso completo para homologación y habilitación en producción con DGI
+---
+
+import { Steps, Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+Esta guía cubre el proceso oficial de la DGI para habilitar la emisión de CFEs en producción.
+
+## Resumen del proceso
+
+```
+Inscripción → Certificado Digital → Solicitar CAE → Homologación → Producción
+```
+
+---
+
+## 1. Inscripción como emisor electrónico
+
+<Steps>
+
+1. Ingresar a [DGI en línea](https://www.dgi.gub.uy/) con usuario y contraseña del contribuyente.
+
+2. Ir a **Gestión CFE → Inscripción como Emisor Electrónico**.
+
+3. Completar los datos de la empresa y los tipos de CFE a emitir.
+
+4. Esperar la aprobación de DGI (generalmente días hábiles).
+
+</Steps>
+
+> 📖 Normativa: [Resolución 798/012 y modificativas](https://www.dgi.gub.uy/)
+
+---
+
+## 2. Obtener certificado digital
+
+El certificado debe ser:
+- Formato **X.509** en archivo `.p12` / `.pfx`
+- Emitido por una **CA reconocida por AGESIC**
+- Vinculado al **RUT del emisor**
+
+### Proveedores habilitados
+
+| Proveedor | Contacto |
+|-----------|----------|
+| ABITAB | [abitab.com.uy](https://www.abitab.com.uy/) |
+| Correo Uruguayo | [correo.com.uy](https://www.correo.com.uy/) |
+| CertiSur | [certisur.com](https://www.certisur.com/) |
+
+### Configurar en el SDK
+
+```csharp
+var config = new UruFacturaConfig
+{
+    RutaCertificado     = "/ruta/certificado.p12",
+    PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
+    // ...
+};
+```
+
+<Aside type="caution">
+  Nunca almacenes `PasswordCertificado` en el código fuente o en repositorios.
+</Aside>
+
+---
+
+## 3. Solicitar el CAE
+
+<Steps>
+
+1. Ingresar a DGI en línea → **Gestión CFE → Solicitud de CAE**.
+
+2. Seleccionar el tipo de CFE (ej: e-Ticket 101).
+
+3. Indicar la cantidad de comprobantes necesarios.
+
+4. DGI devuelve el CAE con número de serie, rango y fecha de vencimiento.
+
+5. Registrar en el SDK:
+
+   ```csharp
+   client.Cae.RegistrarCae(new Cae
+   {
+       NroSerie         = "CAE2025001",
+       TipoCfe          = TipoCfe.ETicket,
+       RangoDesde       = 1,
+       RangoHasta       = 1000,
+       FechaVencimiento = new DateTime(2026, 12, 31),
+   });
+   ```
+
+</Steps>
+
+---
+
+## 4. Homologación (ambiente de pruebas)
+
+La DGI exige un proceso de homologación antes de habilitar producción. El SDK usa el endpoint de homologación automáticamente con `Ambiente.Homologacion`.
+
+```csharp
+var config = new UruFacturaConfig
+{
+    // ...
+    Ambiente = Ambiente.Homologacion, // https://efacturahomologacion.dgi.gub.uy/...
+};
+```
+
+### Pasos de homologación
+
+<Steps>
+
+1. **Emitir los CFE de prueba requeridos** (tipos y cantidades según instructivo DGI):
+
+   ```csharp
+   var eticket = client.CrearETicket();
+   eticket.Numero = 1;
+   eticket.Detalle.Add(new LineaDetalle
+   {
+       NroLinea       = 1,
+       NombreItem     = "Servicio de prueba",
+       Cantidad       = 1,
+       PrecioUnitario = 100m,
+       IndFactIva     = TipoIva.Basico,
+   });
+
+   var respuesta = await client.EnviarCfeAsync(eticket);
+   Console.WriteLine(respuesta.Exitoso ? "✅ Aceptado" : $"❌ {respuesta.Mensaje}");
+   ```
+
+2. **Enviar el Reporte Diario de prueba**:
+
+   ```csharp
+   var resultado = await client.EnviarReporteDiarioAsync(
+       DateTime.Today,
+       new[] { eticket }
+   );
+   ```
+
+3. **Consultar el estado** de cada CFE:
+
+   ```csharp
+   var estado = await client.ConsultarEstadoCfeAsync(eticket);
+   Console.WriteLine($"Estado DGI: {estado.Mensaje}");
+   ```
+
+4. **Notificar a DGI** la finalización de las pruebas vía portal DGI en línea.
+
+</Steps>
+
+---
+
+## 5. Habilitación en producción
+
+Una vez aprobada la homologación por DGI:
+
+```csharp
+var config = new UruFacturaConfig
+{
+    // ...
+    Ambiente = Ambiente.Produccion, // https://efactura.dgi.gub.uy/...
+};
+```
+
+<Aside type="tip">
+  Hacé un envío de prueba con un comprobante de bajo monto para validar el flujo completo antes de operar normalmente.
+</Aside>
+
+---
+
+## Obligaciones operativas continuas
+
+| Obligación | Periodicidad |
+|-----------|-------------|
+| **Reporte Diario** | Diario (obligatorio aunque sea 1 CFE) |
+| **Resguardo de XML** | Conservar 5+ años |
+| **Renovar CAE** | Antes del vencimiento o agotamiento |
+| **Renovar certificado** | Cada 1-3 años (según proveedor) |
+
+---
+
+## Endpoints DGI
+
+| Ambiente | URL |
+|---------|-----|
+| Homologación | `https://efacturahomologacion.dgi.gub.uy/ePresentacionSoap/service` |
+| Producción | `https://efactura.dgi.gub.uy/ePresentacionSoap/service` |
+
+---
+
+## Códigos de respuesta DGI
+
+| Código | Significado |
+|--------|-------------|
+| `00` | ✅ Aceptado |
+| `01` | ⚠️ Aceptado con observaciones |
+| `05` | ❌ Rechazado |
+| `06` | ❌ RUT emisor no habilitado |
+| `09` | ❌ CAE inválido o vencido |
+| `11` | ❌ Error en la firma digital |
+| `99` | ❌ Error interno del servidor DGI |
+
+Ver [Códigos DGI completos](/reference/dgi-codes/) para más detalles.
+
+---
+
+## Recursos oficiales
+
+- [Portal DGI en línea](https://www.dgi.gub.uy/)
+- [Esquemas XML CFE](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,)
+- [AGESIC — Autoridades Certificantes](https://www.agesic.gub.uy/)

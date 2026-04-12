@@ -1,0 +1,162 @@
+---
+title: Gestión de CAE
+description: Cómo registrar, monitorear y renovar Constancias de Autorización de Emisión
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+El **CAE (Constancia de Autorización de Emisión)** es el rango de numeración que DGI autoriza a cada emisor para cada tipo de CFE. Sin un CAE vigente no podés emitir comprobantes.
+
+---
+
+## Registrar un CAE
+
+```csharp
+client.Cae.RegistrarCae(new Cae
+{
+    NroSerie         = "CAE2025001",           // Identificador único del CAE
+    TipoCfe          = TipoCfe.ETicket,        // Tipo de CFE al que aplica
+    RangoDesde       = 1,                      // Primer número autorizado
+    RangoHasta       = 1000,                   // Último número autorizado
+    FechaVencimiento = new DateTime(2026, 12, 31),
+});
+```
+
+Podés registrar múltiples CAEs (para distintos tipos de CFE):
+
+```csharp
+// CAE para e-Tickets
+client.Cae.RegistrarCae(new Cae
+{
+    NroSerie         = "CAE2025-ET",
+    TipoCfe          = TipoCfe.ETicket,
+    RangoDesde       = 1,
+    RangoHasta       = 5000,
+    FechaVencimiento = new DateTime(2026, 6, 30),
+});
+
+// CAE para e-Facturas
+client.Cae.RegistrarCae(new Cae
+{
+    NroSerie         = "CAE2025-EF",
+    TipoCfe          = TipoCfe.EFactura,
+    RangoDesde       = 1,
+    RangoHasta       = 500,
+    FechaVencimiento = new DateTime(2026, 6, 30),
+});
+```
+
+---
+
+## Monitorear el estado de los CAEs
+
+### Ver advertencias
+
+El SDK detecta automáticamente situaciones problemáticas:
+
+```csharp
+var advertencias = client.Cae.ObtenerAdvertencias();
+
+foreach (var advertencia in advertencias)
+{
+    Console.WriteLine(advertencia);
+}
+```
+
+Las advertencias incluyen:
+- CAE próximo a vencer (menos de 30 días)
+- Rango de numeración casi agotado (menos del 10% disponible)
+- CAE ya vencido
+
+### Ver resumen general
+
+```csharp
+Console.WriteLine(client.Cae.ResumenEstado());
+```
+
+Ejemplo de salida:
+
+```
+CAE CAE2025-ET (ETicket): rango 1-5000, usado hasta 4450, vence 2026-06-30 → ⚠️ Rango al 89%
+CAE CAE2025-EF (EFactura): rango 1-500, usado hasta 45, vence 2026-06-30 → ✅ OK
+```
+
+---
+
+## Buenas prácticas para gestión de CAEs
+
+<Aside type="tip">
+  **Monitoreá los CAEs en cada inicio de aplicación** para detectar problemas antes de que bloqueen la emisión.
+</Aside>
+
+### En ASP.NET Core con Hosted Service
+
+```csharp
+// CaeMonitorService.cs
+public class CaeMonitorService : BackgroundService
+{
+    private readonly UruFacturaClient _client;
+    private readonly ILogger<CaeMonitorService> _logger;
+
+    public CaeMonitorService(UruFacturaClient client, ILogger<CaeMonitorService> logger)
+    {
+        _client = client;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var advertencias = _client.Cae.ObtenerAdvertencias();
+
+            foreach (var advertencia in advertencias)
+            {
+                _logger.LogWarning("CAE: {Advertencia}", advertencia);
+                // También podés enviar alerta por email/Slack/etc.
+            }
+
+            // Verificar cada hora
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+        }
+    }
+}
+
+// Program.cs
+builder.Services.AddHostedService<CaeMonitorService>();
+```
+
+---
+
+## Renovar un CAE vencido
+
+<Steps>
+
+1. **Solicitar nuevo CAE en DGI en línea**
+
+   Ingresar a [DGI en línea](https://www.dgi.gub.uy/) → Gestión CFE → Solicitud de CAE. Indicar tipo de CFE y rango deseado.
+
+2. **Registrar el nuevo CAE en el SDK**
+
+   ```csharp
+   client.Cae.RegistrarCae(new Cae
+   {
+       NroSerie         = "CAE2026001",       // Nuevo número de serie
+       TipoCfe          = TipoCfe.ETicket,
+       RangoDesde       = 1001,               // Continuar desde donde terminó el anterior
+       RangoHasta       = 2000,
+       FechaVencimiento = new DateTime(2027, 12, 31),
+   });
+   ```
+
+3. **Verificar el estado**
+
+   ```csharp
+   Console.WriteLine(client.Cae.ResumenEstado());
+   ```
+
+</Steps>
+
+<Aside type="caution">
+  Solicitá el nuevo CAE **antes** de que venza el actual. DGI puede tardar días hábiles en procesar la solicitud.
+</Aside>
