@@ -74,7 +74,7 @@ public class UruFacturaConfig
 }
 ```
 
-Ver [Configuración](/getting-started/configuration/) para detalles de cada propiedad.
+Ver [Configuración](../getting-started/configuration/) para detalles de cada propiedad.
 
 ---
 

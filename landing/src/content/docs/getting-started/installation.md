@@ -16,7 +16,7 @@ Antes de instalar el SDK, asegurate de tener:
 - Un **CAE vigente** otorgado por DGI
 
 <Aside type="note">
-  ¿Todavía no tenés el certificado o CAE? Podés usar el ambiente de **Homologación** de DGI para hacer pruebas sin documentos reales. Consultá la [Guía de Certificación DGI](/guides/dgi-certification/).
+  ¿Todavía no tenés el certificado o CAE? Podés usar el ambiente de **Homologación** de DGI para hacer pruebas sin documentos reales. Consultá la [Guía de Certificación DGI](../guides/dgi-certification/).
 </Aside>
 
 ---
@@ -174,5 +174,5 @@ builder.Services.AddSingleton<UruFacturaClient>();
 
 ## Próximos pasos
 
-- [Uso Rápido →](/getting-started/quick-start/) — Emitir tu primer CFE
-- [Configuración →](/getting-started/configuration/) — Todas las opciones de configuración
+- [Uso Rápido →](quick-start/) — Emitir tu primer CFE
+- [Configuración →](configuration/) — Todas las opciones de configuración

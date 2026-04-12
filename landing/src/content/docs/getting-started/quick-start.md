@@ -153,7 +153,7 @@ else
 ```
 
 <Aside type="tip">
-  El código `00` significa aceptado. El código `01` es aceptado con observaciones (también válido). Ver [Códigos DGI](/reference/dgi-codes/) para la lista completa.
+  El código `00` significa aceptado. El código `01` es aceptado con observaciones (también válido). Ver [Códigos DGI](../reference/dgi-codes/) para la lista completa.
 </Aside>
 
 ---
