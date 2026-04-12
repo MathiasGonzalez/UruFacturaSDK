@@ -69,8 +69,10 @@ using var client = new UruFacturaClient(config);
 ### 2. Crear y enviar un e-Ticket
 
 ```csharp
+using UruFacturaSDK.Models; // Cae, LineaDetalle, Receptor, RefCfe
+
 // Registrar CAE
-client.Cae.RegistrarCae(new Cae
+client.Cae.RegistrarCae(new Models.Cae
 {
     NroSerie        = "CAE2025001",
     TipoCfe         = TipoCfe.ETicket,

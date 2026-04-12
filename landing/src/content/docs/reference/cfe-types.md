@@ -14,8 +14,8 @@ description: Referencia de todos los tipos de comprobantes fiscales electrónico
 | 112 | Nota de Crédito e-Factura | `NotaCreditoEFactura` | `CrearNotaCreditoEFactura()` | ✅ Sí |
 | 113 | Nota de Débito e-Factura | `NotaDebitoEFactura` | `CrearNotaDebitoEFactura()` | ✅ Sí |
 | 121 | e-Factura de Exportación | `EFacturaExportacion` | `CrearEFacturaExportacion()` | ✅ Sí |
-| 122 | NC e-Factura de Exportación | `NotaCreditoExportacion` | `CrearNotaCreditoExportacion()` | ✅ Sí |
-| 123 | ND e-Factura de Exportación | `NotaDebitoExportacion` | `CrearNotaDebitoExportacion()` | ✅ Sí |
+| 122 | NC e-Factura de Exportación | `NotaCreditoEFacturaExportacion` | `CrearNotaCreditoEFacturaExportacion()` | ✅ Sí |
+| 123 | ND e-Factura de Exportación | `NotaDebitoEFacturaExportacion` | `CrearNotaDebitoEFacturaExportacion()` | ✅ Sí |
 | 131 | e-Remito Despachante | `ERemitoDespachante` | `CrearERemitoDespachante()` | Condicional |
 | 151 | e-Resguardo | `EResguardo` | `CrearEResguardo()` | ✅ Sí |
 | 181 | e-Remito | `ERemito` | `CrearERemito()` | Condicional |
@@ -37,7 +37,7 @@ Cuando el comprador es una **empresa o contribuyente** y necesita el documento p
 
 ```csharp
 var factura = client.CrearEFactura();
-factura.Receptor = new Receptor { RutReceptor = "...", ... };
+factura.Receptor = new Receptor { Documento = "...", TipoDocumento = 2, ... };
 ```
 
 ### e-Factura de Exportación (121)

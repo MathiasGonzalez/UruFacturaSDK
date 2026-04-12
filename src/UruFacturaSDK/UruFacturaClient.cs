@@ -87,6 +87,31 @@ public class UruFacturaClient : IDisposable
     /// </summary>
     public Cfe CrearEFacturaExportacion() => CrearCfe(TipoCfe.EFacturaExportacion);
 
+    /// <summary>
+    /// Crea una nota de crédito de e-Factura de exportación.
+    /// </summary>
+    public Cfe CrearNotaCreditoEFacturaExportacion() => CrearCfe(TipoCfe.NotaCreditoEFacturaExportacion);
+
+    /// <summary>
+    /// Crea una nota de débito de e-Factura de exportación.
+    /// </summary>
+    public Cfe CrearNotaDebitoEFacturaExportacion() => CrearCfe(TipoCfe.NotaDebitoEFacturaExportacion);
+
+    /// <summary>
+    /// Crea un e-Remito de despachante (131).
+    /// </summary>
+    public Cfe CrearERemitoDespachante() => CrearCfe(TipoCfe.ERemitoDespachante);
+
+    /// <summary>
+    /// Crea un e-Resguardo (151).
+    /// </summary>
+    public Cfe CrearEResguardo() => CrearCfe(TipoCfe.EResguardo);
+
+    /// <summary>
+    /// Crea una nota de crédito de e-Remito (182).
+    /// </summary>
+    public Cfe CrearNotaCreditoERemito() => CrearCfe(TipoCfe.NotaCreditoERemito);
+
     private Cfe CrearCfe(TipoCfe tipo)
     {
         return new Cfe
@@ -113,6 +138,7 @@ public class UruFacturaClient : IDisposable
     /// <returns>XML sin firmar.</returns>
     public string GenerarXml(Cfe cfe)
     {
+        ThrowIfDisposed();
         var xml = _xmlBuilder.Generar(cfe);
         cfe.XmlSinFirmar = xml;
         return xml;
@@ -125,6 +151,7 @@ public class UruFacturaClient : IDisposable
     /// <returns>XML firmado.</returns>
     public string FirmarCfe(Cfe cfe)
     {
+        ThrowIfDisposed();
         if (string.IsNullOrWhiteSpace(cfe.XmlSinFirmar))
             GenerarXml(cfe);
 
@@ -140,6 +167,7 @@ public class UruFacturaClient : IDisposable
     /// <returns>XML firmado.</returns>
     public string GenerarYFirmar(Cfe cfe)
     {
+        ThrowIfDisposed();
         GenerarXml(cfe);
         return FirmarCfe(cfe);
     }
@@ -159,6 +187,7 @@ public class UruFacturaClient : IDisposable
         Cfe cfe,
         CancellationToken cancellationToken = default)
     {
+        ThrowIfDisposed();
         if (string.IsNullOrWhiteSpace(cfe.XmlFirmado))
             GenerarYFirmar(cfe);
 
@@ -179,6 +208,7 @@ public class UruFacturaClient : IDisposable
         Cfe cfe,
         CancellationToken cancellationToken = default)
     {
+        ThrowIfDisposed();
         var cliente = ObtenerSoapClient();
         return await cliente.ConsultarEstadoCfeAsync(
             cfe.RutEmisor, (int)cfe.Tipo,
@@ -194,6 +224,7 @@ public class UruFacturaClient : IDisposable
         IEnumerable<Cfe> cfes,
         CancellationToken cancellationToken = default)
     {
+        ThrowIfDisposed();
         var xmlsFirmados = cfes
             .Select(c => string.IsNullOrWhiteSpace(c.XmlFirmado)
                 ? GenerarYFirmar(c)
@@ -213,14 +244,22 @@ public class UruFacturaClient : IDisposable
     /// </summary>
     /// <param name="cfe">El CFE.</param>
     /// <returns>Bytes del PDF.</returns>
-    public byte[] GenerarPdfA4(Cfe cfe) => _pdfGenerator.GenerarA4(cfe);
+    public byte[] GenerarPdfA4(Cfe cfe)
+    {
+        ThrowIfDisposed();
+        return _pdfGenerator.GenerarA4(cfe);
+    }
 
     /// <summary>
     /// Genera el PDF térmico (ticket 80mm) del CFE.
     /// </summary>
     /// <param name="cfe">El CFE.</param>
     /// <returns>Bytes del PDF.</returns>
-    public byte[] GenerarPdfTermico(Cfe cfe) => _pdfGenerator.GenerarTermico(cfe);
+    public byte[] GenerarPdfTermico(Cfe cfe)
+    {
+        ThrowIfDisposed();
+        return _pdfGenerator.GenerarTermico(cfe);
+    }
 
     // -----------------------------------------------------------------------
     // Helpers
@@ -232,10 +271,16 @@ public class UruFacturaClient : IDisposable
         return _soapClient;
     }
 
+    private void ThrowIfDisposed()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
         _soapClient?.Dispose();
+        _firmante.Dispose();
         _disposed = true;
         GC.SuppressFinalize(this);
     }

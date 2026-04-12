@@ -34,18 +34,6 @@ public class UruFacturaConfig
     /// <summary>Contraseña del certificado digital.</summary>
     public string PasswordCertificado { get; set; } = string.Empty;
 
-    /// <summary>Número de serie del CAE activo.</summary>
-    public string? NroSerieCae { get; set; }
-
-    /// <summary>Rango inicial del CAE.</summary>
-    public long CaeRangoDesde { get; set; }
-
-    /// <summary>Rango final del CAE.</summary>
-    public long CaeRangoHasta { get; set; }
-
-    /// <summary>Fecha de vencimiento del CAE.</summary>
-    public DateTime? CaeFechaVencimiento { get; set; }
-
     /// <summary>Timeout en segundos para las llamadas SOAP (por defecto 30 s).</summary>
     public int SoapTimeoutSegundos { get; set; } = 30;
 

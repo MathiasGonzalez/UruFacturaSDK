@@ -12,9 +12,10 @@ namespace UruFacturaSDK.Signature;
 /// Implementa la firma XML enveloped con referencia a todo el documento y soporte para
 /// propiedades XAdES (SigningTime, SigningCertificate) que constituyen el nivel XAdES-BES.
 /// </summary>
-public class CfeFirmante
+public class CfeFirmante : IDisposable
 {
     private readonly X509Certificate2 _certificado;
+    private bool _disposed;
 
     /// <summary>
     /// Inicializa el firmante con el certificado cargado en memoria.
@@ -35,7 +36,7 @@ public class CfeFirmante
     public CfeFirmante(string rutaArchivo, string password)
         : this(X509CertificateLoader.LoadPkcs12FromFile(
                rutaArchivo, password,
-               X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet))
+               X509KeyStorageFlags.EphemeralKeySet))
     {
     }
 
@@ -201,5 +202,14 @@ public class CfeFirmante
         using var writer = XmlWriter.Create(sb, settings);
         doc.Save(writer);
         return sb.ToString();
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _certificado.Dispose();
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }

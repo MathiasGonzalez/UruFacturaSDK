@@ -91,7 +91,7 @@ public class CfeXmlBuilder
         WriteElement(w, "MntBruto", "1");
         if (cfe.Moneda != Moneda.PesoUruguayo)
         {
-            WriteElement(w, "TipoMoneda", cfe.Moneda.ToString());
+            WriteElement(w, "TipoMoneda", ((int)cfe.Moneda).ToString());
             if (cfe.TipoCambio.HasValue)
                 WriteElement(w, "TpoCambio", cfe.TipoCambio.Value.ToString("F4"));
         }
