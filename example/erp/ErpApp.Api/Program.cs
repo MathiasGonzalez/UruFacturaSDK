@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using UruFacturaSDK;
 using UruFacturaSDK.Configuration;
 using UruFacturaSDK.Enums;
@@ -130,7 +131,13 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
         RutReceptor = cfe.Receptor?.Documento,
         NombreReceptor = cfe.Receptor?.RazonSocial,
         MontoTotal = cfe.MontoTotal,
+        MontoNetoExento = cfe.MontoNetoExento,
+        MontoNetoMinimo = cfe.MontoNetoMinimo,
+        MontoNetoBasico = cfe.MontoNetoBasico,
+        IvaMinimo = cfe.IvaMinimo,
+        IvaBasico = cfe.IvaBasico,
         XmlFirmado = cfe.XmlFirmado,
+        DetalleJson = JsonSerializer.Serialize(cfe.Detalle),
     };
 
     db.Invoices.Add(invoice);
@@ -154,6 +161,11 @@ app.MapGet("/api/invoices/{id:int}/pdf", async (int id, AppDbContext db, IConfig
         Numero = invoice.Numero,
         FechaEmision = invoice.FechaEmision,
         MontoTotal = invoice.MontoTotal,
+        MontoNetoExento = invoice.MontoNetoExento,
+        MontoNetoMinimo = invoice.MontoNetoMinimo,
+        MontoNetoBasico = invoice.MontoNetoBasico,
+        IvaMinimo = invoice.IvaMinimo,
+        IvaBasico = invoice.IvaBasico,
         RutEmisor = ufConfig.RutEmisor,
         RazonSocialEmisor = ufConfig.RazonSocialEmisor,
         DomicilioFiscalEmisor = ufConfig.DomicilioFiscal,
@@ -161,6 +173,13 @@ app.MapGet("/api/invoices/{id:int}/pdf", async (int id, AppDbContext db, IConfig
         DepartamentoEmisor = ufConfig.Departamento,
         XmlFirmado = invoice.XmlFirmado,
     };
+
+    if (!string.IsNullOrWhiteSpace(invoice.DetalleJson))
+    {
+        var detalle = JsonSerializer.Deserialize<List<LineaDetalle>>(invoice.DetalleJson);
+        if (detalle is not null)
+            cfe.Detalle.AddRange(detalle);
+    }
 
     if (!string.IsNullOrWhiteSpace(invoice.RutReceptor))
         cfe.Receptor = new Receptor { Documento = invoice.RutReceptor, RazonSocial = invoice.NombreReceptor };
