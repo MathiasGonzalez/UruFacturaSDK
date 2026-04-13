@@ -14,6 +14,10 @@ builder.Services.AddCors(o =>
 
 var app = builder.Build();
 
+// NOTE: EnsureCreatedAsync creates the schema on first run but does NOT apply
+// incremental schema changes to an existing database. If the Invoice table
+// already exists and new columns were added (e.g. MontoNetoExento, DetalleJson),
+// drop the database or run a migration before starting the app.
 using (var scope = app.Services.CreateScope())
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreatedAsync();
 
@@ -176,9 +180,19 @@ app.MapGet("/api/invoices/{id:int}/pdf", async (int id, AppDbContext db, IConfig
 
     if (!string.IsNullOrWhiteSpace(invoice.DetalleJson))
     {
-        var detalle = JsonSerializer.Deserialize<List<LineaDetalle>>(invoice.DetalleJson);
-        if (detalle is not null)
-            cfe.Detalle.AddRange(detalle);
+        try
+        {
+            var detalle = JsonSerializer.Deserialize<List<LineaDetalle>>(invoice.DetalleJson);
+            if (detalle is not null)
+                cfe.Detalle.AddRange(detalle);
+        }
+        catch (JsonException)
+        {
+            return Results.Problem(
+                detail: "La factura no puede generar el PDF porque su detalle almacenado es inválido o incompatible.",
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "Detalle de factura inválido");
+        }
     }
 
     if (!string.IsNullOrWhiteSpace(invoice.RutReceptor))

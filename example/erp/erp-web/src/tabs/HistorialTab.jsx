@@ -1,5 +1,5 @@
 import { CFE_META } from '../constants/cfeMeta.js'
-import { C, sectionTitle, th, td } from '../constants/styles.js'
+import { C, sectionTitle, th, td, cfeBadge } from '../constants/styles.js'
 
 export default function HistorialTab({ invoices, onReload }) {
   async function downloadPdf(invoice) {
@@ -8,13 +8,16 @@ export default function HistorialTab({ invoices, onReload }) {
     const blob = await res.blob()
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
-    a.href = url; a.download = `cfe-${invoice.numero}.pdf`; a.click()
-    URL.revokeObjectURL(url)
+    a.href = url
+    a.download = `cfe-${invoice.numero}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 0)
   }
 
   const tipoCfeLabel = v => CFE_META[v]?.label ?? String(v)
   const tipoCfeMeta  = v => CFE_META[v] ?? { color: C.slate, colorL: C.slateL, emoji: '📄' }
-  const cfeBadge     = (color, bg) => ({ display: 'inline-flex', alignItems: 'center', gap: 4, background: bg ?? color + '18', color, border: `1px solid ${color}44`, borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 600 })
 
   return (
     <div>
