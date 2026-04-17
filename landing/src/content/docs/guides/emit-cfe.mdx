@@ -30,7 +30,7 @@ El e-Ticket es el comprobante más común para ventas al consumidor final (sin i
 ```csharp
 var eticket = client.CrearETicket();
 eticket.Numero = 1;                           // Número del comprobante
-eticket.FechaEmision = DateTime.Now;          // Opcional, por defecto DateTime.Now
+eticket.FechaEmision = DateTime.Today;        // Opcional, por defecto DateTime.Today
 
 // Agregar líneas de detalle
 eticket.Detalle.Add(new LineaDetalle
@@ -67,10 +67,11 @@ efactura.Numero = 1;
 // Datos del receptor (obligatorio para e-Factura)
 efactura.Receptor = new Receptor
 {
-    RutReceptor = "210000000013",
-    RazonSocial = "Empresa Compradora S.A.",
-    Domicilio   = "Bulevar España 2345",
-    Ciudad      = "Montevideo",
+    Documento     = "210000000013",
+    TipoDocumento = 2, // RUT
+    RazonSocial   = "Empresa Compradora S.A.",
+    Direccion     = "Bulevar España 2345",
+    Ciudad        = "Montevideo",
 };
 
 efactura.Detalle.Add(new LineaDetalle
@@ -168,13 +169,13 @@ try
             break;
     }
 }
+catch (DgiCommunicationException ex)
+{
+    Console.Error.WriteLine($"Error de comunicación con DGI: {ex.Message}");
+}
 catch (UruFacturaException ex)
 {
     Console.Error.WriteLine($"Error del SDK: {ex.Message}");
-}
-catch (HttpRequestException ex)
-{
-    Console.Error.WriteLine($"Error de red: {ex.Message}");
 }
 ```
 

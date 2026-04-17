@@ -14,7 +14,7 @@ namespace UruFacturaSDK;
 /// Punto de entrada principal del SDK de UruFactura.
 /// Orquesta la generación, firma, envío y representación impresa de CFE.
 /// </summary>
-public class UruFacturaClient : IDisposable
+public class UruFacturaClient : IUruFacturaClient
 {
     private readonly UruFacturaConfig _config;
     private readonly CfeXmlBuilder _xmlBuilder;

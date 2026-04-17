@@ -4,6 +4,7 @@ using System.Text;
 using System.Xml;
 using UruFacturaSDK.Configuration;
 using UruFacturaSDK.Exceptions;
+using UruFacturaSDK.Formatting;
 using UruFacturaSDK.Models;
 
 namespace UruFacturaSDK.Soap;
@@ -207,7 +208,7 @@ public class DgiSoapClient : IDisposable
 <soap:Envelope xmlns:soap=""{SoapNs}"">
   <soap:Body>
     <enviarReporteDiario xmlns=""http://dgi.gub.uy/efactura"">
-      <fecha>{fecha:yyyy-MM-dd}</fecha>
+      <fecha>{CfeFormat.DateIso(fecha)}</fecha>
       <cfes>{cfesXml}</cfes>
     </enviarReporteDiario>
   </soap:Body>

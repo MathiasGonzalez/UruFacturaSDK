@@ -3,6 +3,7 @@ using System.Xml;
 using UruFacturaSDK.Enums;
 using UruFacturaSDK.Models;
 using UruFacturaSDK.Exceptions;
+using UruFacturaSDK.Formatting;
 
 namespace UruFacturaSDK.Xml;
 
@@ -86,14 +87,14 @@ public class CfeXmlBuilder
         WriteElement(w, "TipoCFE", ((int)cfe.Tipo).ToString());
         WriteElement(w, "Serie", cfe.Serie ?? string.Empty);
         WriteElement(w, "Nro", cfe.Numero.ToString());
-        WriteElement(w, "FchEmis", cfe.FechaEmision.ToString("yyyy-MM-dd"));
+        WriteElement(w, "FchEmis", CfeFormat.DateIso(cfe.FechaEmision));
         WriteElement(w, "FmaPago", ((int)cfe.FormaPago).ToString());
         WriteElement(w, "MntBruto", "0"); // precios netos (sin IVA) en el detalle
         if (cfe.Moneda != Moneda.PesoUruguayo)
         {
             WriteElement(w, "TipoMoneda", ObtenerCodigoMoneda(cfe.Moneda));
             if (cfe.TipoCambio.HasValue)
-                WriteElement(w, "TpoCambio", cfe.TipoCambio.Value.ToString("F4"));
+                WriteElement(w, "TpoCambio", CfeFormat.DecimalInvariant(cfe.TipoCambio.Value, "F4"));
         }
         w.WriteEndElement(); // IdDoc
     }
@@ -148,23 +149,23 @@ public class CfeXmlBuilder
         w.WriteStartElement("Totales", NsUri);
 
         if (cfe.MontoNetoExento > 0)
-            WriteElement(w, "MntExe", cfe.MontoNetoExento.ToString("F2"));
+            WriteElement(w, "MntExe", CfeFormat.DecimalInvariant(cfe.MontoNetoExento, "F2"));
 
         if (cfe.MontoNetoMinimo > 0)
         {
-            WriteElement(w, "MntNetoIvaTasaMin", cfe.MontoNetoMinimo.ToString("F2"));
+            WriteElement(w, "MntNetoIvaTasaMin", CfeFormat.DecimalInvariant(cfe.MontoNetoMinimo, "F2"));
             WriteElement(w, "IVATasaMin", "10.000");
-            WriteElement(w, "MntIVATasaMin", cfe.IvaMinimo.ToString("F2"));
+            WriteElement(w, "MntIVATasaMin", CfeFormat.DecimalInvariant(cfe.IvaMinimo, "F2"));
         }
 
         if (cfe.MontoNetoBasico > 0)
         {
-            WriteElement(w, "MntNetoIVA", cfe.MontoNetoBasico.ToString("F2"));
+            WriteElement(w, "MntNetoIVA", CfeFormat.DecimalInvariant(cfe.MontoNetoBasico, "F2"));
             WriteElement(w, "IVATasa", "22.000");
-            WriteElement(w, "MntIVA", cfe.IvaBasico.ToString("F2"));
+            WriteElement(w, "MntIVA", CfeFormat.DecimalInvariant(cfe.IvaBasico, "F2"));
         }
 
-        WriteElement(w, "MntTotal", cfe.MontoTotal.ToString("F2"));
+        WriteElement(w, "MntTotal", CfeFormat.DecimalInvariant(cfe.MontoTotal, "F2"));
         WriteElement(w, "CantLinDet", cfe.Detalle.Count.ToString());
 
         w.WriteEndElement(); // Totales
@@ -180,17 +181,17 @@ public class CfeXmlBuilder
             WriteElement(w, "UniMed", linea.UnidadMedida);
 
         WriteElement(w, "NomItem", linea.NombreItem);
-        WriteElement(w, "Cantidad", linea.Cantidad.ToString("F4"));
-        WriteElement(w, "PrecioUnitario", linea.PrecioUnitario.ToString("F4"));
+        WriteElement(w, "Cantidad", CfeFormat.DecimalInvariant(linea.Cantidad, "F4"));
+        WriteElement(w, "PrecioUnitario", CfeFormat.DecimalInvariant(linea.PrecioUnitario, "F4"));
 
         if (linea.DescuentoMonto > 0)
-            WriteElement(w, "DescuentoMonto", linea.DescuentoMonto.ToString("F2"));
+            WriteElement(w, "DescuentoMonto", CfeFormat.DecimalInvariant(linea.DescuentoMonto, "F2"));
 
         if (linea.RecargoMonto > 0)
-            WriteElement(w, "RecargoMonto", linea.RecargoMonto.ToString("F2"));
+            WriteElement(w, "RecargoMonto", CfeFormat.DecimalInvariant(linea.RecargoMonto, "F2"));
 
         WriteElement(w, "IndFact", ((int)linea.IndFactIva).ToString());
-        WriteElement(w, "MontoItem", linea.MontoTotal.ToString("F2"));
+        WriteElement(w, "MontoItem", CfeFormat.DecimalInvariant(linea.MontoTotal, "F2"));
 
         w.WriteEndElement(); // Item
     }
@@ -201,7 +202,7 @@ public class CfeXmlBuilder
         WriteElement(w, "TpoDocRef", ((int)refCfe.TipoCfe).ToString());
         WriteElement(w, "Serie", refCfe.Serie);
         WriteElement(w, "NroCFERef", refCfe.NroCfe.ToString());
-        WriteElement(w, "FechaCFERef", refCfe.FechaCfe.ToString("yyyy-MM-dd"));
+        WriteElement(w, "FechaCFERef", CfeFormat.DateIso(refCfe.FechaCfe));
         if (!string.IsNullOrWhiteSpace(refCfe.Razon))
             WriteElement(w, "RazonRef", refCfe.Razon);
         w.WriteEndElement(); // RefDoc

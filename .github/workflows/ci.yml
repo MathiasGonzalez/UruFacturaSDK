@@ -29,7 +29,7 @@ jobs:
         run: dotnet build UruFacturaSDK.slnx --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test UruFacturaSDK.slnx --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+        run: dotnet test UruFacturaSDK.slnx --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --settings tests/UruFacturaSDK.Tests/coverlet.runsettings
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4

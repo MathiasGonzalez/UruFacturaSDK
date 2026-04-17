@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
@@ -170,7 +171,7 @@ public class CfeFirmante : IDisposable
 
         // SigningTime
         var signingTime = doc.CreateElement("xades", "SigningTime", xadesNs);
-        signingTime.InnerText = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+        signingTime.InnerText = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
         signedSigProps.AppendChild(signingTime);
 
         // SigningCertificate

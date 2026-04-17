@@ -29,7 +29,9 @@ Inscripción → Certificado Digital → Solicitar CAE → Homologación → Pro
 
 </Steps>
 
-> 📖 Normativa: [Resolución 798/012 y modificativas](https://www.dgi.gub.uy/)
+<Aside type="note">
+  **Normativa:** [Resolución 798/012 y modificativas](https://www.dgi.gub.uy/)
+</Aside>
 
 ---
 
@@ -188,6 +190,74 @@ var config = new UruFacturaConfig
 
 ---
 
+## Flujo completo en producción
+
+Ejemplo end-to-end de un e-Ticket configurado, firmado, enviado y renderizado como PDF:
+
+```csharp
+// 1. Configurar
+var config = new UruFacturaConfig
+{
+    RutEmisor           = "210000000012",
+    RazonSocialEmisor   = "Mi Empresa S.A.",
+    DomicilioFiscal     = "Av. 18 de Julio 1234",
+    Ciudad              = "Montevideo",
+    Departamento        = "Montevideo",
+    Ambiente            = Ambiente.Produccion,
+    RutaCertificado     = "/ruta/certificado.p12",
+    PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
+};
+
+using var client = new UruFacturaClient(config);
+
+// 2. Registrar CAE
+client.Cae.RegistrarCae(new Cae
+{
+    NroSerie         = "CAE2025001",
+    TipoCfe          = TipoCfe.ETicket,
+    RangoDesde       = 1,
+    RangoHasta       = 1000,
+    FechaVencimiento = new DateTime(2026, 12, 31),
+});
+
+// 3. Crear comprobante
+var eticket = client.CrearETicket();
+eticket.Numero = 1;
+eticket.Detalle.Add(new LineaDetalle
+{
+    NroLinea       = 1,
+    NombreItem     = "Servicio de consultoría",
+    Cantidad       = 1,
+    PrecioUnitario = 5000m,
+    IndFactIva     = TipoIva.Basico,
+});
+
+// 4. Calcular, firmar y enviar
+eticket.CalcularTotales();
+var respuesta = await client.EnviarCfeAsync(eticket);
+
+if (!respuesta.Exitoso)
+    throw new Exception($"DGI rechazó el CFE: {respuesta.Mensaje}");
+
+// 5. Generar representación impresa
+byte[] pdf = client.GenerarPdfA4(eticket);
+await File.WriteAllBytesAsync("eticket_001.pdf", pdf);
+```
+
+---
+
+## Recursos oficiales DGI
+
+| Recurso | Enlace |
+|---------|--------|
+| Portal DGI en línea | [dgi.gub.uy](https://www.dgi.gub.uy/) |
+| Esquemas XML CFE | [Factura Electrónica — DGI](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,) |
+| Instructivo técnico | Portal DGI → Gestión CFE |
+| AGESIC (CAs habilitadas) | [agesic.gub.uy](https://www.agesic.gub.uy/) |
+| Soporte DGI | [Contacto](https://www.dgi.gub.uy/wdgi/page?2,contacto,index,O,es,0,) |
+
+---
+
 ## Códigos de respuesta DGI
 
 | Código | Significado |
@@ -196,16 +266,12 @@ var config = new UruFacturaConfig
 | `01` | ⚠️ Aceptado con observaciones |
 | `05` | ❌ Rechazado |
 | `06` | ❌ RUT emisor no habilitado |
-| `09` | ❌ CAE inválido o vencido |
+| `09` | ❌ Número de CAE inválido o vencido |
 | `11` | ❌ Error en la firma digital |
 | `99` | ❌ Error interno del servidor DGI |
 
+<Aside type="note">
+  En caso de rechazo revisar el campo `respuesta.Mensaje`, que contiene la descripción detallada del error.
+</Aside>
+
 Ver [Códigos DGI completos](../reference/dgi-codes/) para más detalles.
-
----
-
-## Recursos oficiales
-
-- [Portal DGI en línea](https://www.dgi.gub.uy/)
-- [Esquemas XML CFE](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,)
-- [AGESIC — Autoridades Certificantes](https://www.agesic.gub.uy/)
