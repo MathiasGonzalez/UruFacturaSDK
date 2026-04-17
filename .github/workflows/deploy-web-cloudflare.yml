@@ -1,0 +1,70 @@
+name: Deploy Web → Cloudflare Pages
+
+# Builds the React/Vite frontend and deploys it to Cloudflare Pages.
+# Only runs on push to `main` when files inside `saas/saas-web/` change.
+#
+# ── Required Secrets ──────────────────────────────────────────────────────────
+#   CF_API_TOKEN   – Cloudflare API token with "Cloudflare Pages: Edit" permission
+#                    (Cloudflare Dashboard → My Profile → API Tokens → Create Token)
+#   CF_ACCOUNT_ID  – Cloudflare account ID (right-hand sidebar of any Cloudflare page)
+#
+# ── Required Variables (set as GitHub Actions variables, not secrets) ─────────
+#   CF_PAGES_PROJECT – Name of the Cloudflare Pages project (create it once via
+#                      "Pages → Create a project → Direct upload" in the dashboard)
+#
+# ── Build-time variable ────────────────────────────────────────────────────────
+#   VITE_API_URL   – Full URL of your Railway API, e.g. https://api.myapp.railway.app
+#                    Set this as a GitHub Actions secret or variable.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "saas/saas-web/**"
+      - ".github/workflows/deploy-web-cloudflare.yml"
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write   # allows Cloudflare action to create GitHub deployments
+
+    defaults:
+      run:
+        working-directory: saas/saas-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: saas/saas-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          # Point the frontend at the production Railway API.
+          # The Vite config exposes this as __API_BASE__ in the bundle.
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: ${{ vars.CF_PAGES_PROJECT }}
+          directory: saas/saas-web/dist
+          # Creates a preview deployment for PRs; production deployment for main.
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

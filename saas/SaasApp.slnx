@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/saas/">
+    <Project Path="saas/SaasApp.AppHost/SaasApp.AppHost.csproj" />
+    <Project Path="saas/SaasApp.Api/SaasApp.Api.csproj" />
+  </Folder>
+</Solution>
