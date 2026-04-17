@@ -76,8 +76,9 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
     var ufConfig = config.GetSection("UruFactura").Get<UruFacturaConfig>()!;
 
     // NOTE: Instantiated per request for demo simplicity.
-    // In production, register UruFacturaClient as a singleton or scoped DI service
-    // to avoid reloading the certificate on every request.
+    // In production, keep UruFacturaClient per request (scoped/transient) because it may hold mutable state
+    // and should not be shared as a singleton across concurrent requests. If certificate loading becomes a
+    // performance concern, cache/load the certificate or other immutable configuration once instead.
     using var client = new UruFacturaClient(ufConfig);
 
     var tipo = (TipoCfe)req.TipoCfe;

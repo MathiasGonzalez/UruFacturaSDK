@@ -1,10 +1,10 @@
-using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
 using UruFacturaSDK.Configuration;
 using UruFacturaSDK.Exceptions;
+using UruFacturaSDK.Formatting;
 using UruFacturaSDK.Models;
 
 namespace UruFacturaSDK.Soap;
@@ -208,7 +208,7 @@ public class DgiSoapClient : IDisposable
 <soap:Envelope xmlns:soap=""{SoapNs}"">
   <soap:Body>
     <enviarReporteDiario xmlns=""http://dgi.gub.uy/efactura"">
-      <fecha>{fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}</fecha>
+      <fecha>{CfeFormat.DateIso(fecha)}</fecha>
       <cfes>{cfesXml}</cfes>
     </enviarReporteDiario>
   </soap:Body>

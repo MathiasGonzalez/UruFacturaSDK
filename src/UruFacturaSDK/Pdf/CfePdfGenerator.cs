@@ -1,4 +1,3 @@
-using System.Globalization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -6,6 +5,7 @@ using SkiaSharp;
 using UruFacturaSDK.Configuration;
 using UruFacturaSDK.Enums;
 using UruFacturaSDK.Exceptions;
+using UruFacturaSDK.Formatting;
 using UruFacturaSDK.Models;
 using ZXing;
 using ZXing.Common;
@@ -126,20 +126,14 @@ public class CfePdfGenerator
                $"&tipoCfe={(int)cfe.Tipo}" +
                $"&serie={Uri.EscapeDataString(cfe.Serie ?? string.Empty)}" +
                $"&nro={cfe.Numero}" +
-               $"&fecha={cfe.FechaEmision.ToString("yyyyMMdd", CultureInfo.InvariantCulture)}" +
-               $"&monto={cfe.MontoTotal.ToString("F2", CultureInfo.InvariantCulture)}";
+               $"&fecha={CfeFormat.DateCompact(cfe.FechaEmision)}" +
+               $"&monto={CfeFormat.DecimalInvariant(cfe.MontoTotal, "F2")}";
     }
 }
 
 // ---------------------------------------------------------------------------
 // Documento PDF A4
 // ---------------------------------------------------------------------------
-
-/// <summary>Cultura usada para formatear montos en el PDF (formato uruguayo: 1.220,00).</summary>
-internal static class PdfCultura
-{
-    internal static readonly CultureInfo EsUy = new("es-UY");
-}
 
 internal class CfeDocumentoA4 : IDocument
 {
@@ -266,11 +260,11 @@ internal class CfeDocumentoA4 : IDocument
 
                 foreach (var linea in _cfe.Detalle)
                 {
-                    table.Cell().Element(Celda).Text(linea.Cantidad.ToString("F2", PdfCultura.EsUy));
+                    table.Cell().Element(Celda).Text(CfeFormat.MonetaryPdf(linea.Cantidad, "F2"));
                     table.Cell().Element(CeldaLeft).Text(linea.NombreItem);
-                    table.Cell().Element(Celda).Text(linea.PrecioUnitario.ToString("N2", PdfCultura.EsUy));
+                    table.Cell().Element(Celda).Text(CfeFormat.MonetaryPdf(linea.PrecioUnitario));
                     table.Cell().Element(Celda).Text(ObtenerEtiquetaIva(linea.IndFactIva));
-                    table.Cell().Element(Celda).Text(linea.MontoTotal.ToString("N2", PdfCultura.EsUy));
+                    table.Cell().Element(Celda).Text(CfeFormat.MonetaryPdf(linea.MontoTotal));
                 }
             });
 
@@ -278,18 +272,18 @@ internal class CfeDocumentoA4 : IDocument
             col.Item().PaddingTop(10).AlignRight().Column(tot =>
             {
                 if (_cfe.MontoNetoExento > 0)
-                    tot.Item().Text($"Exento: {_cfe.MontoNetoExento.ToString("N2", PdfCultura.EsUy)}");
+                    tot.Item().Text($"Exento: {CfeFormat.MonetaryPdf(_cfe.MontoNetoExento)}");
                 if (_cfe.MontoNetoMinimo > 0)
                 {
-                    tot.Item().Text($"Neto IVA 10%: {_cfe.MontoNetoMinimo.ToString("N2", PdfCultura.EsUy)}");
-                    tot.Item().Text($"IVA 10%: {_cfe.IvaMinimo.ToString("N2", PdfCultura.EsUy)}");
+                    tot.Item().Text($"Neto IVA 10%: {CfeFormat.MonetaryPdf(_cfe.MontoNetoMinimo)}");
+                    tot.Item().Text($"IVA 10%: {CfeFormat.MonetaryPdf(_cfe.IvaMinimo)}");
                 }
                 if (_cfe.MontoNetoBasico > 0)
                 {
-                    tot.Item().Text($"Neto IVA 22%: {_cfe.MontoNetoBasico.ToString("N2", PdfCultura.EsUy)}");
-                    tot.Item().Text($"IVA 22%: {_cfe.IvaBasico.ToString("N2", PdfCultura.EsUy)}");
+                    tot.Item().Text($"Neto IVA 22%: {CfeFormat.MonetaryPdf(_cfe.MontoNetoBasico)}");
+                    tot.Item().Text($"IVA 22%: {CfeFormat.MonetaryPdf(_cfe.IvaBasico)}");
                 }
-                tot.Item().Text($"TOTAL: {_cfe.MontoTotal.ToString("N2", PdfCultura.EsUy)}").Bold().FontSize(12);
+                tot.Item().Text($"TOTAL: {CfeFormat.MonetaryPdf(_cfe.MontoTotal)}").Bold().FontSize(12);
             });
 
             // QR y sello de seguridad
@@ -419,8 +413,8 @@ internal class CfeDocumentoTermico : IDocument
                 col.Item().Text($"{linea.NombreItem}");
                 col.Item().Row(row =>
                 {
-                    row.RelativeItem().Text($"  {linea.Cantidad.ToString("F2", PdfCultura.EsUy)} x {linea.PrecioUnitario.ToString("N2", PdfCultura.EsUy)}");
-                    row.AutoItem().Text($"{linea.MontoTotal.ToString("N2", PdfCultura.EsUy)}");
+                    row.RelativeItem().Text($"  {CfeFormat.MonetaryPdf(linea.Cantidad, "F2")} x {CfeFormat.MonetaryPdf(linea.PrecioUnitario)}");
+                    row.AutoItem().Text(CfeFormat.MonetaryPdf(linea.MontoTotal));
                 });
             }
 
@@ -428,16 +422,16 @@ internal class CfeDocumentoTermico : IDocument
 
             // Totales
             if (_cfe.MontoNetoExento > 0)
-                col.Item().Row(r => { r.RelativeItem().Text("Exento:"); r.AutoItem().Text(_cfe.MontoNetoExento.ToString("N2", PdfCultura.EsUy)); });
+                col.Item().Row(r => { r.RelativeItem().Text("Exento:"); r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.MontoNetoExento)); });
             if (_cfe.IvaMinimo > 0)
-                col.Item().Row(r => { r.RelativeItem().Text("IVA 10%:"); r.AutoItem().Text(_cfe.IvaMinimo.ToString("N2", PdfCultura.EsUy)); });
+                col.Item().Row(r => { r.RelativeItem().Text("IVA 10%:"); r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.IvaMinimo)); });
             if (_cfe.IvaBasico > 0)
-                col.Item().Row(r => { r.RelativeItem().Text("IVA 22%:"); r.AutoItem().Text(_cfe.IvaBasico.ToString("N2", PdfCultura.EsUy)); });
+                col.Item().Row(r => { r.RelativeItem().Text("IVA 22%:"); r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.IvaBasico)); });
 
             col.Item().Row(r =>
             {
                 r.RelativeItem().Text("TOTAL:").Bold();
-                r.AutoItem().Text(_cfe.MontoTotal.ToString("N2", PdfCultura.EsUy)).Bold();
+                r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.MontoTotal)).Bold();
             });
 
             col.Item().LineHorizontal(0.5f);
