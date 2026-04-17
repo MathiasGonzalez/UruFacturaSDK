@@ -3,16 +3,16 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
 
 # Copy project files first for layer-cache efficiency
-COPY src/UruFacturaSDK/UruFacturaSDK.csproj        src/UruFacturaSDK/
-COPY saas/SaasApp.Api/SaasApp.Api.csproj            saas/SaasApp.Api/
+COPY src/UruFacturaSDK/UruFacturaSDK.csproj           src/UruFacturaSDK/
+COPY uerp/UruErpApp.Api/UruErpApp.Api.csproj          uerp/UruErpApp.Api/
 
-RUN dotnet restore saas/SaasApp.Api/SaasApp.Api.csproj
+RUN dotnet restore uerp/UruErpApp.Api/UruErpApp.Api.csproj
 
 # Copy full source
 COPY src/ src/
-COPY saas/SaasApp.Api/ saas/SaasApp.Api/
+COPY uerp/UruErpApp.Api/ uerp/UruErpApp.Api/
 
-RUN dotnet publish saas/SaasApp.Api/SaasApp.Api.csproj \
+RUN dotnet publish uerp/UruErpApp.Api/UruErpApp.Api.csproj \
     --no-restore \
     -c Release \
     -o /app/publish \
@@ -27,4 +27,4 @@ ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
 
 COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "SaasApp.Api.dll"]
+ENTRYPOINT ["dotnet", "UruErpApp.Api.dll"]

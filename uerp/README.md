@@ -1,6 +1,6 @@
-# UruFactura SaaS
+# UruErp
 
-Aplicación SaaS multi-tenant construida sobre el **UruFactura SDK**.
+Aplicación ERP multi-tenant construida sobre el **UruFactura SDK**.
 Permite a múltiples empresas emitir, firmar y gestionar sus CFE (Comprobantes Fiscales Electrónicos) desde un único portal web.
 
 ## Stack
@@ -17,11 +17,11 @@ Permite a múltiples empresas emitir, firmar y gestionar sus CFE (Comprobantes F
 ## Estructura
 
 ```
-saas/
-├── SaasApp.AppHost/   ← orquestador Aspire (solo para desarrollo local)
-├── SaasApp.Api/       ← API REST multi-tenant con auth JWT
+uerp/
+├── UruErpApp.AppHost/   ← orquestador Aspire (solo para desarrollo local)
+├── UruErpApp.Api/       ← API REST multi-tenant con auth JWT
 │   └── Dockerfile     ← imagen para Railway
-├── saas-web/          ← SPA React + Vite
+├── uerp-web/          ← SPA React + Vite
 └── README.md          ← este archivo
 ```
 
@@ -53,7 +53,7 @@ saas/
 ```bash
 # Generar certificado autofirmado (solo para pruebas locales)
 openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=demo"
-openssl pkcs12 -export -out saas/SaasApp.Api/certs/demo.pfx -inkey key.pem -in cert.pem -passout pass:demo123
+openssl pkcs12 -export -out uerp/UruErpApp.Api/certs/demo.pfx -inkey key.pem -in cert.pem -passout pass:demo123
 ```
 
 Luego ajusta `UruFactura:PasswordCertificado` en `appsettings.json`.
@@ -61,8 +61,8 @@ Luego ajusta `UruFactura:PasswordCertificado` en `appsettings.json`.
 ### Iniciar
 
 ```bash
-cd saas
-dotnet run --project SaasApp.AppHost
+cd uerp
+dotnet run --project UruErpApp.AppHost
 ```
 
 Aspire levantará PostgreSQL (Docker), la API y el frontend.
@@ -78,7 +78,7 @@ Abre el Dashboard de Aspire para ver las URLs asignadas.
 2. Agrega un servicio **PostgreSQL** (el plugin oficial de Railway).
 3. Agrega un servicio **Docker** apuntando a este repositorio con:
    - **Root Directory**: `/` (raíz del repo)
-   - **Dockerfile Path**: `saas/SaasApp.Api/Dockerfile`
+   - **Dockerfile Path**: `uerp/UruErpApp.Api/Dockerfile`
 4. Configura las variables de entorno del servicio (ver tabla abajo).
 5. El workflow `.github/workflows/deploy-api-railway.yml` automatiza los despliegues
    con cada push a `main`.
@@ -118,8 +118,8 @@ Abre el Dashboard de Aspire para ver las URLs asignadas.
 | Campo | Valor |
 |-------|-------|
 | Framework preset | None (Vite) |
-| Build command | `cd saas/saas-web && npm ci && npm run build` |
-| Build output directory | `saas/saas-web/dist` |
+| Build command | `cd uerp/uerp-web && npm ci && npm run build` |
+| Build output directory | `uerp/uerp-web/dist` |
 | Node.js version | `20` |
 
 ---
@@ -128,9 +128,9 @@ Abre el Dashboard de Aspire para ver las URLs asignadas.
 
 | Workflow | Archivo | Trigger | Descripción |
 |----------|---------|---------|-------------|
-| SaaS CI | `saas-ci.yml` | push/PR a `main` en `saas/**` o `src/**` | Build del API .NET y del frontend Vite. No despliega. |
-| Deploy API → Railway | `deploy-api-railway.yml` | push a `main` en `saas/SaasApp.Api/**` | Construye imagen Docker, la sube a Docker Hub y hace `railway redeploy`. |
-| Deploy Web → Cloudflare | `deploy-web-cloudflare.yml` | push a `main` en `saas/saas-web/**` | `npm run build` + `cloudflare/pages-action` para subir `dist/`. |
+| UruErp CI | `uerp-ci.yml`` | push/PR a `main` en `uerp/**` o `src/**` | Build del API .NET y del frontend Vite. No despliega. |
+| Deploy API → Railway | `deploy-api-railway.yml` | push a `main` en `uerp/UruErpApp.Api/**` | Construye imagen Docker, la sube a Docker Hub y hace `railway redeploy`. |
+| Deploy Web → Cloudflare | `deploy-web-cloudflare.yml` | push a `main` en `uerp/uerp-web/**` | `npm run build` + `cloudflare/pages-action` para subir `dist/`. |
 
 ### Secrets necesarios en GitHub
 

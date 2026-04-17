@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using SaasApp.Api;
-using SaasApp.Api.Auth;
-using SaasApp.Api.Models;
+using UruErpApp.Api;
+using UruErpApp.Api.Auth;
+using UruErpApp.Api.Models;
+using UruErpApp.Api.Services;
 using UruFacturaSDK;
 using UruFacturaSDK.Configuration;
 using UruFacturaSDK.Enums;
@@ -47,6 +48,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtService>();
+
+// ── Cloudflare R2 ───────────────────────────────────────────────────────────
+// R2 is optional; if CloudflareR2:AccountId is missing the service won't be
+// registered and R2 uploads will be skipped.
+var r2Configured = !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:AccountId"])
+                && !string.IsNullOrWhiteSpace(builder.Configuration["CloudflareR2:AccessKeyId"]);
+if (r2Configured)
+    builder.Services.AddSingleton<CloudflareR2Service>();
+
+// ── Invoice Mailer (Cloudflare Worker) ──────────────────────────────────────
+builder.Services.AddHttpClient("InvoiceMailer");
+builder.Services.AddScoped<InvoiceMailerService>();
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(o =>
@@ -193,7 +206,8 @@ app.MapGet("/api/invoices", async (AppDbContext db, HttpContext ctx) =>
         .ToListAsync();
 }).RequireAuthorization();
 
-app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, IConfiguration config, HttpContext ctx) =>
+app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, IConfiguration config, HttpContext ctx,
+    IServiceProvider services) =>
 {
     var tenantId = GetTenantId(ctx);
     var ufConfig = config.GetSection("UruFactura").Get<UruFacturaConfig>()!;
@@ -251,6 +265,9 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
     cfe.CalcularTotales();
     client.GenerarYFirmar(cfe);
 
+    // ── Generate PDF for storage ─────────────────────────────────────────────
+    var pdfBytes = client.GenerarPdfA4(cfe);
+
     var invoice = new Invoice
     {
         TenantId         = tenantId,
@@ -272,36 +289,109 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
     db.Invoices.Add(invoice);
     await db.SaveChangesAsync();
 
+    // ── Upload to Cloudflare R2 (best-effort) ────────────────────────────────
+    var r2 = services.GetService<CloudflareR2Service>();
+    if (r2 is not null)
+    {
+        var prefix = $"tenant-{tenantId}/{cfe.FechaEmision:yyyy/MM}";
+        try
+        {
+            var pdfKey = $"{prefix}/{invoice.Id}-{(int)cfe.Tipo}-{cfe.Numero}.pdf";
+            await r2.UploadAsync(pdfKey, pdfBytes, "application/pdf");
+            invoice.R2PdfKey = pdfKey;
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogWarning(ex, "R2 PDF upload failed for invoice {InvoiceId}.", invoice.Id);
+        }
+
+        if (!string.IsNullOrWhiteSpace(cfe.XmlFirmado))
+        {
+            try
+            {
+                var xmlBytes = System.Text.Encoding.UTF8.GetBytes(cfe.XmlFirmado);
+                var xmlKey   = $"{prefix}/{invoice.Id}-{(int)cfe.Tipo}-{cfe.Numero}.xml";
+                await r2.UploadAsync(xmlKey, xmlBytes, "application/xml");
+                invoice.R2XmlKey = xmlKey;
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogWarning(ex, "R2 XML upload failed for invoice {InvoiceId}.", invoice.Id);
+            }
+        }
+
+        if (invoice.R2PdfKey is not null || invoice.R2XmlKey is not null)
+            await db.SaveChangesAsync();
+    }
+
+    // ── Send email notification via Cloudflare Worker (best-effort) ──────────
+    if (!string.IsNullOrWhiteSpace(req.RecipientEmail))
+    {
+        var mailer = services.GetRequiredService<InvoiceMailerService>();
+        var tenant = await db.Tenants.FindAsync(tenantId);
+        string? pdfUrl = null;
+        if (r2 is not null && invoice.R2PdfKey is not null)
+            pdfUrl = await r2.GetDownloadUrlAsync(invoice.R2PdfKey);
+
+        await mailer.NotifyAsync(new EmailPayload(
+            TenantName:    tenant?.Name ?? string.Empty,
+            RecipientEmail: req.RecipientEmail,
+            RecipientName:  req.RecipientName ?? req.RecipientEmail,
+            InvoiceId:     invoice.Id,
+            InvoiceNumber: invoice.Numero,
+            TipoCfe:       invoice.TipoCfe,
+            TipoCfeLabel:  cfe.Tipo.ToString(),
+            Total:         invoice.MontoTotal,
+            PdfUrl:        pdfUrl));
+    }
+
     return Results.Created($"/api/invoices/{invoice.Id}", invoice);
 }).RequireAuthorization();
 
-app.MapGet("/api/invoices/{id:int}/pdf", async (int id, AppDbContext db, IConfiguration config, HttpContext ctx) =>
+// ── Download PDF (from R2 if stored, otherwise regenerate) ────────────────
+app.MapGet("/api/invoices/{id:int}/pdf", async (int id, AppDbContext db, IConfiguration config, HttpContext ctx,
+    IServiceProvider services) =>
 {
     var tenantId = GetTenantId(ctx);
     var invoice  = await db.Invoices.FirstOrDefaultAsync(i => i.Id == id && i.TenantId == tenantId);
     if (invoice is null) return Results.NotFound();
 
-    var ufConfig = config.GetSection("UruFactura").Get<UruFacturaConfig>()!;
+    // If the PDF is stored in R2, serve it from there
+    var r2 = services.GetService<CloudflareR2Service>();
+    if (r2 is not null && !string.IsNullOrWhiteSpace(invoice.R2PdfKey))
+    {
+        try
+        {
+            var pdfBytes = await r2.DownloadAsync(invoice.R2PdfKey);
+            return Results.File(pdfBytes, "application/pdf", $"factura-{invoice.Numero}.pdf");
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogWarning(ex, "R2 PDF download failed for invoice {Id}, falling back to on-the-fly generation.", id);
+        }
+    }
 
+    // Fallback: regenerate PDF from stored data
+    var ufConfig = config.GetSection("UruFactura").Get<UruFacturaConfig>()!;
     using var client = new UruFacturaClient(ufConfig);
 
     var cfe = new Cfe
     {
-        Tipo                 = (TipoCfe)invoice.TipoCfe,
-        Numero               = invoice.Numero,
-        FechaEmision         = invoice.FechaEmision,
-        MontoTotal           = invoice.MontoTotal,
-        MontoNetoExento      = invoice.MontoNetoExento,
-        MontoNetoMinimo      = invoice.MontoNetoMinimo,
-        MontoNetoBasico      = invoice.MontoNetoBasico,
-        IvaMinimo            = invoice.IvaMinimo,
-        IvaBasico            = invoice.IvaBasico,
-        RutEmisor            = ufConfig.RutEmisor,
-        RazonSocialEmisor    = ufConfig.RazonSocialEmisor,
+        Tipo                  = (TipoCfe)invoice.TipoCfe,
+        Numero                = invoice.Numero,
+        FechaEmision          = invoice.FechaEmision,
+        MontoTotal            = invoice.MontoTotal,
+        MontoNetoExento       = invoice.MontoNetoExento,
+        MontoNetoMinimo       = invoice.MontoNetoMinimo,
+        MontoNetoBasico       = invoice.MontoNetoBasico,
+        IvaMinimo             = invoice.IvaMinimo,
+        IvaBasico             = invoice.IvaBasico,
+        RutEmisor             = ufConfig.RutEmisor,
+        RazonSocialEmisor     = ufConfig.RazonSocialEmisor,
         DomicilioFiscalEmisor = ufConfig.DomicilioFiscal,
-        CiudadEmisor         = ufConfig.Ciudad,
-        DepartamentoEmisor   = ufConfig.Departamento,
-        XmlFirmado           = invoice.XmlFirmado,
+        CiudadEmisor          = ufConfig.Ciudad,
+        DepartamentoEmisor    = ufConfig.Departamento,
+        XmlFirmado            = invoice.XmlFirmado,
     };
 
     if (!string.IsNullOrWhiteSpace(invoice.DetalleJson))
@@ -327,6 +417,29 @@ app.MapGet("/api/invoices/{id:int}/pdf", async (int id, AppDbContext db, IConfig
     return Results.File(pdf, "application/pdf", $"factura-{invoice.Numero}.pdf");
 }).RequireAuthorization();
 
+// ── R2 download URLs ──────────────────────────────────────────────────────
+app.MapGet("/api/invoices/{id:int}/r2-urls", async (int id, AppDbContext db, HttpContext ctx,
+    IServiceProvider services) =>
+{
+    var tenantId = GetTenantId(ctx);
+    var invoice  = await db.Invoices.FirstOrDefaultAsync(i => i.Id == id && i.TenantId == tenantId);
+    if (invoice is null) return Results.NotFound();
+
+    var r2 = services.GetService<CloudflareR2Service>();
+    if (r2 is null)
+        return Results.Problem("Cloudflare R2 is not configured.", statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    string? pdfUrl = invoice.R2PdfKey is not null
+        ? await r2.GetDownloadUrlAsync(invoice.R2PdfKey)
+        : null;
+
+    string? xmlUrl = invoice.R2XmlKey is not null
+        ? await r2.GetDownloadUrlAsync(invoice.R2XmlKey)
+        : null;
+
+    return Results.Ok(new { pdfUrl, xmlUrl });
+}).RequireAuthorization();
+
 app.Run();
 
 // ── DTOs ────────────────────────────────────────────────────────────────────
@@ -340,7 +453,9 @@ record CreateInvoiceRequest(
     string? RutReceptor,
     string? NombreReceptor,
     List<LineaDetalleDto> Detalle,
-    List<RefCfeDto>? Referencias = null);
+    List<RefCfeDto>? Referencias = null,
+    string? RecipientEmail = null,
+    string? RecipientName  = null);
 
 record LineaDetalleDto(
     string NombreItem,

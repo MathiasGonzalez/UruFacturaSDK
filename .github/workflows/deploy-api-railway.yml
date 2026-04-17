@@ -2,7 +2,7 @@ name: Deploy API → Railway
 
 # Pushes a Docker image to Docker Hub (or GHCR) and then triggers a Railway
 # redeploy via the Railway CLI.  Only runs on push to `main` when files inside
-# `saas/SaasApp.Api/` or `src/` change.
+# `uerp/UruErpApp.Api/` or `src/` change.
 #
 # ── Required Secrets ──────────────────────────────────────────────────────────
 #   RAILWAY_TOKEN      – Railway CLI token (from Railway dashboard → Account Settings)
@@ -21,13 +21,25 @@ name: Deploy API → Railway
 #   UruFactura__Ambiente     – "Homologacion" or "Produccion"
 #   UruFactura__RutaCertificado   – Path to .pfx inside the container, e.g. /app/certs/cert.pfx
 #   UruFactura__PasswordCertificado
+#
+# ── Cloudflare R2 Variables (optional) ───────────────────────────────────────
+#   CloudflareR2__AccountId      – Your Cloudflare account ID
+#   CloudflareR2__BucketName     – R2 bucket name (default: uruerp-invoices)
+#   CloudflareR2__AccessKeyId    – R2 API token access key ID
+#   CloudflareR2__SecretAccessKey – R2 API token secret access key
+#   CloudflareR2__PublicBaseUrl  – Optional public bucket URL for direct downloads
+#                                   Leave empty to use presigned URLs.
+#
+# ── Invoice Mailer Worker Variables (optional) ────────────────────────────────
+#   InvoiceMailer__WorkerUrl  – URL of the deployed invoice-mailer Cloudflare Worker
+#   InvoiceMailer__ApiSecret  – Shared secret matching ALLOWED_API_SECRET in the Worker
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
   push:
     branches: ["main"]
     paths:
-      - "saas/SaasApp.Api/**"
+      - "uerp/UruErpApp.Api/**"
       - "src/UruFacturaSDK/**"
       - ".github/workflows/deploy-api-railway.yml"
 
@@ -74,7 +86,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: saas/SaasApp.Api/Dockerfile
+          file: uerp/UruErpApp.Api/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

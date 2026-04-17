@@ -1,7 +1,7 @@
 name: Deploy Web → Cloudflare Pages
 
 # Builds the React/Vite frontend and deploys it to Cloudflare Pages.
-# Only runs on push to `main` when files inside `saas/saas-web/` change.
+# Only runs on push to `main` when files inside `uerp/uerp-web/` change.
 #
 # ── Required Secrets ──────────────────────────────────────────────────────────
 #   CF_API_TOKEN   – Cloudflare API token with "Cloudflare Pages: Edit" permission
@@ -21,7 +21,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "saas/saas-web/**"
+      - "uerp/uerp-web/**"
       - ".github/workflows/deploy-web-cloudflare.yml"
 
   workflow_dispatch:
@@ -36,7 +36,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: saas/saas-web
+        working-directory: uerp/uerp-web
 
     steps:
       - name: Checkout
@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: saas/saas-web/package-lock.json
+          cache-dependency-path: uerp/uerp-web/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -65,6 +65,6 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           projectName: ${{ vars.CF_PAGES_PROJECT }}
-          directory: saas/saas-web/dist
+          directory: uerp/uerp-web/dist
           # Creates a preview deployment for PRs; production deployment for main.
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}

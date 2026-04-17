@@ -1,4 +1,4 @@
-namespace SaasApp.Api.Models;
+namespace UruErpApp.Api.Models;
 
 public class Invoice
 {
@@ -22,4 +22,8 @@ public class Invoice
     public string? XmlFirmado { get; set; }
     /// <summary>Líneas de detalle serializadas como JSON para reconstrucción del PDF.</summary>
     public string? DetalleJson { get; set; }
+    /// <summary>R2 object key for the stored PDF artifact.</summary>
+    public string? R2PdfKey { get; set; }
+    /// <summary>R2 object key for the stored signed XML artifact.</summary>
+    public string? R2XmlKey { get; set; }
 }

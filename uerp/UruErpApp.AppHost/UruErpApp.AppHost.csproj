@@ -12,6 +12,6 @@
     <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../SaasApp.Api/SaasApp.Api.csproj" />
+    <ProjectReference Include="../UruErpApp.Api/UruErpApp.Api.csproj" />
   </ItemGroup>
 </Project>

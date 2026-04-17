@@ -1,0 +1,55 @@
+name: Deploy Cloudflare Workers
+
+# Deploys all Cloudflare Workers in `uerp/cf-workers/` on push to `main`.
+#
+# ── Required Secrets ──────────────────────────────────────────────────────────
+#   CF_API_TOKEN  – Cloudflare API token with "Workers Scripts: Edit" permission
+#   CF_ACCOUNT_ID – Cloudflare account ID
+#
+# ── Worker Secrets (configure once via Wrangler or the Cloudflare dashboard) ──
+#   invoice-mailer worker:
+#     SENDER_EMAIL       – verified sender address
+#     SENDER_NAME        – display name (e.g. "UruErp Facturación")
+#     ALLOWED_API_SECRET – shared secret matching InvoiceMailer:ApiSecret in the API
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "uerp/cf-workers/**"
+      - ".github/workflows/deploy-workers.yml"
+
+  workflow_dispatch:
+
+jobs:
+  deploy-invoice-mailer:
+    name: Deploy invoice-mailer Worker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        working-directory: uerp/cf-workers/invoice-mailer
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: uerp/cf-workers/invoice-mailer/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy via Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: uerp/cf-workers/invoice-mailer

@@ -1,4 +1,4 @@
-namespace SaasApp.Api.Models;
+namespace UruErpApp.Api.Models;
 
 public class Tenant
 {

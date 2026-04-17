@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using SaasApp.Api.Models;
+using UruErpApp.Api.Models;
 
-namespace SaasApp.Api;
+namespace UruErpApp.Api;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

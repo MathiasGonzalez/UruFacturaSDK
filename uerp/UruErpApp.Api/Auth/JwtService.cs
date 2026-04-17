@@ -2,9 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using SaasApp.Api.Models;
+using UruErpApp.Api.Models;
 
-namespace SaasApp.Api.Auth;
+namespace UruErpApp.Api.Auth;
 
 public class JwtService(IConfiguration config)
 {

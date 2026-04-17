@@ -5,11 +5,11 @@ var postgres = builder.AddPostgres("postgres")
 
 var db = postgres.AddDatabase("saasdb");
 
-var api = builder.AddProject<Projects.SaasApp_Api>("api")
+var api = builder.AddProject<Projects.UruErpApp_Api>("api")
     .WithReference(db)
     .WaitFor(db);
 
-builder.AddNpmApp("web", "../saas-web", "dev")
+builder.AddNpmApp("web", "../uerp-web", "dev")
     .WithHttpEndpoint(env: "PORT")
     .WithExternalHttpEndpoints()
     .WithReference(api);

@@ -1,18 +1,18 @@
-name: SaaS CI
+name: UruErp CI
 
-# Runs on every push / PR that touches the saas/ directory or the SDK source.
+# Runs on every push / PR that touches the uerp/ directory or the SDK source.
 # Does NOT deploy – this is a pure build + test gate.
 on:
   push:
     branches: ["main"]
     paths:
-      - "saas/**"
+      - "uerp/**"
       - "src/**"
       - "tests/**"
   pull_request:
     branches: ["main"]
     paths:
-      - "saas/**"
+      - "uerp/**"
       - "src/**"
       - "tests/**"
 
@@ -37,10 +37,10 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore SaaS solution
-        run: dotnet restore saas/SaasApp.slnx
+        run: dotnet restore uerp/UruErpApp.slnx
 
       - name: Build SaaS API
-        run: dotnet build saas/SaasApp.Api/SaasApp.Api.csproj --no-restore -c Release
+        run: dotnet build uerp/UruErpApp.Api/UruErpApp.Api.csproj --no-restore -c Release
 
       # Run SDK unit tests
       - name: Restore & Build SDK tests
@@ -57,7 +57,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: saas/saas-web
+        working-directory: uerp/uerp-web
 
     steps:
       - name: Checkout
@@ -68,7 +68,7 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: saas/saas-web/package-lock.json
+          cache-dependency-path: uerp/uerp-web/package-lock.json
 
       - name: Install dependencies
         run: npm ci
