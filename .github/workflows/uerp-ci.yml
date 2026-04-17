@@ -36,10 +36,10 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Restore SaaS solution
-        run: dotnet restore uerp/UruErpApp.slnx
+      - name: Restore UruErp solution
+        run: dotnet restore UruFacturaSDK.slnx
 
-      - name: Build SaaS API
+      - name: Build UruErp API
         run: dotnet build uerp/UruErpApp.Api/UruErpApp.Api.csproj --no-restore -c Release
 
       # Run SDK unit tests

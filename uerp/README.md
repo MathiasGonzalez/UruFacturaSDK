@@ -128,7 +128,7 @@ Abre el Dashboard de Aspire para ver las URLs asignadas.
 
 | Workflow | Archivo | Trigger | Descripción |
 |----------|---------|---------|-------------|
-| UruErp CI | `uerp-ci.yml`` | push/PR a `main` en `uerp/**` o `src/**` | Build del API .NET y del frontend Vite. No despliega. |
+| UruErp CI | `uerp-ci.yml` | push/PR a `main` en `uerp/**` o `src/**` | Build del API .NET y del frontend Vite. No despliega. |
 | Deploy API → Railway | `deploy-api-railway.yml` | push a `main` en `uerp/UruErpApp.Api/**` | Construye imagen Docker, la sube a Docker Hub y hace `railway redeploy`. |
 | Deploy Web → Cloudflare | `deploy-web-cloudflare.yml` | push a `main` en `uerp/uerp-web/**` | `npm run build` + `cloudflare/pages-action` para subir `dist/`. |
 
