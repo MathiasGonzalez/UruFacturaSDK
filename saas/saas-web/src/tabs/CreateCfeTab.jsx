@@ -195,7 +195,7 @@ export default function CreateCfeTab({ cfeTypes, onCreated }) {
               </div>
 
               {error   && <div style={errorBox}>{error}</div>}
-              {success && <div style={{ ...errorBox, background: C.greenL, borderColor: C.greenBorder, color: C.green }}>{success}</div>}
+              {success && <div style={successBox}>{success}</div>}
 
               <div style={{ marginTop: 18 }}>
                 <button type="submit" disabled={loading}

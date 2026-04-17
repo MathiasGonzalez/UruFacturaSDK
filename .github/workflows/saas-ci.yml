@@ -42,7 +42,10 @@ jobs:
       - name: Build SaaS API
         run: dotnet build saas/SaasApp.Api/SaasApp.Api.csproj --no-restore -c Release
 
-      # Run SDK unit tests to make sure the SaaS API still compiles against them
+      # Run SDK unit tests
+      - name: Restore & Build SDK tests
+        run: dotnet build UruFacturaSDK.slnx -c Release
+
       - name: Test SDK
         run: dotnet test UruFacturaSDK.slnx --no-build -c Release --verbosity normal
 
@@ -50,6 +53,8 @@ jobs:
   frontend:
     name: Build Frontend (Vite)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: saas/saas-web

@@ -86,6 +86,8 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     environment: production   # optional – add an approval gate in GitHub
+    permissions:
+      contents: read
 
     steps:
       - name: Install Railway CLI

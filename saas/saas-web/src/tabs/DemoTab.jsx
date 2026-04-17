@@ -88,8 +88,6 @@ function DemoExplanation({ state, meta, cancelMeta, cancelTipoCfe, invoice, canc
     </div>
   )
 
-  const codeInlineStyle2 = { background: C.slateL, border: `1px solid ${C.slateBorder}`, borderRadius: 4, padding: '1px 5px', fontSize: 12, fontFamily: 'monospace' }
-
   if (state === 'created' || state === 'confirming-cancel') return (
     <div style={card}>
       <h3 style={{ margin: '0 0 14px', fontSize: 15, color: C.green }}>✅ CFE emitido correctamente</h3>
