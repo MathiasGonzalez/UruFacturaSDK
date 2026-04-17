@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using ErpApp.Api;
 using UruFacturaSDK;
 using UruFacturaSDK.Configuration;
 using UruFacturaSDK.Enums;
@@ -74,6 +75,9 @@ app.MapPost("/api/invoices", async (CreateInvoiceRequest req, AppDbContext db, I
 {
     var ufConfig = config.GetSection("UruFactura").Get<UruFacturaConfig>()!;
 
+    // NOTE: Instantiated per request for demo simplicity.
+    // In production, register UruFacturaClient as a singleton or scoped DI service
+    // to avoid reloading the certificate on every request.
     using var client = new UruFacturaClient(ufConfig);
 
     var tipo = (TipoCfe)req.TipoCfe;
@@ -157,6 +161,7 @@ app.MapGet("/api/invoices/{id:int}/pdf", async (int id, AppDbContext db, IConfig
 
     var ufConfig = config.GetSection("UruFactura").Get<UruFacturaConfig>()!;
 
+    // NOTE: See note in POST /api/invoices about per-request instantiation.
     using var client = new UruFacturaClient(ufConfig);
 
     var cfe = new Cfe

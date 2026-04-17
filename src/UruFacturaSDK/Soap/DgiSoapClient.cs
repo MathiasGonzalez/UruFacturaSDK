@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -207,7 +208,7 @@ public class DgiSoapClient : IDisposable
 <soap:Envelope xmlns:soap=""{SoapNs}"">
   <soap:Body>
     <enviarReporteDiario xmlns=""http://dgi.gub.uy/efactura"">
-      <fecha>{fecha:yyyy-MM-dd}</fecha>
+      <fecha>{fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}</fecha>
       <cfes>{cfesXml}</cfes>
     </enviarReporteDiario>
   </soap:Body>

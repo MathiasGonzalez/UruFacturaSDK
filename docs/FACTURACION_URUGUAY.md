@@ -231,9 +231,9 @@ var resultado = await client.EnviarReporteDiarioAsync(
     new[] { eticket1, eticket2, efactura1 }
 );
 
-Console.WriteLine(resultado.Exitoso
+Console.WriteLine(resultado.Respuesta.Exitoso
     ? "✅ Reporte diario enviado"
-    : $"❌ Error: {resultado.Mensaje}");
+    : $"❌ Error: {resultado.Respuesta.Mensaje}");
 ```
 
 > Automatizá este envío con un job nocturno (ej: Hangfire, un Worker Service de .NET, o una GitHub Action programada).
