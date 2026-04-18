@@ -1,4 +1,0 @@
-# Built output
-dist/
-node_modules/
-.env.local
