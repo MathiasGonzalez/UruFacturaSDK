@@ -16,6 +16,7 @@ export default defineConfig({
       },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/MathiasGonzalez/UruFacturaSDK' },
+        { icon: 'external', label: 'NuGet', href: 'https://www.nuget.org/packages/UruFacturaSDK/' },
       ],
       editLink: {
         baseUrl: 'https://github.com/MathiasGonzalez/UruFacturaSDK/edit/main/landing/',
