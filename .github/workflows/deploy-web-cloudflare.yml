@@ -1,0 +1,71 @@
+name: Deploy Web → Cloudflare Pages
+
+# Builds the React/Vite frontend and deploys it to Cloudflare Pages using
+# the Wrangler action. Only runs on push to `main` when files inside `uerp/uerp-web/` change.
+#
+# ── Required Secrets ──────────────────────────────────────────────────────────
+#   CF_API_TOKEN   – Cloudflare API token with "Cloudflare Pages: Edit" permission
+#                    (Cloudflare Dashboard → My Profile → API Tokens → Create Token)
+#   CF_ACCOUNT_ID  – Cloudflare account ID (right-hand sidebar of any Cloudflare page)
+#
+# ── Required Variables (set as GitHub Actions variables, not secrets) ─────────
+#   CF_PAGES_PROJECT – Name of the Cloudflare Pages project (create it once via
+#                      "Pages → Create a project → Direct upload" in the dashboard)
+#
+# ── Build-time variable ────────────────────────────────────────────────────────
+#   VITE_API_URL   – URL of the api-proxy Cloudflare Worker, e.g.
+#                    https://api-proxy.your-account.workers.dev
+#                    The frontend proxies ALL /api/* requests through this Worker.
+#                    Do NOT set this to the Railway API URL directly.
+#                    Set this as a GitHub Actions secret or variable.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "uerp/uerp-web/**"
+      - ".github/workflows/deploy-web-cloudflare.yml"
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write   # allows Cloudflare action to create GitHub deployments
+
+    defaults:
+      run:
+        working-directory: uerp/uerp-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: uerp/uerp-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          # Point the frontend at the production Railway API.
+          # The Vite config exposes this as __API_BASE__ in the bundle.
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: pages deploy uerp/uerp-web/dist --project-name=${{ vars.CF_PAGES_PROJECT }} --commit-dirty=true
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

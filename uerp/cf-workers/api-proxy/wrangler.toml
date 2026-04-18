@@ -1,0 +1,17 @@
+name = "api-proxy"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# ── Variables (set per-environment in wrangler.toml or the Cloudflare dashboard) ──
+[vars]
+# Full URL of the Railway API backend, e.g. https://uruerp-api.up.railway.app
+UPSTREAM_API_URL = ""
+
+# ── Secrets (configure via `wrangler secret put <name>` or the dashboard) ────────
+# None required for the proxy itself.
+# The JWT validation (if REQUIRE_AUTH = "true") uses the same secret as the API:
+#   JWT_SECRET – must match Jwt__Secret set in the Railway API service
+
+# ── Optional: CORS allowed origins ─────────────────────────────────────────────
+# CORS_ORIGINS – comma-separated list, e.g. "https://app.pages.dev,https://yourdomain.com"
+# Defaults to "*" when empty (open CORS).  Set this in production.

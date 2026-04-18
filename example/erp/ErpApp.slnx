@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="ErpApp.AppHost/ErpApp.AppHost.csproj" />
-  <Project Path="ErpApp.Api/ErpApp.Api.csproj" />
-</Solution>

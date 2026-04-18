@@ -1,0 +1,114 @@
+name: Deploy API → Railway
+
+# Pushes a Docker image to Docker Hub (or GHCR) and then triggers a Railway
+# redeploy via the Railway CLI.  Only runs on push to `main` when files inside
+# `uerp/UruErpApp.Api/` or `src/` change.
+#
+# ── Required Secrets ──────────────────────────────────────────────────────────
+#   RAILWAY_TOKEN      – Railway CLI token (from Railway dashboard → Account Settings)
+#   RAILWAY_SERVICE_ID – ID of the Railway service to redeploy
+#                        (Settings → Service → copy the Service ID)
+#   DOCKER_USERNAME    – Docker Hub username  (or set REGISTRY to ghcr.io and
+#   DOCKER_PASSWORD      use GITHUB_TOKEN instead)
+#
+# ── Environment Variables to set in Railway ───────────────────────────────────
+#   DATABASE_URL             – Automatically provided by Railway PostgreSQL plugin
+#   Jwt__Secret              – A random 64-char secret string
+#   AllowedOrigins           – Your Cloudflare Pages URL, e.g. https://app.pages.dev
+#   UruFactura__RutEmisor    – DGI RUT
+#   UruFactura__RazonSocialEmisor
+#   UruFactura__DomicilioFiscal
+#   UruFactura__Ambiente     – "Homologacion" or "Produccion"
+#   UruFactura__RutaCertificado   – Path to .pfx inside the container, e.g. /app/certs/cert.pfx
+#   UruFactura__PasswordCertificado
+#
+# ── Cloudflare R2 Variables (optional) ───────────────────────────────────────
+#   CloudflareR2__AccountId      – Your Cloudflare account ID
+#   CloudflareR2__BucketName     – R2 bucket name (default: uruerp-invoices)
+#   CloudflareR2__AccessKeyId    – R2 API token access key ID
+#   CloudflareR2__SecretAccessKey – R2 API token secret access key
+#   CloudflareR2__PublicBaseUrl  – Optional public bucket URL for direct downloads
+#                                   Leave empty to use presigned URLs.
+#
+# ── Invoice Mailer Worker Variables (optional) ────────────────────────────────
+#   InvoiceMailer__WorkerUrl  – URL of the deployed invoice-mailer Cloudflare Worker
+#   InvoiceMailer__ApiSecret  – Shared secret matching ALLOWED_API_SECRET in the Worker
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "uerp/UruErpApp.Api/**"
+      - "src/UruFacturaSDK/**"
+      - ".github/workflows/deploy-api-railway.yml"
+
+  workflow_dispatch:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/urufactura-api
+
+jobs:
+  build-and-push:
+    name: Build Docker image & push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # needed if using GHCR
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract Docker metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: uerp/UruErpApp.Api/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Trigger Railway redeploy
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production   # optional – add an approval gate in GitHub
+    permissions:
+      contents: read
+
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Redeploy service
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway service redeploy \
+            --service ${{ secrets.RAILWAY_SERVICE_ID }} \
+            --yes

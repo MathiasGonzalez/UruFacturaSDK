@@ -5,4 +5,8 @@
   <Folder Name="/tests/">
     <Project Path="tests/UruFacturaSDK.Tests/UruFacturaSDK.Tests.csproj" />
   </Folder>
+  <Folder Name="/uerp/">
+    <Project Path="uerp/UruErpApp.AppHost/UruErpApp.AppHost.csproj" />
+    <Project Path="uerp/UruErpApp.Api/UruErpApp.Api.csproj" />
+  </Folder>
 </Solution>
