@@ -13,7 +13,10 @@ name: Deploy Web → Cloudflare Pages
 #                      "Pages → Create a project → Direct upload" in the dashboard)
 #
 # ── Build-time variable ────────────────────────────────────────────────────────
-#   VITE_API_URL   – Full URL of your Railway API, e.g. https://api.myapp.railway.app
+#   VITE_API_URL   – URL of the api-proxy Cloudflare Worker, e.g.
+#                    https://api-proxy.your-account.workers.dev
+#                    The frontend proxies ALL /api/* requests through this Worker.
+#                    Do NOT set this to the Railway API URL directly.
 #                    Set this as a GitHub Actions secret or variable.
 # ─────────────────────────────────────────────────────────────────────────────
 
