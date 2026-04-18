@@ -26,10 +26,9 @@ public class CloudflareR2Service
 
         var endpoint = new AmazonS3Config
         {
-            ServiceURL            = $"https://{accountId}.r2.cloudflarestorage.com",
-            ForcePathStyle        = true,
-            SignatureVersion      = "4",
-            AuthenticationRegion  = "auto",
+            ServiceURL           = $"https://{accountId}.r2.cloudflarestorage.com",
+            ForcePathStyle       = true,
+            AuthenticationRegion = "auto",
         };
 
         _client = new AmazonS3Client(

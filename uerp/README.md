@@ -7,11 +7,11 @@ Permite a múltiples empresas emitir, firmar y gestionar sus CFE (Comprobantes F
 
 | Capa | Tecnología |
 |------|-----------|
-| Orquestación (dev) | .NET Aspire 9 |
-| API | .NET 10 · Minimal API · EF Core 9 · JWT |
+| Orquestación (dev) | .NET Aspire 9.5.2 |
+| API | .NET 10 · Minimal API · EF Core 10 · JWT |
 | Base de datos | PostgreSQL 17+ |
-| Frontend | React 19 · Vite 6 |
-| API Gateway | [Cloudflare Workers](https://workers.cloudflare.com) · [Hono](https://hono.dev) |
+| Frontend | React 19.2 · Vite 6.4 |
+| API Gateway | [Cloudflare Workers](https://workers.cloudflare.com) · [Hono](https://hono.dev) 4.12 |
 | Deploy API | [Railway](https://railway.app) (Docker) |
 | Deploy Web | [Cloudflare Pages](https://pages.cloudflare.com) (estático) |
 
@@ -246,6 +246,45 @@ Todos los endpoints son accesibles a través del Worker `api-proxy`:
 | GET | `/api/invoices/{id}/r2-urls` | ✓ | URLs de descarga desde R2 |
 
 Todos los endpoints protegidos requieren el header `Authorization: Bearer <token>`.
+
+---
+
+## Versiones de dependencias
+
+### .NET (NuGet)
+
+| Paquete | Versión | Proyecto |
+|---------|---------|---------|
+| `Aspire.Hosting.AppHost` | 9.5.2 | AppHost |
+| `Aspire.Hosting.NodeJs` | 9.5.2 | AppHost |
+| `Aspire.Hosting.PostgreSQL` | 9.5.2 | AppHost |
+| `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL` | 13.2.2 | API |
+| `AWSSDK.S3` | 4.0.21.2 | API |
+| `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.0.6 | API |
+| `Microsoft.EntityFrameworkCore.Design` | 10.0.6 | API |
+| `QuestPDF` | 2026.2.4 | SDK |
+| `SkiaSharp` | 3.119.2 | SDK |
+| `ZXing.Net` | 0.16.11 | SDK |
+| `ZXing.Net.Bindings.SkiaSharp` | 0.16.22 | SDK |
+| `System.Security.Cryptography.Pkcs` | 10.0.6 | SDK |
+| `System.Security.Cryptography.Xml` | 10.0.6 | SDK |
+| `Microsoft.NET.Test.Sdk` | 18.4.0 | Tests |
+| `coverlet.collector` | 10.0.0 | Tests |
+| `xunit.runner.visualstudio` | 3.1.5 | Tests |
+
+> **Nota sobre versiones Aspire:** el AppHost permanece en la familia 9.x porque `Aspire.Hosting.NodeJs` no tiene versión 13.x aún. La API usa `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL` 13.x que es el componente Aspire para .NET 10 / EF Core 10 / Npgsql 10.
+
+### JavaScript / npm
+
+| Paquete | Versión | Proyecto |
+|---------|---------|---------|
+| `react` / `react-dom` | ^19.2.5 | uerp-web |
+| `vite` | ^6.4.2 | uerp-web |
+| `@vitejs/plugin-react` | ^4.7.0 | uerp-web |
+| `hono` | ^4.12.14 | api-proxy |
+| `wrangler` | ^4.0.0 | api-proxy, invoice-mailer |
+| `astro` | ^6.1.8 | landing |
+| `@astrojs/starlight` | ^0.38.3 | landing |
 
 ---
 
