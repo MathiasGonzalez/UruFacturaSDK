@@ -31,13 +31,13 @@ UruFacturaSDK/
 ├── src/
 │   └── UruFacturaSDK/
 │       ├── Configuration/      # UruFacturaConfig
-│       ├── Enums/              # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente
+│       ├── Enums/              # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, TipoDocumentoReceptor
 │       ├── Exceptions/         # Excepciones tipadas del SDK
 │       ├── Models/             # Cfe, Cae, Receptor, LineaDetalle, RespuestaDgi
 │       ├── Xml/                # CfeXmlBuilder (generación XML DGI)
 │       ├── Signature/          # CfeFirmante (XAdES-BES)
 │       ├── Soap/               # DgiSoapClient (comunicación con DGI)
-│       ├── Cae/                # CaeManager (gestión de CAE)
+│       ├── Cae/                # CaeManager / ICaeManager (gestión de CAE)
 │       ├── Pdf/                # CfePdfGenerator (PDF A4 y térmico)
 │       └── UruFacturaClient.cs # Facade principal del SDK
 └── tests/

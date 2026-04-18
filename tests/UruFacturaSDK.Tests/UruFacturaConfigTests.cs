@@ -67,4 +67,26 @@ public class UruFacturaConfigTests
         Assert.DoesNotContain("homologacion", config.DgiSoapBaseUrl, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("efactura.dgi.gub.uy", config.DgiSoapBaseUrl);
     }
+
+    [Fact]
+    public void OmitirValidacionSsl_PorDefecto_EsFalse()
+    {
+        var config = ConfigValida();
+        Assert.False(config.OmitirValidacionSsl);
+    }
+
+    [Fact]
+    public void OmitirValidacionSsl_CuandoSeActiva_EsTrue()
+    {
+        var config = ConfigValida();
+        config.OmitirValidacionSsl = true;
+        Assert.True(config.OmitirValidacionSsl);
+    }
+
+    [Fact]
+    public void SoapTimeoutSegundos_PorDefecto_EsTreinta()
+    {
+        var config = ConfigValida();
+        Assert.Equal(30, config.SoapTimeoutSegundos);
+    }
 }
