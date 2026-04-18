@@ -28,19 +28,24 @@ public class CfeXmlBuilder
 
         cfe.CalcularTotales();
 
-        var sb = new StringBuilder();
+        // Use MemoryStream so XmlWriter writes the declaration as encoding="utf-8".
+        // Writing to a StringBuilder always produces encoding="utf-16" regardless of
+        // XmlWriterSettings.Encoding, because StringBuilder is internally UTF-16.
+        // Use UTF8Encoding without BOM so the resulting string is directly parseable
+        // by XmlDocument.LoadXml (which rejects a leading BOM character).
+        using var ms = new MemoryStream();
         var settings = new XmlWriterSettings
         {
-            Encoding = Encoding.UTF8,
+            Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
             Indent = true,
             OmitXmlDeclaration = false,
         };
 
-        using var writer = XmlWriter.Create(sb, settings);
+        using var writer = XmlWriter.Create(ms, settings);
         EscribirCfe(writer, cfe);
         writer.Flush();
 
-        return sb.ToString();
+        return Encoding.UTF8.GetString(ms.ToArray());
     }
 
     private static void EscribirCfe(XmlWriter w, Cfe cfe)
@@ -119,7 +124,7 @@ public class CfeXmlBuilder
 
         if (!string.IsNullOrWhiteSpace(receptor.Documento))
         {
-            WriteElement(w, "TipoDocRecep", receptor.TipoDocumento.ToString());
+            WriteElement(w, "TipoDocRecep", ((int)receptor.TipoDocumento).ToString());
             WriteElement(w, "DocRecep", receptor.Documento);
         }
 

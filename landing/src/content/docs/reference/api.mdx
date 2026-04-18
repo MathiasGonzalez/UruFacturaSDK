@@ -52,7 +52,7 @@ using var client = new UruFacturaClient(config);
 
 | Propiedad | Tipo | Descripción |
 |-----------|------|-------------|
-| `Cae` | `CaeManager` | Gestor de CAEs del emisor |
+| `Cae` | `ICaeManager` | Gestor de CAEs del emisor |
 
 ---
 
@@ -71,6 +71,8 @@ public class UruFacturaConfig
     public string RutaCertificado { get; set; }
     public string PasswordCertificado { get; set; }
     public Ambiente Ambiente { get; set; }
+    public int SoapTimeoutSegundos { get; set; }  // default: 30
+    public bool OmitirValidacionSsl { get; set; } // default: false
 }
 ```
 
@@ -113,7 +115,7 @@ Datos del receptor del comprobante (requerido para e-Factura).
 | Propiedad | Tipo | Requerido | Descripción |
 |-----------|------|-----------|-------------|
 | `Documento` | `string?` | ✅ | RUT u otro documento del receptor |
-| `TipoDocumento` | `int` | ✅ | Tipo de documento (2=RUT, 3=Cédula, etc.) |
+| `TipoDocumento` | `TipoDocumentoReceptor` | ✅ | Tipo de documento del receptor |
 | `RazonSocial` | `string?` | ✅ | Razón social del receptor |
 | `Direccion` | `string?` | — | Domicilio del receptor |
 | `Ciudad` | `string?` | — | Ciudad del receptor |
@@ -202,9 +204,23 @@ public enum TipoIva
 }
 ```
 
+### `TipoDocumentoReceptor`
+
+```csharp
+public enum TipoDocumentoReceptor
+{
+    Rut               = 2, // RUT — empresa o contribuyente uruguayo
+    CedulaIdentidad   = 3, // Cédula de Identidad
+    Pasaporte         = 4, // Pasaporte
+    DocumentoExterior = 5, // Documento de identidad del exterior
+}
+```
+
 ---
 
-## `CaeManager`
+## `ICaeManager` / `CaeManager`
+
+`CaeManager` implementa `ICaeManager`. La propiedad `client.Cae` expone `ICaeManager`, lo que permite mockear la gestión de CAEs en tests de aplicaciones consumidoras. Esta implementación es **thread-safe**.
 
 Gestiona los CAEs registrados en el cliente. Accedido a través de `client.Cae`.
 

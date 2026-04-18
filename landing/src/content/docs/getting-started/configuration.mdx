@@ -49,6 +49,8 @@ using var client = new UruFacturaClient(config);
 | Propiedad | Tipo | Valor por defecto | Descripción |
 |-----------|------|-------------------|-------------|
 | `Ambiente` | `Ambiente` | `Ambiente.Homologacion` | Define el endpoint DGI a usar |
+| `SoapTimeoutSegundos` | `int` | `30` | Timeout en segundos para las llamadas SOAP a DGI |
+| `OmitirValidacionSsl` | `bool` | `false` | Deshabilita la validación TLS del servidor. Activar solo cuando el ambiente de Homologación tenga una CA no reconocida por el sistema. **Nunca activar en Producción.** |
 
 Valores del enum `Ambiente`:
 

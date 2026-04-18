@@ -89,6 +89,10 @@ CAE CAE2025-EF (EFactura): rango 1-500, usado hasta 45, vence 2026-06-30 → ✅
   **Monitoreá los CAEs en cada inicio de aplicación** para detectar problemas antes de que bloqueen la emisión.
 </Aside>
 
+<Aside type="note">
+  `CaeManager` es **thread-safe**: podés usarlo desde múltiples hilos concurrentes (p. ej., en una API ASP.NET Core con requests simultáneos) sin necesidad de sincronización adicional.
+</Aside>
+
 ### En ASP.NET Core con Hosted Service
 
 ```csharp

@@ -11,7 +11,7 @@ namespace UruFacturaSDK;
 public interface IUruFacturaClient : IDisposable
 {
     /// <summary>Gestión de CAEs del cliente.</summary>
-    CaeManager Cae { get; }
+    ICaeManager Cae { get; }
 
     // -----------------------------------------------------------------------
     // Generación de CFE

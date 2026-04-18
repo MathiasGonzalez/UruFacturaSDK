@@ -5,6 +5,8 @@
 [![CI](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml)
 [![Publish NuGet](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml)
 [![Deploy Landing](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml)
+[![NuGet](https://img.shields.io/nuget/v/UruFacturaSDK.svg)](https://www.nuget.org/packages/UruFacturaSDK/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/UruFacturaSDK.svg)](https://www.nuget.org/packages/UruFacturaSDK/)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -31,13 +33,13 @@ UruFacturaSDK/
 ├── src/
 │   └── UruFacturaSDK/
 │       ├── Configuration/      # UruFacturaConfig
-│       ├── Enums/              # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente
+│       ├── Enums/              # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, TipoDocumentoReceptor
 │       ├── Exceptions/         # Excepciones tipadas del SDK
 │       ├── Models/             # Cfe, Cae, Receptor, LineaDetalle, RespuestaDgi
 │       ├── Xml/                # CfeXmlBuilder (generación XML DGI)
 │       ├── Signature/          # CfeFirmante (XAdES-BES)
 │       ├── Soap/               # DgiSoapClient (comunicación con DGI)
-│       ├── Cae/                # CaeManager (gestión de CAE)
+│       ├── Cae/                # CaeManager / ICaeManager (gestión de CAE)
 │       ├── Pdf/                # CfePdfGenerator (PDF A4 y térmico)
 │       └── UruFacturaClient.cs # Facade principal del SDK
 └── tests/

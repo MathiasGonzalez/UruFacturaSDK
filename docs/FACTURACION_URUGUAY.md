@@ -88,7 +88,7 @@ efactura.Numero = 42;
 efactura.Receptor = new Receptor
 {
     Documento       = "210012345678",
-    TipoDocumento   = 2, // RUT
+    TipoDocumento   = TipoDocumentoReceptor.Rut,
     RazonSocial     = "Importadora Sur S.A.",
     Direccion       = "Rambla República de Chile 4030",
 };

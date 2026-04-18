@@ -143,6 +143,14 @@ public class Cfe
         MontoTotal = Math.Round(MontoTotal, 2);
     }
 
+    private static readonly TipoCfe[] TiposCorreccion =
+    [
+        TipoCfe.NotaCreditoETicket, TipoCfe.NotaDebitoETicket,
+        TipoCfe.NotaCreditoEFactura, TipoCfe.NotaDebitoEFactura,
+        TipoCfe.NotaCreditoEFacturaExportacion, TipoCfe.NotaDebitoEFacturaExportacion,
+        TipoCfe.NotaCreditoERemito,
+    ];
+
     /// <summary>
     /// Valida el CFE y retorna la lista de errores encontrados.
     /// </summary>
@@ -156,7 +164,7 @@ public class Cfe
         if (FechaEmision == default)
             errors.Add("FechaEmision es obligatoria.");
 
-        if (!Detalle.Any())
+        if (Detalle.Count == 0)
             errors.Add("El CFE debe tener al menos una línea de detalle.");
 
         for (int i = 0; i < Detalle.Count; i++)
@@ -174,15 +182,7 @@ public class Cfe
             errors.Add("TipoCambio es obligatorio y debe ser mayor a cero cuando la moneda no es Peso Uruguayo.");
 
         // Notas de corrección requieren referencias
-        var tiposCorreccion = new[]
-        {
-            TipoCfe.NotaCreditoETicket, TipoCfe.NotaDebitoETicket,
-            TipoCfe.NotaCreditoEFactura, TipoCfe.NotaDebitoEFactura,
-            TipoCfe.NotaCreditoEFacturaExportacion, TipoCfe.NotaDebitoEFacturaExportacion,
-            TipoCfe.NotaCreditoERemito,
-        };
-
-        if (Array.Exists(tiposCorreccion, t => t == Tipo) && !Referencias.Any())
+        if (Array.Exists(TiposCorreccion, t => t == Tipo) && Referencias.Count == 0)
             errors.Add("Las notas de crédito/débito deben referenciar al menos un CFE.");
 
         return errors;
