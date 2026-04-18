@@ -162,7 +162,8 @@ public class CaeManager : ICaeManager
         return sb.ToString();
     }
 
-    // Caller must hold _lock.
+    // Thread-safety: This method must be called while holding _lock.
+    // Do not call from public methods without first acquiring the lock.
     private Models.Cae? ObtenerCaeActivoInterno(TipoCfe tipoCfe)
     {
         if (!_caesPorTipo.TryGetValue(tipoCfe, out var lista))
