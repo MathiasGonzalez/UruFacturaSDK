@@ -14,12 +14,12 @@ name: Provision Railway PostgreSQL 18
 # ── Required Secrets ─────────────────────────────────────────────────────────
 #   RAILWAY_TOKEN      – Railway API token (Account Settings → Tokens)
 #   RAILWAY_PROJECT_ID – Railway project ID (Settings → General)
-#   RAILWAY_ENV_ID     – Environment ID (usually "production"; check Settings)
+#   POSTGRES_PASSWORD  – Strong password for the database user
 #
-# ── Required Variables ────────────────────────────────────────────────────────
-#   POSTGRES_DB       – Database name to create   (default: uruerp)
-#   POSTGRES_USER     – Database user              (default: uruerp)
-#   POSTGRES_PASSWORD – Strong password (set as a secret, not a variable)
+# ── Inputs (set when triggering this workflow) ────────────────────────────────
+#   db_name       – Database name to create   (default: uruerp)
+#   db_user       – Database user              (default: uruerp)
+#   service_name  – Railway service name       (default: postgres18)
 # ─────────────────────────────────────────────────────────────────────────────
 
 on:
@@ -49,38 +49,20 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      # ── Step 1: Create the database service using the postgres:18-alpine image
+      # ── Create the PostgreSQL 18 service with image and environment variables
       - name: Create PostgreSQL 18 service
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
-          railway service create \
-            --name "${{ github.event.inputs.service_name }}" \
-            --project "${{ secrets.RAILWAY_PROJECT_ID }}"
-
-      # ── Step 2: Deploy a postgres:18-alpine container into the new service
-      - name: Deploy postgres:18-alpine image
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          railway up \
-            --service "${{ github.event.inputs.service_name }}" \
+          railway add \
             --image "postgres:18-alpine" \
-            --project "${{ secrets.RAILWAY_PROJECT_ID }}"
-
-      # ── Step 3: Set the required PostgreSQL environment variables
-      - name: Set PostgreSQL environment variables
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          railway variables set \
             --service "${{ github.event.inputs.service_name }}" \
-            --project "${{ secrets.RAILWAY_PROJECT_ID }}" \
-            POSTGRES_DB="${{ github.event.inputs.db_name }}" \
-            POSTGRES_USER="${{ github.event.inputs.db_user }}" \
-            POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+            --variables "POSTGRES_DB=${{ github.event.inputs.db_name }}" \
+            --variables "POSTGRES_USER=${{ github.event.inputs.db_user }}" \
+            --variables "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}"
 
-      # ── Step 4: Print the DATABASE_URL template for the API service
+      # ── Print the DATABASE_URL template for the API service
       - name: Print next steps
         run: |
           echo "✅ PostgreSQL 18 service '${{ github.event.inputs.service_name }}' created."

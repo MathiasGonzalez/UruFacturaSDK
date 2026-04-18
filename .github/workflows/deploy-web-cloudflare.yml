@@ -1,7 +1,7 @@
 name: Deploy Web → Cloudflare Pages
 
-# Builds the React/Vite frontend and deploys it to Cloudflare Pages.
-# Only runs on push to `main` when files inside `uerp/uerp-web/` change.
+# Builds the React/Vite frontend and deploys it to Cloudflare Pages using
+# the Wrangler action. Only runs on push to `main` when files inside `uerp/uerp-web/` change.
 #
 # ── Required Secrets ──────────────────────────────────────────────────────────
 #   CF_API_TOKEN   – Cloudflare API token with "Cloudflare Pages: Edit" permission
@@ -63,11 +63,9 @@ jobs:
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: ${{ vars.CF_PAGES_PROJECT }}
-          directory: uerp/uerp-web/dist
-          # Creates a preview deployment for PRs; production deployment for main.
+          command: pages deploy uerp/uerp-web/dist --project-name=${{ vars.CF_PAGES_PROJECT }} --commit-dirty=true
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}

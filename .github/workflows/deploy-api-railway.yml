@@ -83,7 +83,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: uerp/UruErpApp.Api/Dockerfile
@@ -109,6 +109,6 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway redeploy \
+          railway service redeploy \
             --service ${{ secrets.RAILWAY_SERVICE_ID }} \
             --yes
