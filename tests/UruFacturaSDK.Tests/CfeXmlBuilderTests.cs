@@ -139,7 +139,7 @@ public class CfeXmlBuilderTests
         {
             RazonSocial = "Cliente Test S.R.L.",
             Documento = "219999999018",
-            TipoDocumento = 2,
+            TipoDocumento = UruFacturaSDK.Enums.TipoDocumentoReceptor.Rut,
         };
 
         var xml = _builder.Generar(cfe);
@@ -262,5 +262,17 @@ public class CfeXmlBuilderTests
         cfe.TipoCambio = 42.5m;
         var errores = cfe.Validar();
         Assert.DoesNotContain(errores, e => e.Contains("TipoCambio"));
+    }
+
+    [Fact]
+    public void Generar_XmlGenerado_DeclaracionContieneEncodingUtf8()
+    {
+        var cfe = CriarCfeCompleto();
+        var xml = _builder.Generar(cfe);
+
+        // La declaración XML debe indicar encoding="utf-8" (no utf-16).
+        // Esto es requerido por los validadores de la DGI.
+        Assert.Contains("encoding=\"utf-8\"", xml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("utf-16", xml, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -1,3 +1,5 @@
+using UruFacturaSDK.Enums;
+
 namespace UruFacturaSDK.Models;
 
 /// <summary>
@@ -8,8 +10,8 @@ public class Receptor
     /// <summary>RUT o documento de identidad del receptor (opcional para e-Ticket al consumidor final).</summary>
     public string? Documento { get; set; }
 
-    /// <summary>Tipo de documento: 2=RUT, 3=Cédula, etc.</summary>
-    public int TipoDocumento { get; set; } = 2;
+    /// <summary>Tipo de documento del receptor.</summary>
+    public TipoDocumentoReceptor TipoDocumento { get; set; } = TipoDocumentoReceptor.Rut;
 
     /// <summary>Razón social o nombre del receptor.</summary>
     public string? RazonSocial { get; set; }

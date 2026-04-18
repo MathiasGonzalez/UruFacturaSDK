@@ -7,6 +7,9 @@ namespace UruFacturaSDK.Models;
 /// </summary>
 public class Cae
 {
+    private readonly object _lock = new();
+    private long _ultimoNroUsado;
+
     /// <summary>Número de serie del CAE.</summary>
     public string NroSerie { get; set; } = string.Empty;
 
@@ -22,8 +25,16 @@ public class Cae
     /// <summary>Fecha de vencimiento del CAE.</summary>
     public DateTime FechaVencimiento { get; set; }
 
-    /// <summary>Último número utilizado dentro del rango.</summary>
-    public long UltimoNroUsado { get; set; }
+    /// <summary>
+    /// Último número utilizado dentro del rango.
+    /// Use <c>init</c> en inicializadores de objeto; el valor se incrementa
+    /// internamente por <see cref="ObtenerProximoNumero"/>.
+    /// </summary>
+    public long UltimoNroUsado
+    {
+        get => _ultimoNroUsado;
+        init => _ultimoNroUsado = value;
+    }
 
     /// <summary>
     /// Indica si el CAE está vigente (no vencido).
@@ -33,7 +44,7 @@ public class Cae
     /// <summary>
     /// Indica si el CAE tiene números disponibles.
     /// </summary>
-    public bool TieneNumerosDisponibles => UltimoNroUsado < RangoHasta;
+    public bool TieneNumerosDisponibles => _ultimoNroUsado < RangoHasta;
 
     /// <summary>
     /// Porcentaje de uso del rango del CAE (0-100).
@@ -44,7 +55,7 @@ public class Cae
         {
             long total = RangoHasta - RangoDesde + 1;
             if (total <= 0) return 100m;
-            long usados = UltimoNroUsado - RangoDesde + 1;
+            long usados = _ultimoNroUsado - RangoDesde + 1;
             if (usados <= 0) return 0m;
             return Math.Round((decimal)usados / total * 100, 2);
         }
@@ -52,20 +63,24 @@ public class Cae
 
     /// <summary>
     /// Obtiene el próximo número disponible e incrementa el contador.
+    /// Este método es thread-safe.
     /// </summary>
     /// <exception cref="Exceptions.CaeException">Si no hay números disponibles o el CAE está vencido.</exception>
     public long ObtenerProximoNumero()
     {
-        if (!EsVigente)
-            throw new Exceptions.CaeException(
-                $"El CAE {NroSerie} venció el {FechaVencimiento:dd/MM/yyyy}.");
+        lock (_lock)
+        {
+            if (!EsVigente)
+                throw new Exceptions.CaeException(
+                    $"El CAE {NroSerie} venció el {FechaVencimiento:dd/MM/yyyy}.");
 
-        if (!TieneNumerosDisponibles)
-            throw new Exceptions.CaeException(
-                $"El CAE {NroSerie} no tiene números disponibles (rango hasta {RangoHasta}).");
+            if (!TieneNumerosDisponibles)
+                throw new Exceptions.CaeException(
+                    $"El CAE {NroSerie} no tiene números disponibles (rango hasta {RangoHasta}).");
 
-        UltimoNroUsado = UltimoNroUsado == 0 ? RangoDesde : UltimoNroUsado + 1;
-        return UltimoNroUsado;
+            _ultimoNroUsado = _ultimoNroUsado == 0 ? RangoDesde : _ultimoNroUsado + 1;
+            return _ultimoNroUsado;
+        }
     }
 
     /// <summary>

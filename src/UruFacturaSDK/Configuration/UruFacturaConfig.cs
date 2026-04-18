@@ -38,6 +38,14 @@ public class UruFacturaConfig
     public int SoapTimeoutSegundos { get; set; } = 30;
 
     /// <summary>
+    /// Cuando es <c>true</c>, deshabilita la validación del certificado TLS del servidor.
+    /// Útil para pruebas contra el ambiente de Homologación cuando la CA no es de confianza.
+    /// <b>No habilitar en Producción.</b>
+    /// Por defecto es <c>false</c>; el SDK no desactiva la validación automáticamente.
+    /// </summary>
+    public bool OmitirValidacionSsl { get; set; }
+
+    /// <summary>
     /// URL base del servicio SOAP de la DGI según el ambiente configurado.
     /// </summary>
     public string DgiSoapBaseUrl =>

@@ -219,9 +219,10 @@ public class DgiSoapClient : IDisposable
     {
         var handler = new HttpClientHandler();
 
-        // Solo deshabilitar la validación SSL en Homologación para facilitar el testing.
-        // En Producción se utiliza la validación estándar del sistema operativo.
-        if (_config.Ambiente == Enums.Ambiente.Homologacion)
+        // Disable TLS certificate validation only when the caller explicitly opts in.
+        // Previously this was enabled automatically for the Homologación environment, but
+        // doing so silently is a security risk. Callers must now set OmitirValidacionSsl = true.
+        if (_config.OmitirValidacionSsl)
         {
             handler.ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;

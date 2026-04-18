@@ -60,10 +60,9 @@ public class CfeFirmante : IDisposable
             var doc = new XmlDocument { PreserveWhitespace = true };
             doc.LoadXml(xmlSinFirmar);
 
-            var signedXml = new SignedXmlConXades(doc)
-            {
-                SigningKey = ObtenerClavePrivada(),
-            };
+            var signedXml = new SignedXmlConXades(doc);
+            using var rsa = ObtenerClavePrivada();
+            signedXml.SigningKey = rsa;
 
             // Asignar Id al Signature para que QualifyingProperties.Target lo referencie
             signedXml.Signature.Id = "Signature";

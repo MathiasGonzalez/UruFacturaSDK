@@ -27,7 +27,7 @@ public class UruFacturaClient : IUruFacturaClient
     /// <summary>
     /// Gestión de CAEs del cliente.
     /// </summary>
-    public CaeManager Cae => _caeManager;
+    public ICaeManager Cae => _caeManager;
 
     /// <summary>
     /// Inicializa el cliente de UruFactura con la configuración provista.
