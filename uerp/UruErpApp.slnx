@@ -1,6 +1,0 @@
-<Solution>
-  <Folder Name="/uerp/">
-    <Project Path="UruErpApp.AppHost/UruErpApp.AppHost.csproj" />
-    <Project Path="UruErpApp.Api/UruErpApp.Api.csproj" />
-  </Folder>
-</Solution>
