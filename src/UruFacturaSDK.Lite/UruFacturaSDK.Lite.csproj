@@ -33,6 +33,8 @@
 
   <!-- Share source files from the main project, excluding the Pdf folder -->
   <ItemGroup>
+    <Compile Include="../UruFacturaSDK/UruFacturaClientBase.cs"
+             Link="UruFacturaClientBase.cs" />
     <Compile Include="../UruFacturaSDK/Cae/**/*.cs"
              Link="Cae/%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="../UruFacturaSDK/Configuration/**/*.cs"
