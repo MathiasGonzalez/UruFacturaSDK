@@ -10,6 +10,8 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+> 📖 **Documentación completa:** [mathiasgonzalez.github.io/UruFacturaSDK](https://mathiasgonzalez.github.io/UruFacturaSDK/)
+
 UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseñada para simplificar la integración de sistemas locales con el ecosistema de la DGI. Olvídate de lidiar con la complejidad manual de los sobres SOAP o la estructura rígida de los esquemas XML; esta herramienta actúa como un puente amigable entre tu lógica de negocio y los requisitos impositivos uruguayos.
 
 ---
@@ -86,7 +88,7 @@ using var client = new UruFacturaClient(config);
 
 // O usando el builder fluido (recomendado para DI o tests):
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .ConPdfPorDefecto()   // omitir si usás UruFacturaSDK.Lite
+    .WithDefaultPdf()   // omitir si usás UruFacturaSDK.Lite
     .Build();
 ```
 
@@ -266,14 +268,14 @@ inyectar dependencias personalizadas (p.ej. mocks en tests o transporte SOAP pro
 ```csharp
 // Caso más habitual — todas las implementaciones predeterminadas:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .ConPdfPorDefecto()   // solo disponible en UruFacturaSDK (no en Lite)
+    .WithDefaultPdf()   // solo disponible en UruFacturaSDK (no en Lite)
     .Build();
 
 // Reemplazar solo lo que necesitás:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .ConGestorCae(miCaeManager)
-    .ConClienteSoap(miSoapMock)
-    .ConGeneradorPdf(miGeneradorPdf)
+    .WithCaeManager(miCaeManager)
+    .WithSoapClient(miSoapMock)
+    .WithPdfGenerator(miGeneradorPdf)
     .Build();
 ```
 

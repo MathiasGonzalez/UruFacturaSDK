@@ -131,7 +131,7 @@ Deberías ver algo como:
      ```csharp
      // Paquete completo con PDF
      using var client = UruFacturaClientBuilder.WithDefaults(config)
-         .ConPdfPorDefecto()
+         .WithDefaultPdf()
          .Build();
 
      // Paquete Lite (sin PDF, o con generador personalizado)
@@ -186,7 +186,7 @@ builder.Services.AddSingleton<IUruFacturaClient>(sp =>
 {
     var config = sp.GetRequiredService<UruFacturaConfig>();
     return UruFacturaClientBuilder.WithDefaults(config)
-        .ConPdfPorDefecto()   // omitir si usás UruFacturaSDK.Lite
+        .WithDefaultPdf()   // omitir si usás UruFacturaSDK.Lite
         .Build();
 });
 ```

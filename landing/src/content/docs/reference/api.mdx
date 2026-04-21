@@ -18,7 +18,7 @@ La fachada principal del SDK. Punto de entrada para todas las operaciones.
 | `UruFacturaClient(config, xmlBuilder, firmante, caeManager, soapClient, pdfGenerator)` | Ambos | Constructor principal con todas las dependencias — usado por el builder |
 
 <Aside type="tip">
-  Preferí usar `UruFacturaClientBuilder.WithDefaults(config)` en lugar del constructor directo. El builder permite reemplazar cualquier dependencia individualmente, lo que facilita los tests.
+  Preferir usar `UruFacturaClientBuilder.WithDefaults(config)` en lugar del constructor directo. El builder permite reemplazar cualquier dependencia individualmente, lo que facilita los tests.
 </Aside>
 
 ### Métodos de creación de CFE
@@ -65,18 +65,18 @@ Builder fluido para construir un `UruFacturaClient` con pleno control sobre cada
 ```csharp
 // Caso habitual — paquete completo con PDF predeterminado:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .ConPdfPorDefecto()
+    .WithDefaultPdf()
     .Build();
 
 // Paquete Lite — sin PDF, o con generador personalizado:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .ConGeneradorPdf(miGeneradorPdf)  // opcional
+    .WithPdfGenerator(miGeneradorPdf)  // opcional
     .Build();
 
 // Tests — reemplazar solo lo que interesa:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .ConGestorCae(miCaeMock)
-    .ConClienteSoap(miSoapMock)
+    .WithCaeManager(miCaeMock)
+    .WithSoapClient(miSoapMock)
     .Build();
 ```
 
@@ -85,12 +85,12 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
 | Método | Descripción |
 |--------|-------------|
 | `WithDefaults(UruFacturaConfig config)` | *(static)* Crea el builder con todas las implementaciones predeterminadas |
-| `ConGeneradorXml(ICfeXmlBuilder)` | Reemplaza el generador de XML |
-| `ConFirmante(ICfeFirmante)` | Reemplaza el firmante digital |
-| `ConGestorCae(ICaeManager)` | Reemplaza el gestor de CAEs |
-| `ConClienteSoap(IDgiSoapClient)` | Reemplaza el cliente SOAP hacia DGI |
-| `ConGeneradorPdf(ICfePdfGenerator?)` | Establece el generador de PDF (puede ser `null`) |
-| `ConPdfPorDefecto()` | Agrega el generador PDF predeterminado (solo `UruFacturaSDK`, no Lite) |
+| `WithXmlBuilder(ICfeXmlBuilder)` | Reemplaza el generador de XML |
+| `WithSigner(ICfeFirmante)` | Reemplaza el firmante digital |
+| `WithCaeManager(ICaeManager)` | Reemplaza el gestor de CAEs |
+| `WithSoapClient(IDgiSoapClient)` | Reemplaza el cliente SOAP hacia DGI |
+| `WithPdfGenerator(ICfePdfGenerator?)` | Establece el generador de PDF (puede ser `null`) |
+| `WithDefaultPdf()` | Agrega el generador PDF predeterminado (solo `UruFacturaSDK`, no Lite) |
 | `Build()` | Construye y retorna el `UruFacturaClient` |
 
 ---

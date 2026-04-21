@@ -19,8 +19,8 @@ namespace UruFacturaSDK;
 ///
 /// // Con un gestor de CAE y cliente SOAP personalizados (p.ej. para tests):
 /// var client = UruFacturaClientBuilder.WithDefaults(config)
-///     .ConGestorCae(miCaeManager)
-///     .ConClienteSoap(miSoapMock)
+///     .WithCaeManager(miCaeManager)
+///     .WithSoapClient(miSoapMock)
 ///     .Build();
 /// </code>
 /// </example>
@@ -50,7 +50,7 @@ public sealed partial class UruFacturaClientBuilder
     public static UruFacturaClientBuilder WithDefaults(UruFacturaConfig config) => new(config);
 
     /// <summary>Reemplaza el generador de XML predeterminado.</summary>
-    public UruFacturaClientBuilder ConGeneradorXml(ICfeXmlBuilder xmlBuilder)
+    public UruFacturaClientBuilder WithXmlBuilder(ICfeXmlBuilder xmlBuilder)
     {
         ArgumentNullException.ThrowIfNull(xmlBuilder);
         _xmlBuilder = xmlBuilder;
@@ -58,7 +58,7 @@ public sealed partial class UruFacturaClientBuilder
     }
 
     /// <summary>Reemplaza el firmante digital predeterminado.</summary>
-    public UruFacturaClientBuilder ConFirmante(ICfeFirmante firmante)
+    public UruFacturaClientBuilder WithSigner(ICfeFirmante firmante)
     {
         ArgumentNullException.ThrowIfNull(firmante);
         _firmante = firmante;
@@ -66,7 +66,7 @@ public sealed partial class UruFacturaClientBuilder
     }
 
     /// <summary>Reemplaza el gestor de CAEs predeterminado.</summary>
-    public UruFacturaClientBuilder ConGestorCae(ICaeManager caeManager)
+    public UruFacturaClientBuilder WithCaeManager(ICaeManager caeManager)
     {
         ArgumentNullException.ThrowIfNull(caeManager);
         _caeManager = caeManager;
@@ -74,7 +74,7 @@ public sealed partial class UruFacturaClientBuilder
     }
 
     /// <summary>Reemplaza el cliente SOAP predeterminado.</summary>
-    public UruFacturaClientBuilder ConClienteSoap(IDgiSoapClient soapClient)
+    public UruFacturaClientBuilder WithSoapClient(IDgiSoapClient soapClient)
     {
         ArgumentNullException.ThrowIfNull(soapClient);
         _soapClient = soapClient;
@@ -82,7 +82,7 @@ public sealed partial class UruFacturaClientBuilder
     }
 
     /// <summary>Establece el generador de PDF a utilizar.</summary>
-    public UruFacturaClientBuilder ConGeneradorPdf(ICfePdfGenerator? pdfGenerator)
+    public UruFacturaClientBuilder WithPdfGenerator(ICfePdfGenerator? pdfGenerator)
     {
         _pdfGenerator = pdfGenerator;
         return this;

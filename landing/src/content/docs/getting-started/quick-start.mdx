@@ -41,7 +41,7 @@ using var client = new UruFacturaClient(config);
 
 // Alternativa recomendada con el builder fluido:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .ConPdfPorDefecto()   // disponible solo en UruFacturaSDK (no en Lite)
+    .WithDefaultPdf()   // disponible solo en UruFacturaSDK (no en Lite)
     .Build();
 ```
 

@@ -226,7 +226,7 @@ public partial class UruFacturaClient : IUruFacturaClient
     /// <returns>Bytes del PDF.</returns>
     /// <exception cref="InvalidOperationException">
     /// Si el cliente fue construido sin un generador de PDF.
-    /// Use <see cref="UruFacturaClientBuilder.ConGeneradorPdf"/> o el constructor con <see cref="ICfePdfGenerator"/>.
+    /// Use <see cref="UruFacturaClientBuilder.WithPdfGenerator"/> o el constructor con <see cref="ICfePdfGenerator"/>.
     /// </exception>
     public byte[] GenerarPdfA4(Cfe cfe)
     {
@@ -242,7 +242,7 @@ public partial class UruFacturaClient : IUruFacturaClient
     /// <returns>Bytes del PDF.</returns>
     /// <exception cref="InvalidOperationException">
     /// Si el cliente fue construido sin un generador de PDF.
-    /// Use <see cref="UruFacturaClientBuilder.ConGeneradorPdf"/> o el constructor con <see cref="ICfePdfGenerator"/>.
+    /// Use <see cref="UruFacturaClientBuilder.WithPdfGenerator"/> o el constructor con <see cref="ICfePdfGenerator"/>.
     /// </exception>
     public byte[] GenerarPdfTermico(Cfe cfe)
     {
@@ -263,8 +263,8 @@ public partial class UruFacturaClient : IUruFacturaClient
         if (_pdfGenerator is null)
             throw new InvalidOperationException(
                 "Este cliente no tiene un generador de PDF configurado. " +
-                "Use UruFacturaClientBuilder.WithDefaults(config).ConPdfPorDefecto().Build() (paquete completo) " +
-                "o .ConGeneradorPdf(miGenerador).Build() para inyectar una implementación personalizada.");
+                "Use UruFacturaClientBuilder.WithDefaults(config).WithDefaultPdf().Build() (paquete completo) " +
+                "o .WithPdfGenerator(miGenerador).Build() para inyectar una implementación personalizada.");
     }
 
     /// <inheritdoc />
