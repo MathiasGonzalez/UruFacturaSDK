@@ -156,4 +156,107 @@ public class CfeModelTests
         };
         Assert.Equal(440m, linea.MontoTotal); // 3×150 - 10 = 440
     }
+
+    // --- IVA Suspendido ---
+
+    [Fact]
+    public void CalcularTotales_Suspendido_SeParaDeExento()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
+        cfe.Detalle[0].Cantidad = 1;
+        cfe.Detalle[0].PrecioUnitario = 500m;
+        cfe.CalcularTotales();
+
+        Assert.Equal(500m, cfe.MontoNetoSuspendido);
+        Assert.Equal(0m, cfe.MontoNetoExento);  // no se mezclan
+        Assert.Equal(0m, cfe.IvaBasico);
+        Assert.Equal(500m, cfe.MontoTotal);
+    }
+
+    [Fact]
+    public void CalcularTotales_ExentoYSuspendido_SonCamposSeparados()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Detalle[0].IndFactIva = TipoIva.Exento;
+        cfe.Detalle[0].PrecioUnitario = 300m;
+        cfe.Detalle[0].Cantidad = 1;
+        cfe.Detalle.Add(new LineaDetalle
+        {
+            NroLinea = 2,
+            NombreItem = "Item Suspendido",
+            Cantidad = 1,
+            PrecioUnitario = 200m,
+            IndFactIva = TipoIva.Suspendido,
+        });
+        cfe.CalcularTotales();
+
+        Assert.Equal(300m, cfe.MontoNetoExento);
+        Assert.Equal(200m, cfe.MontoNetoSuspendido);
+        Assert.Equal(500m, cfe.MontoTotal);
+    }
+
+    // --- Validación de Receptor en e-Factura ---
+
+    [Fact]
+    public void Validar_EFacturaSinReceptor_RetornaError()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Tipo = TipoCfe.EFactura;
+        cfe.Receptor = null;
+        var errores = cfe.Validar();
+        Assert.Contains(errores, e => e.Contains("receptor"));
+    }
+
+    [Fact]
+    public void Validar_EFacturaConReceptor_NoRetornaErrorReceptor()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Tipo = TipoCfe.EFactura;
+        cfe.Receptor = new Receptor { Documento = "210000000013", TipoDocumento = TipoDocumentoReceptor.Rut };
+        var errores = cfe.Validar();
+        Assert.DoesNotContain(errores, e => e.Contains("receptor"));
+    }
+
+    [Fact]
+    public void Validar_EFacturaExportacionSinReceptor_RetornaError()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Tipo = TipoCfe.EFacturaExportacion;
+        cfe.Receptor = null;
+        var errores = cfe.Validar();
+        Assert.Contains(errores, e => e.Contains("receptor"));
+    }
+
+    // --- Validación de IndTraslado en e-Remito ---
+
+    [Fact]
+    public void Validar_ERemitoCon_IndTraslado_NoRetornaError()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Tipo = TipoCfe.ERemito;
+        cfe.IndTraslado = IndTraslado.TrasladoPropio;
+        var errores = cfe.Validar();
+        Assert.DoesNotContain(errores, e => e.Contains("IndTraslado") || e.Contains("traslado"));
+    }
+
+    [Fact]
+    public void Validar_ERemito_SinIndTraslado_RetornaError()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Tipo = TipoCfe.ERemito;
+        cfe.IndTraslado = null;
+        var errores = cfe.Validar();
+        Assert.Contains(errores, e => e.Contains("traslado") || e.Contains("IndTraslado"));
+    }
+
+    [Fact]
+    public void Validar_ERemitoDespachante_SinIndTraslado_RetornaError()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Tipo = TipoCfe.ERemitoDespachante;
+        cfe.IndTraslado = null;
+        var errores = cfe.Validar();
+        Assert.Contains(errores, e => e.Contains("traslado") || e.Contains("IndTraslado"));
+    }
 }

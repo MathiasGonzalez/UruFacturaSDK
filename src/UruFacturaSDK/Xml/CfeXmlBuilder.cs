@@ -101,6 +101,14 @@ public class CfeXmlBuilder
             if (cfe.TipoCambio.HasValue)
                 WriteElement(w, "TpoCambio", CfeFormat.DecimalInvariant(cfe.TipoCambio.Value, "F4"));
         }
+
+        // e-Remito y e-Remito Despachante requieren el motivo de traslado
+        if ((cfe.Tipo == TipoCfe.ERemito || cfe.Tipo == TipoCfe.ERemitoDespachante)
+            && cfe.IndTraslado.HasValue)
+        {
+            WriteElement(w, "IndTraslado", ((int)cfe.IndTraslado.Value).ToString());
+        }
+
         w.WriteEndElement(); // IdDoc
     }
 
@@ -111,6 +119,8 @@ public class CfeXmlBuilder
         WriteElement(w, "RznSoc", cfe.RazonSocialEmisor);
         if (!string.IsNullOrWhiteSpace(cfe.NombreComercialEmisor))
             WriteElement(w, "NomComercial", cfe.NombreComercialEmisor);
+        if (!string.IsNullOrWhiteSpace(cfe.Giro))
+            WriteElement(w, "GiroNegocio", cfe.Giro);
         WriteElement(w, "DomFiscal", cfe.DomicilioFiscalEmisor);
         WriteElement(w, "Ciudad", cfe.CiudadEmisor);
         WriteElement(w, "Departamento", cfe.DepartamentoEmisor);
@@ -156,6 +166,9 @@ public class CfeXmlBuilder
         if (cfe.MontoNetoExento > 0)
             WriteElement(w, "MntExe", CfeFormat.DecimalInvariant(cfe.MontoNetoExento, "F2"));
 
+        if (cfe.MontoNetoSuspendido > 0)
+            WriteElement(w, "MntSuspenso", CfeFormat.DecimalInvariant(cfe.MontoNetoSuspendido, "F2"));
+
         if (cfe.MontoNetoMinimo > 0)
         {
             WriteElement(w, "MntNetoIvaTasaMin", CfeFormat.DecimalInvariant(cfe.MontoNetoMinimo, "F2"));
@@ -171,6 +184,7 @@ public class CfeXmlBuilder
         }
 
         WriteElement(w, "MntTotal", CfeFormat.DecimalInvariant(cfe.MontoTotal, "F2"));
+        WriteElement(w, "MntPagar", CfeFormat.DecimalInvariant(cfe.MontoTotal, "F2"));
         WriteElement(w, "CantLinDet", cfe.Detalle.Count.ToString());
 
         w.WriteEndElement(); // Totales
