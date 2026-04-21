@@ -150,13 +150,13 @@ Si estás migrando desde un módulo de facturación electrónica de un ERP (Bisc
 
            cfe.Numero = dto.Numero;
 
-           if (cfe is EFactura efactura && dto.Receptor != null)
+             if (dto.Receptor != null)
            {
-               efactura.Receptor = new Receptor
+               cfe.Receptor = new Receptor
                {
-                   RutReceptor = dto.Receptor.Rut,
+                 Documento   = dto.Receptor.Rut,
                    RazonSocial = dto.Receptor.Nombre,
-                   Domicilio   = dto.Receptor.Direccion,
+                 Direccion   = dto.Receptor.Direccion,
                    Ciudad      = dto.Receptor.Ciudad,
                };
            }

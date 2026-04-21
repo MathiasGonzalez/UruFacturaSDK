@@ -38,7 +38,7 @@ public enum TipoCfe
     /// <summary>Nota de débito de e-Factura de exportación (123)</summary>
     NotaDebitoEFacturaExportacion = 123,
 
-    /// <summary>e-Remito de exportación (131)</summary>
+    /// <summary>e-Remito de despachante (131)</summary>
     ERemitoDespachante = 131,
 
     /// <summary>e-Resguardo (151)</summary>
