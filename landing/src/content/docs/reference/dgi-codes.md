@@ -26,7 +26,7 @@ Cuando enviás un CFE, DGI responde con un código numérico y un mensaje. Estos
 var respuesta = await client.EnviarCfeAsync(cfe);
 
 // Verificación simple
-if (respuesta.Exitoso) // true si código es "00" o "01"
+if (respuesta.Exitoso) // true si código es "00" (aceptado) o "01" (aceptado con observaciones)
 {
     Console.WriteLine("CFE aceptado ✅");
 }
