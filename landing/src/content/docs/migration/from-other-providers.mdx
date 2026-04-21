@@ -150,16 +150,16 @@ Si estás migrando desde un módulo de facturación electrónica de un ERP (Bisc
 
            cfe.Numero = dto.Numero;
 
-             if (dto.Receptor != null)
-           {
-               cfe.Receptor = new Receptor
-               {
-                 Documento   = dto.Receptor.Rut,
-                   RazonSocial = dto.Receptor.Nombre,
-                 Direccion   = dto.Receptor.Direccion,
-                   Ciudad      = dto.Receptor.Ciudad,
-               };
-           }
+            if (dto.Receptor != null)
+            {
+                cfe.Receptor = new Receptor
+                {
+                    Documento   = dto.Receptor.Rut,
+                    RazonSocial = dto.Receptor.Nombre,
+                    Direccion   = dto.Receptor.Direccion,
+                    Ciudad      = dto.Receptor.Ciudad,
+                };
+            }
 
            int nroLinea = 1;
            foreach (var linea in dto.Lineas)
