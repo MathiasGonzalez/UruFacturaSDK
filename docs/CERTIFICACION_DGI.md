@@ -53,6 +53,7 @@ var config = new UruFacturaConfig
     DomicilioFiscal     = "Av. 18 de Julio 1234",
     Ciudad              = "Montevideo",
     Departamento        = "Montevideo",
+    Giro                = "Comercio al por mayor",   // Actividad económica (opcional)
     RutaCertificado     = "/ruta/certificado.p12",
     PasswordCertificado = "contraseña_del_certificado",
     Ambiente            = Ambiente.Homologacion,   // ← Homologación durante las pruebas

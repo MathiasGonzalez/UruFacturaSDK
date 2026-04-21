@@ -155,8 +155,7 @@ public class DgiSoapClient : IDisposable
                        ?? doc.SelectSingleNode("//*[local-name()='Descripcion']")?.InnerText
                        ?? $"Respuesta de '{operacion}' procesada correctamente.";
 
-            bool exitoso = codigo == "0" || codigo == "00" || codigo == "OK"
-                        || codigo.StartsWith("A", StringComparison.OrdinalIgnoreCase);
+            bool exitoso = codigo == "00" || codigo == "01";
 
             return exitoso
                 ? RespuestaDgi.Exito(codigo, mensaje, xmlRespuesta)

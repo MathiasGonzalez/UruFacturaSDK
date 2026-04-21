@@ -18,8 +18,12 @@ El SDK provee métodos de fábrica en `UruFacturaClient` para crear cada tipo de
 | `CrearNotaCreditoEFactura()` | Nota de Crédito e-Factura | 112 |
 | `CrearNotaDebitoEFactura()` | Nota de Débito e-Factura | 113 |
 | `CrearEFacturaExportacion()` | e-Factura de Exportación | 121 |
-| `CrearERemito()` | e-Remito | 181 |
+| `CrearNotaCreditoEFacturaExportacion()` | NC e-Factura de Exportación | 122 |
+| `CrearNotaDebitoEFacturaExportacion()` | ND e-Factura de Exportación | 123 |
+| `CrearERemitoDespachante()` | e-Remito Despachante | 131 |
 | `CrearEResguardo()` | e-Resguardo | 151 |
+| `CrearERemito()` | e-Remito | 181 |
+| `CrearNotaCreditoERemito()` | Nota de Crédito e-Remito | 182 |
 
 ---
 
@@ -129,6 +133,7 @@ El enum `TipoIva` define cómo se calcula el IVA de cada línea:
 | `TipoIva.Basico` | 22% | Servicios y bienes generales |
 | `TipoIva.Minimo` | 10% | Alimentos de primera necesidad |
 | `TipoIva.Exento` | 0% | Bienes y servicios exonerados |
+| `TipoIva.Suspendido` | — | IVA suspendido por disposición legal (sin cálculo, genera `MntSuspenso` en el XML) |
 
 ---
 

@@ -16,6 +16,9 @@ public class UruFacturaConfig
     /// <summary>Nombre comercial del emisor (opcional).</summary>
     public string? NombreComercialEmisor { get; set; }
 
+    /// <summary>Giro o actividad económica del emisor (opcional).</summary>
+    public string? Giro { get; set; }
+
     /// <summary>Domicilio fiscal del emisor.</summary>
     public string DomicilioFiscal { get; set; } = string.Empty;
 

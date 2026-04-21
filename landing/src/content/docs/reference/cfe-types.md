@@ -66,6 +66,21 @@ Para **ajustar al alza** o cobrar diferencias sobre un CFE emitido.
 
 ### e-Remito (181) y Remito Despachante (131)
 Para **documentar el traslado de mercadería** sin implicar una transacción de venta.
+El campo `IndTraslado` es **obligatorio** para estos tipos e indica el motivo del traslado:
+
+| Valor | Descripción |
+|-------|-------------|
+| `IndTraslado.TrasladoPropio` | Traslado entre depósitos propios |
+| `IndTraslado.TrasladoEnComision` | Traslado en comisión |
+| `IndTraslado.Devolucion` | Devolución al proveedor |
+| `IndTraslado.TrasladoPorVenta` | Traslado por venta |
+| `IndTraslado.TrasladoEnConsignacion` | Traslado en consignación |
+| `IndTraslado.TrasladoPorExposicion` | Traslado por exposición / feria |
+
+```csharp
+var remito = client.CrearERemito();
+remito.IndTraslado = IndTraslado.TrasladoPropio;
+```
 
 ### e-Resguardo (151)
 Para documentar **retenciones de IVA** realizadas a proveedores.

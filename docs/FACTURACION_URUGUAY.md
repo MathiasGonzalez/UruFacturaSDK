@@ -28,8 +28,12 @@ La **adhesión es obligatoria** para contribuyentes IRAE según su facturación 
 | **112** | Nota de Crédito e-Factura | Anulación / devolución de e-Factura |
 | **113** | Nota de Débito e-Factura | Ajuste en más sobre e-Factura |
 | **121** | e-Factura de Exportación | Operaciones de exportación de bienes/servicios |
-| **181** | e-Remito | Traslado de mercadería sin transferencia de dominio |
+| **122** | Nota de Crédito e-Factura Exportación | Anulación / devolución de e-Factura de Exportación |
+| **123** | Nota de Débito e-Factura Exportación | Ajuste en más sobre e-Factura de Exportación |
+| **131** | e-Remito Despachante | Traslado de mercadería a cargo de un despachante |
 | **151** | e-Resguardo | Retención de impuestos |
+| **181** | e-Remito | Traslado de mercadería sin transferencia de dominio |
+| **182** | Nota de Crédito e-Remito | Corrección de e-Remito |
 
 > La diferencia principal entre **e-Ticket** y **e-Factura** es si el receptor tiene o no RUT. Las empresas siempre deben exigir e-Factura para poder descontar el IVA compras.
 
@@ -42,6 +46,7 @@ La **adhesión es obligatoria** para contribuyentes IRAE según su facturación 
 | **22 %** (básica) | Bienes y servicios en general |
 | **10 %** (mínima) | Alimentos de la canasta básica, medicamentos, servicios médicos |
 | **0 %** (exento) | Arrendamientos de inmuebles, servicios educativos, exportaciones |
+| **Suspendido** | IVA temporalmente suspendido por disposición legal (sin cálculo de impuesto) |
 
 ---
 
@@ -209,6 +214,7 @@ var respuesta = await client.EnviarCfeAsync(nc);
 ```csharp
 var remito = client.CrearERemito();
 remito.Numero = 33;
+remito.IndTraslado = IndTraslado.TrasladoPropio; // Motivo del traslado — obligatorio
 // El e-Remito no incluye precios; describe el traslado físico
 remito.Detalle.Add(new LineaDetalle
 {
