@@ -14,35 +14,43 @@ namespace UruFacturaSDK;
 /// Orquesta la creación de CFE, generación/firma de XML, comunicación con DGI
 /// y, opcionalmente, la generación de representaciones impresas (PDF).
 /// <para>
-/// La versión completa del paquete inicializa un generador de PDF por defecto.
-/// La versión Lite no incluye generador de PDF; puede pasarse uno personalizado
-/// mediante el constructor que acepta <see cref="ICfePdfGenerator"/>.
+/// Use <see cref="UruFacturaClientBuilder.WithDefaults"/> para construir una instancia
+/// con las implementaciones predeterminadas, o el constructor principal para inyectar
+/// implementaciones personalizadas.
 /// </para>
 /// </summary>
 public partial class UruFacturaClient : IUruFacturaClient
 {
     private readonly UruFacturaConfig _config;
-    private readonly CfeXmlBuilder _xmlBuilder;
-    private readonly CfeFirmante _firmante;
-    private readonly CaeManager _caeManager;
+    private readonly ICfeXmlBuilder _xmlBuilder;
+    private readonly ICfeFirmante _firmante;
+    private readonly ICaeManager _caeManager;
+    private readonly IDgiSoapClient _soapClient;
     private readonly ICfePdfGenerator? _pdfGenerator;
-    private DgiSoapClient? _soapClient;
     private bool _disposed;
 
     /// <summary>Gestión de CAEs del cliente.</summary>
     public ICaeManager Cae => _caeManager;
 
     /// <summary>
-    /// Constructor principal compartido entre todas las variantes del paquete.
-    /// Los constructores de conveniencia sin parámetro de PDF se definen en cada variante.
+    /// Constructor principal con todas las dependencias inyectadas.
+    /// Para el caso de uso estándar prefiera <see cref="UruFacturaClientBuilder.WithDefaults"/>
+    /// o los constructores de conveniencia del paquete correspondiente.
     /// </summary>
-    public UruFacturaClient(UruFacturaConfig config, ICfePdfGenerator? pdfGenerator)
+    public UruFacturaClient(
+        UruFacturaConfig config,
+        ICfeXmlBuilder xmlBuilder,
+        ICfeFirmante firmante,
+        ICaeManager caeManager,
+        IDgiSoapClient soapClient,
+        ICfePdfGenerator? pdfGenerator)
     {
         config.Validate();
         _config = config;
-        _xmlBuilder = new CfeXmlBuilder();
-        _firmante = new CfeFirmante(config.RutaCertificado, config.PasswordCertificado);
-        _caeManager = new CaeManager();
+        _xmlBuilder = xmlBuilder;
+        _firmante = firmante;
+        _caeManager = caeManager;
+        _soapClient = soapClient;
         _pdfGenerator = pdfGenerator;
     }
 
@@ -166,8 +174,7 @@ public partial class UruFacturaClient : IUruFacturaClient
         if (string.IsNullOrWhiteSpace(cfe.XmlFirmado))
             GenerarYFirmar(cfe);
 
-        var cliente = ObtenerSoapClient();
-        var respuesta = await cliente.EnviarCfeAsync(cfe.XmlFirmado!, cancellationToken);
+        var respuesta = await _soapClient.EnviarCfeAsync(cfe.XmlFirmado!, cancellationToken);
 
         cfe.CodigoRespuestaDgi = respuesta.Codigo;
         cfe.MensajeRespuestaDgi = respuesta.Mensaje;
@@ -184,8 +191,7 @@ public partial class UruFacturaClient : IUruFacturaClient
         CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-        var cliente = ObtenerSoapClient();
-        return await cliente.ConsultarEstadoCfeAsync(
+        return await _soapClient.ConsultarEstadoCfeAsync(
             cfe.RutEmisor, (int)cfe.Tipo,
             cfe.Serie ?? string.Empty, cfe.Numero,
             cancellationToken);
@@ -206,8 +212,7 @@ public partial class UruFacturaClient : IUruFacturaClient
                 : c.XmlFirmado!)
             .ToList();
 
-        var cliente = ObtenerSoapClient();
-        return await cliente.EnviarReporteDiarioAsync(fecha, xmlsFirmados, cancellationToken);
+        return await _soapClient.EnviarReporteDiarioAsync(fecha, xmlsFirmados, cancellationToken);
     }
 
     // -----------------------------------------------------------------------
@@ -221,7 +226,7 @@ public partial class UruFacturaClient : IUruFacturaClient
     /// <returns>Bytes del PDF.</returns>
     /// <exception cref="InvalidOperationException">
     /// Si el cliente fue construido sin un generador de PDF.
-    /// Pase una implementación de <see cref="ICfePdfGenerator"/> al constructor.
+    /// Use <see cref="UruFacturaClientBuilder.ConGeneradorPdf"/> o el constructor con <see cref="ICfePdfGenerator"/>.
     /// </exception>
     public byte[] GenerarPdfA4(Cfe cfe)
     {
@@ -237,7 +242,7 @@ public partial class UruFacturaClient : IUruFacturaClient
     /// <returns>Bytes del PDF.</returns>
     /// <exception cref="InvalidOperationException">
     /// Si el cliente fue construido sin un generador de PDF.
-    /// Pase una implementación de <see cref="ICfePdfGenerator"/> al constructor.
+    /// Use <see cref="UruFacturaClientBuilder.ConGeneradorPdf"/> o el constructor con <see cref="ICfePdfGenerator"/>.
     /// </exception>
     public byte[] GenerarPdfTermico(Cfe cfe)
     {
@@ -250,12 +255,6 @@ public partial class UruFacturaClient : IUruFacturaClient
     // Helpers
     // -----------------------------------------------------------------------
 
-    private DgiSoapClient ObtenerSoapClient()
-    {
-        _soapClient ??= new DgiSoapClient(_config);
-        return _soapClient;
-    }
-
     private void ThrowIfDisposed() =>
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -264,18 +263,17 @@ public partial class UruFacturaClient : IUruFacturaClient
         if (_pdfGenerator is null)
             throw new InvalidOperationException(
                 "Este cliente no tiene un generador de PDF configurado. " +
-                "Pase una implementación de ICfePdfGenerator al constructor.");
+                "Use UruFacturaClientBuilder.WithDefaults(config).ConGeneradorPdf(generador).Build() " +
+                "o el constructor que acepta ICfePdfGenerator.");
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
         if (_disposed) return;
-        _soapClient?.Dispose();
+        _soapClient.Dispose();
         _firmante.Dispose();
         _disposed = true;
         GC.SuppressFinalize(this);
     }
 }
-
-

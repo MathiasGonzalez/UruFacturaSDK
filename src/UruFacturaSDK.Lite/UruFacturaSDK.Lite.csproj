@@ -33,9 +33,14 @@
 
   <!-- Share source files from the main project, excluding the Pdf folder -->
   <ItemGroup>
-    <!-- Single client class shared between full and Lite builds -->
+    <!-- Single shared client class and interface -->
+    <Compile Include="../UruFacturaSDK/IUruFacturaClient.cs"
+             Link="IUruFacturaClient.cs" />
     <Compile Include="../UruFacturaSDK/UruFacturaClient.cs"
              Link="UruFacturaClient.cs" />
+    <!-- Builder: share main class but NOT UruFacturaClientBuilderPdf.cs (requires QuestPDF) -->
+    <Compile Include="../UruFacturaSDK/UruFacturaClientBuilder.cs"
+             Link="UruFacturaClientBuilder.cs" />
     <!-- ICfePdfGenerator is interface-only; no QuestPDF/SkiaSharp dependency -->
     <Compile Include="../UruFacturaSDK/Pdf/ICfePdfGenerator.cs"
              Link="Pdf/ICfePdfGenerator.cs" />

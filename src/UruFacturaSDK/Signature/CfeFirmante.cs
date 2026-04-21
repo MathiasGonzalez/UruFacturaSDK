@@ -13,7 +13,7 @@ namespace UruFacturaSDK.Signature;
 /// Implementa la firma XML enveloped con referencia a todo el documento y soporte para
 /// propiedades XAdES (SigningTime, SigningCertificate) que constituyen el nivel XAdES-BES.
 /// </summary>
-public class CfeFirmante : IDisposable
+public class CfeFirmante : ICfeFirmante
 {
     private readonly X509Certificate2 _certificado;
     private bool _disposed;
