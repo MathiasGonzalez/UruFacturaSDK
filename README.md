@@ -10,7 +10,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-UruFactura SDK es una librería open-source **.Net 10 C#** de alto nivel diseñada para simplificar la integración de sistemas locales con el ecosistema de la DGI. Olvídate de lidiar con la complejidad manual de los sobres SOAP o la estructura rígida de los esquemas XML; esta herramienta actúa como un puente amigable entre tu lógica de negocio y los requisitos impositivos uruguayos.
+UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseñada para simplificar la integración de sistemas locales con el ecosistema de la DGI. Olvídate de lidiar con la complejidad manual de los sobres SOAP o la estructura rígida de los esquemas XML; esta herramienta actúa como un puente amigable entre tu lógica de negocio y los requisitos impositivos uruguayos.
 
 ---
 
@@ -41,7 +41,7 @@ UruFacturaSDK/
 │       ├── Soap/               # DgiSoapClient (comunicación con DGI)
 │       ├── Cae/                # CaeManager / ICaeManager (gestión de CAE)
 │       ├── Pdf/                # CfePdfGenerator (PDF A4 y térmico)
-│       └── UruFacturaClient.cs # Facade principal del SDK
+│       └── UruFacturaClient.cs # Fachada principal del SDK
 └── tests/
     └── UruFacturaSDK.Tests/    # Tests unitarios xUnit
 ```
@@ -74,7 +74,7 @@ using var client = new UruFacturaClient(config);
 using UruFacturaSDK.Models; // Cae, LineaDetalle, Receptor, RefCfe
 
 // Registrar CAE
-client.Cae.RegistrarCae(new Models.Cae
+client.Cae.RegistrarCae(new Cae
 {
     NroSerie        = "CAE2025001",
     TipoCfe         = TipoCfe.ETicket,

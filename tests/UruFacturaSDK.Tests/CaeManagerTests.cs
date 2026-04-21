@@ -7,7 +7,7 @@ namespace UruFacturaSDK.Tests;
 
 public class CaeManagerTests
 {
-    private static Models.Cae CriarCaeVigente(
+    private static Models.Cae CrearCaeVigente(
         TipoCfe tipo = TipoCfe.ETicket,
         long desde = 1,
         long hasta = 100,
@@ -22,7 +22,7 @@ public class CaeManagerTests
             UltimoNroUsado = ultimoUsado,
         };
 
-    private static Models.Cae CriarCaeVencido() =>
+    private static Models.Cae CrearCaeVencido() =>
         new()
         {
             NroSerie = "CAE-OLD",
@@ -37,7 +37,7 @@ public class CaeManagerTests
     public void RegistrarCae_YObtenerCaeActivo_RetornaCae()
     {
         var manager = new Cae.CaeManager();
-        var cae = CriarCaeVigente();
+        var cae = CrearCaeVigente();
         manager.RegistrarCae(cae);
 
         var activo = manager.ObtenerCaeActivo(TipoCfe.ETicket);
@@ -57,7 +57,7 @@ public class CaeManagerTests
     public void ObtenerCaeActivo_CaeVencido_RetornaNull()
     {
         var manager = new Cae.CaeManager();
-        manager.RegistrarCae(CriarCaeVencido());
+        manager.RegistrarCae(CrearCaeVencido());
 
         var activo = manager.ObtenerCaeActivo(TipoCfe.ETicket);
         Assert.Null(activo);
@@ -67,7 +67,7 @@ public class CaeManagerTests
     public void ObtenerProximoNumero_PrimerUso_RetornaRangoDesde()
     {
         var manager = new Cae.CaeManager();
-        manager.RegistrarCae(CriarCaeVigente(desde: 500));
+        manager.RegistrarCae(CrearCaeVigente(desde: 500));
 
         var (_, numero) = manager.ObtenerProximoNumero(TipoCfe.ETicket);
         Assert.Equal(500, numero);
@@ -77,7 +77,7 @@ public class CaeManagerTests
     public void ObtenerProximoNumero_SegundoUso_Incrementa()
     {
         var manager = new Cae.CaeManager();
-        manager.RegistrarCae(CriarCaeVigente(desde: 1, ultimoUsado: 5));
+        manager.RegistrarCae(CrearCaeVigente(desde: 1, ultimoUsado: 5));
 
         var (_, numero) = manager.ObtenerProximoNumero(TipoCfe.ETicket);
         Assert.Equal(6, numero);
@@ -95,7 +95,7 @@ public class CaeManagerTests
     {
         var manager = new Cae.CaeManager();
         // CAE con rango 1-5, ya usados todos
-        manager.RegistrarCae(CriarCaeVigente(desde: 1, hasta: 5, ultimoUsado: 5));
+        manager.RegistrarCae(CrearCaeVigente(desde: 1, hasta: 5, ultimoUsado: 5));
 
         Assert.Throws<CaeException>(() => manager.ObtenerProximoNumero(TipoCfe.ETicket));
     }
@@ -124,7 +124,7 @@ public class CaeManagerTests
     public void ObtenerAdvertencias_CaeSinProblemas_RetornaVacio()
     {
         var manager = new Cae.CaeManager();
-        manager.RegistrarCae(CriarCaeVigente()); // vence en 3 meses, sin uso
+        manager.RegistrarCae(CrearCaeVigente()); // vence en 3 meses, sin uso
 
         var advertencias = manager.ObtenerAdvertencias(diasAlertaVencimiento: 7, porcentajeAlertaUso: 80);
         Assert.Empty(advertencias);
@@ -133,42 +133,42 @@ public class CaeManagerTests
     [Fact]
     public void Cae_EsVigente_VigenteRetornaTrue()
     {
-        var cae = CriarCaeVigente();
+        var cae = CrearCaeVigente();
         Assert.True(cae.EsVigente);
     }
 
     [Fact]
     public void Cae_EsVigente_VencidoRetornaFalse()
     {
-        var cae = CriarCaeVencido();
+        var cae = CrearCaeVencido();
         Assert.False(cae.EsVigente);
     }
 
     [Fact]
     public void Cae_TieneNumerosDisponibles_RetornaTrue()
     {
-        var cae = CriarCaeVigente(desde: 1, hasta: 100, ultimoUsado: 50);
+        var cae = CrearCaeVigente(desde: 1, hasta: 100, ultimoUsado: 50);
         Assert.True(cae.TieneNumerosDisponibles);
     }
 
     [Fact]
     public void Cae_TieneNumerosDisponibles_AgotadoRetornaFalse()
     {
-        var cae = CriarCaeVigente(desde: 1, hasta: 5, ultimoUsado: 5);
+        var cae = CrearCaeVigente(desde: 1, hasta: 5, ultimoUsado: 5);
         Assert.False(cae.TieneNumerosDisponibles);
     }
 
     [Fact]
     public void Cae_PorcentajeUso_CalculaCorrectamente()
     {
-        var cae = CriarCaeVigente(desde: 1, hasta: 100, ultimoUsado: 50);
+        var cae = CrearCaeVigente(desde: 1, hasta: 100, ultimoUsado: 50);
         Assert.Equal(50m, cae.PorcentajeUso);
     }
 
     [Fact]
     public void Cae_ObtenerProximoNumero_VencidoLanzaExcepcion()
     {
-        var cae = CriarCaeVencido();
+        var cae = CrearCaeVencido();
         Assert.Throws<CaeException>(() => cae.ObtenerProximoNumero());
     }
 
@@ -176,8 +176,8 @@ public class CaeManagerTests
     public void ObtenerTodosLosCaes_RetornaTodos()
     {
         var manager = new Cae.CaeManager();
-        manager.RegistrarCae(CriarCaeVigente(TipoCfe.ETicket));
-        manager.RegistrarCae(CriarCaeVigente(TipoCfe.EFactura));
+        manager.RegistrarCae(CrearCaeVigente(TipoCfe.ETicket));
+        manager.RegistrarCae(CrearCaeVigente(TipoCfe.EFactura));
 
         var todos = manager.ObtenerTodosLosCaes();
         Assert.Equal(2, todos.Count);
@@ -187,7 +187,7 @@ public class CaeManagerTests
     public void ResumenEstado_RetornaStringNoVacio()
     {
         var manager = new Cae.CaeManager();
-        manager.RegistrarCae(CriarCaeVigente());
+        manager.RegistrarCae(CrearCaeVigente());
         var resumen = manager.ResumenEstado();
         Assert.NotEmpty(resumen);
         Assert.Contains("CAE-001", resumen);

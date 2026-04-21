@@ -7,7 +7,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 ## `UruFacturaClient`
 
-El facade principal del SDK. Punto de entrada para todas las operaciones.
+La fachada principal del SDK. Punto de entrada para todas las operaciones.
 
 ```csharp
 using var client = new UruFacturaClient(config);
@@ -183,8 +183,8 @@ public enum TipoCfe
     NotaCreditoEFactura       = 112,
     NotaDebitoEFactura        = 113,
     EFacturaExportacion       = 121,
-    NotaCreditoExportacion    = 122,
-    NotaDebitoExportacion     = 123,
+    NotaCreditoEFacturaExportacion = 122,
+    NotaDebitoEFacturaExportacion  = 123,
     ERemitoDespachante        = 131,
     EResguardo                = 151,
     ERemito                   = 181,
