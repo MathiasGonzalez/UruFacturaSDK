@@ -20,7 +20,7 @@ public class UruFacturaClient : IUruFacturaClient
     private readonly CfeXmlBuilder _xmlBuilder;
     private readonly CfeFirmante _firmante;
     private readonly CaeManager _caeManager;
-    private readonly CfePdfGenerator _pdfGenerator;
+    private readonly ICfePdfGenerator _pdfGenerator;
     private DgiSoapClient? _soapClient;
     private bool _disposed;
 
@@ -34,13 +34,23 @@ public class UruFacturaClient : IUruFacturaClient
     /// </summary>
     /// <param name="config">Configuración del SDK.</param>
     public UruFacturaClient(UruFacturaConfig config)
+        : this(config, new CfePdfGenerator(config))
+    {
+    }
+
+    /// <summary>
+    /// Inicializa el cliente de UruFactura con la configuración y un generador de PDF personalizado.
+    /// </summary>
+    /// <param name="config">Configuración del SDK.</param>
+    /// <param name="pdfGenerator">Implementación de <see cref="ICfePdfGenerator"/> a utilizar.</param>
+    public UruFacturaClient(UruFacturaConfig config, ICfePdfGenerator pdfGenerator)
     {
         config.Validate();
         _config = config;
         _xmlBuilder = new CfeXmlBuilder();
         _firmante = new CfeFirmante(config.RutaCertificado, config.PasswordCertificado);
         _caeManager = new CaeManager();
-        _pdfGenerator = new CfePdfGenerator(config);
+        _pdfGenerator = pdfGenerator;
     }
 
     // -----------------------------------------------------------------------
