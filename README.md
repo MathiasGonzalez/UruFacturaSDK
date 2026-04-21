@@ -34,14 +34,18 @@ UruFacturaSDK/
 │   └── UruFacturaSDK/
 │       ├── Configuration/      # UruFacturaConfig
 │       ├── Enums/              # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, TipoDocumentoReceptor
-│       ├── Exceptions/         # Excepciones tipadas del SDK
-│       ├── Models/             # Cfe, Cae, Receptor, LineaDetalle, RespuestaDgi
+│       ├── Exceptions/         # CaeException, CfeValidationException, DgiCommunicationException,
+│       │                       # FirmaDigitalException, PdfGenerationException, UruFacturaException
+│       ├── Models/             # Cfe, Cae, Receptor, LineaDetalle, RefCfe,
+│       │                       # RespuestaDgi, RespuestaReporteDiario, TotalesIva
+│       ├── Formatting/         # CfeFormat (formateadores internos de fecha y moneda)
 │       ├── Xml/                # CfeXmlBuilder (generación XML DGI)
 │       ├── Signature/          # CfeFirmante (XAdES-BES)
 │       ├── Soap/               # DgiSoapClient (comunicación con DGI)
 │       ├── Cae/                # CaeManager / ICaeManager (gestión de CAE)
 │       ├── Pdf/                # CfePdfGenerator (PDF A4 y térmico)
-│       └── UruFacturaClient.cs # Fachada principal del SDK
+│       ├── IUruFacturaClient.cs # Interfaz pública (para mocking en tests)
+│       └── UruFacturaClient.cs  # Fachada principal del SDK
 └── tests/
     └── UruFacturaSDK.Tests/    # Tests unitarios xUnit
 ```
@@ -55,7 +59,8 @@ UruFacturaSDK/
 ```csharp
 var config = new UruFacturaConfig
 {
-    RutEmisor           = "210000000012",
+    // Obligatorios
+    RutEmisor           = "210000000012",       // 12 dígitos, sin puntos ni guión
     RazonSocialEmisor   = "Mi Empresa S.A.",
     DomicilioFiscal     = "Av. 18 de Julio 1234",
     Ciudad              = "Montevideo",
@@ -63,11 +68,18 @@ var config = new UruFacturaConfig
     Giro                = "Comercio al por mayor", // Actividad económica (opcional)
     Ambiente            = Ambiente.Homologacion,
     RutaCertificado     = "/ruta/al/certificado.p12",
-    PasswordCertificado = "mi_password",
+    PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
+
+    // Opcionales
+    NombreComercialEmisor = "Mi Comercio",      // nombre de fantasía
+    SoapTimeoutSegundos   = 60,                 // timeout SOAP (default: 30 s)
+    OmitirValidacionSsl   = true,               // solo en Homologación con CA no confiable
 };
 
 using var client = new UruFacturaClient(config);
 ```
+
+> ⚠️ Nunca almacenes `PasswordCertificado` en texto plano. Usá variables de entorno o un gestor de secretos.
 
 ### 2. Crear y enviar un e-Ticket
 
@@ -89,12 +101,25 @@ var eticket = client.CrearETicket();
 eticket.Numero = 1;
 eticket.Detalle.Add(new LineaDetalle
 {
-    NroLinea      = 1,
-    NombreItem    = "Servicio de consultoría",
-    Cantidad      = 1,
+    NroLinea       = 1,
+    NombreItem     = "Servicio de consultoría",
+    Cantidad       = 1,
     PrecioUnitario = 1000m,
-    IndFactIva    = TipoIva.Basico,
+    IndFactIva     = TipoIva.Basico,
+    // Opcional: descuentos y recargos
+    DescuentoMonto    = 50m,   // monto fijo sin IVA
+    // DescuentoPorcentaje = 5m, // alternativa: porcentaje
+    RecargoMonto      = 0m,
 });
+
+// Validar antes de enviar
+var errores = eticket.Validar();
+if (errores.Count > 0)
+{
+    foreach (var error in errores)
+        Console.WriteLine($"❌ {error}");
+    return;
+}
 
 // Generar XML, firmar y enviar
 var xmlFirmado = client.GenerarYFirmar(eticket);
@@ -142,7 +167,21 @@ nc.Detalle.Add(new LineaDetalle
 ### 5. Verificar estado de CAEs
 
 ```csharp
-var advertencias = client.Cae.ObtenerAdvertencias();
+// Registrar múltiples CAEs a la vez
+client.Cae.RegistrarCaes(new[]
+{
+    new Cae { NroSerie = "CAE2025001", TipoCfe = TipoCfe.ETicket,  RangoDesde = 1, RangoHasta = 1000, FechaVencimiento = new DateTime(2026, 12, 31) },
+    new Cae { NroSerie = "CAE2025002", TipoCfe = TipoCfe.EFactura, RangoDesde = 1, RangoHasta = 500,  FechaVencimiento = new DateTime(2026, 12, 31) },
+});
+
+// Obtener próximo número disponible (thread-safe)
+var (cae, numero) = client.Cae.ObtenerProximoNumero(TipoCfe.ETicket);
+
+// Obtener CAE activo para un tipo
+var caeActivo = client.Cae.ObtenerCaeActivo(TipoCfe.ETicket);
+
+// Ver advertencias (vencimiento próximo, rango casi agotado)
+var advertencias = client.Cae.ObtenerAdvertencias(diasAlertaVencimiento: 7, porcentajeAlertaUso: 80m);
 foreach (var advertencia in advertencias)
     Console.WriteLine(advertencia);
 
@@ -153,21 +192,59 @@ Console.WriteLine(client.Cae.ResumenEstado());
 
 ## 📄 Tipos de CFE soportados
 
-| Código | Tipo |
-|--------|------|
-| 101 | e-Ticket |
-| 102 | Nota de Crédito e-Ticket |
-| 103 | Nota de Débito e-Ticket |
-| 111 | e-Factura |
-| 112 | Nota de Crédito e-Factura |
-| 113 | Nota de Débito e-Factura |
-| 121 | e-Factura de Exportación |
-| 122 | Nota de Crédito e-Factura Exportación |
-| 123 | Nota de Débito e-Factura Exportación |
-| 131 | e-Remito Despachante |
-| 151 | e-Resguardo |
-| 181 | e-Remito |
-| 182 | Nota de Crédito e-Remito |
+| Código | Tipo | Método del cliente |
+|--------|------|-------------------|
+| 101 | e-Ticket | `CrearETicket()` |
+| 102 | Nota de Crédito e-Ticket | `CrearNotaCreditoETicket()` |
+| 103 | Nota de Débito e-Ticket | `CrearNotaDebitoETicket()` |
+| 111 | e-Factura | `CrearEFactura()` |
+| 112 | Nota de Crédito e-Factura | `CrearNotaCreditoEFactura()` |
+| 113 | Nota de Débito e-Factura | `CrearNotaDebitoEFactura()` |
+| 121 | e-Factura de Exportación | `CrearEFacturaExportacion()` |
+| 122 | Nota de Crédito e-Factura Exportación | `CrearNotaCreditoEFacturaExportacion()` |
+| 123 | Nota de Débito e-Factura Exportación | `CrearNotaDebitoEFacturaExportacion()` |
+| 131 | e-Remito Despachante | `CrearERemitoDespachante()` |
+| 151 | e-Resguardo | `CrearEResguardo()` |
+| 181 | e-Remito | `CrearERemito()` |
+| 182 | Nota de Crédito e-Remito | `CrearNotaCreditoERemito()` |
+
+---
+
+## 💸 Tasas de IVA (`TipoIva`)
+
+| Valor | Nombre | Tasa |
+|-------|--------|------|
+| `TipoIva.Exento` | Exento | 0 % |
+| `TipoIva.Minimo` | Mínimo | 10 % |
+| `TipoIva.Basico` | Básico | 22 % |
+| `TipoIva.Suspendido` | Suspendido | — |
+
+---
+
+## 🧩 Interfaz `IUruFacturaClient`
+
+El SDK expone la interfaz `IUruFacturaClient` para facilitar el **mocking en tests** de aplicaciones consumidoras:
+
+```csharp
+// En tu aplicación
+public class MiServicioFacturacion(IUruFacturaClient client) { ... }
+
+// En tus tests
+var mockClient = Substitute.For<IUruFacturaClient>(); // NSubstitute, Moq, etc.
+```
+
+---
+
+## ⚠️ Excepciones tipadas
+
+| Excepción | Cuándo se lanza |
+|-----------|----------------|
+| `UruFacturaException` | Base de todas las excepciones del SDK |
+| `CaeException` | CAE vencido, sin rango disponible o no registrado |
+| `CfeValidationException` | CFE inválido según reglas de negocio |
+| `DgiCommunicationException` | Error de comunicación con el servicio SOAP de la DGI |
+| `FirmaDigitalException` | Error al firmar el CFE con el certificado |
+| `PdfGenerationException` | Error al generar el PDF |
 
 ---
 
@@ -176,6 +253,15 @@ Console.WriteLine(client.Cae.ResumenEstado());
 - .NET 10 SDK
 - Certificado digital DGI (`.p12` / `.pfx`)
 - CAE vigente emitido por la DGI
+
+---
+
+## 📚 Documentación adicional
+
+| Documento | Descripción |
+|-----------|-------------|
+| [FACTURACION_URUGUAY.md](docs/FACTURACION_URUGUAY.md) | Marco normativo, ejemplos por tipo de empresa y consideraciones fiscales |
+| [CERTIFICACION_DGI.md](docs/CERTIFICACION_DGI.md) | Proceso de homologación y puesta en producción paso a paso |
 
 ---
 
