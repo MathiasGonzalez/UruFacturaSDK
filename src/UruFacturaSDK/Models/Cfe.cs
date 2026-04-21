@@ -217,9 +217,12 @@ public class Cfe
         if (Array.Exists(TiposFactura, t => t == Tipo) && Receptor == null)
             errors.Add("Las e-Facturas y e-Resguardos requieren datos del receptor.");
 
-        // e-Remito y e-Remito Despachante requieren IndTraslado
+        // e-Remito y e-Remito Despachante requieren IndTraslado válido
         if (Array.Exists(TiposRemito, t => t == Tipo) && IndTraslado == null)
             errors.Add("Los e-Remitos requieren indicar el motivo de traslado (IndTraslado).");
+        else if (Array.Exists(TiposRemito, t => t == Tipo) && IndTraslado.HasValue
+                 && !Enum.IsDefined(typeof(IndTraslado), IndTraslado.Value))
+            errors.Add("IndTraslado contiene un valor no soportado para e-Remitos.");
 
         return errors;
     }

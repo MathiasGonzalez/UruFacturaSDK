@@ -231,7 +231,7 @@ public class CfeModelTests
     // --- Validación de IndTraslado en e-Remito ---
 
     [Fact]
-    public void Validar_ERemitoCon_IndTraslado_NoRetornaError()
+    public void Validar_ERemitoConIndTraslado_NoRetornaError()
     {
         var cfe = CriarCfeValido();
         cfe.Tipo = TipoCfe.ERemito;
@@ -258,5 +258,15 @@ public class CfeModelTests
         cfe.IndTraslado = null;
         var errores = cfe.Validar();
         Assert.Contains(errores, e => e.Contains("traslado") || e.Contains("IndTraslado"));
+    }
+
+    [Fact]
+    public void Validar_ERemitoConIndTrasladoFueraDeRango_RetornaError()
+    {
+        var cfe = CriarCfeValido();
+        cfe.Tipo = TipoCfe.ERemito;
+        cfe.IndTraslado = (IndTraslado)99; // valor fuera del enum
+        var errores = cfe.Validar();
+        Assert.Contains(errores, e => e.Contains("IndTraslado") || e.Contains("no soportado"));
     }
 }
