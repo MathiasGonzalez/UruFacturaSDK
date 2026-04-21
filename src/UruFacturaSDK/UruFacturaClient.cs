@@ -1,34 +1,213 @@
+using UruFacturaSDK.Cae;
 using UruFacturaSDK.Configuration;
+using UruFacturaSDK.Enums;
+using UruFacturaSDK.Models;
 using UruFacturaSDK.Pdf;
+using UruFacturaSDK.Signature;
+using UruFacturaSDK.Soap;
+using UruFacturaSDK.Xml;
 
 namespace UruFacturaSDK;
 
 /// <summary>
-/// Punto de entrada principal del SDK de UruFactura.
-/// Extiende <see cref="UruFacturaClientBase"/> añadiendo la generación de representaciones impresas (PDF) del CFE.
+/// Cliente principal del SDK de UruFactura.
+/// Orquesta la creación de CFE, generación/firma de XML, comunicación con DGI
+/// y, opcionalmente, la generación de representaciones impresas (PDF).
+/// <para>
+/// La versión completa del paquete inicializa un generador de PDF por defecto.
+/// La versión Lite no incluye generador de PDF; puede pasarse uno personalizado
+/// mediante el constructor que acepta <see cref="ICfePdfGenerator"/>.
+/// </para>
 /// </summary>
-public class UruFacturaClient : UruFacturaClientBase, IUruFacturaClient
+public partial class UruFacturaClient : IUruFacturaClient
 {
-    private readonly ICfePdfGenerator _pdfGenerator;
+    private readonly UruFacturaConfig _config;
+    private readonly CfeXmlBuilder _xmlBuilder;
+    private readonly CfeFirmante _firmante;
+    private readonly CaeManager _caeManager;
+    private readonly ICfePdfGenerator? _pdfGenerator;
+    private DgiSoapClient? _soapClient;
+    private bool _disposed;
+
+    /// <summary>Gestión de CAEs del cliente.</summary>
+    public ICaeManager Cae => _caeManager;
 
     /// <summary>
-    /// Inicializa el cliente de UruFactura con la configuración provista.
+    /// Constructor principal compartido entre todas las variantes del paquete.
+    /// Los constructores de conveniencia sin parámetro de PDF se definen en cada variante.
     /// </summary>
-    /// <param name="config">Configuración del SDK.</param>
-    public UruFacturaClient(UruFacturaConfig config)
-        : this(config, new CfePdfGenerator(config))
+    public UruFacturaClient(UruFacturaConfig config, ICfePdfGenerator? pdfGenerator)
     {
+        config.Validate();
+        _config = config;
+        _xmlBuilder = new CfeXmlBuilder();
+        _firmante = new CfeFirmante(config.RutaCertificado, config.PasswordCertificado);
+        _caeManager = new CaeManager();
+        _pdfGenerator = pdfGenerator;
+    }
+
+    // -----------------------------------------------------------------------
+    // Generación de CFE
+    // -----------------------------------------------------------------------
+
+    /// <summary>Crea un nuevo e-Ticket pre-configurado con los datos del emisor.</summary>
+    public Cfe CrearETicket() => CrearCfe(TipoCfe.ETicket);
+
+    /// <summary>Crea una nueva e-Factura pre-configurada con los datos del emisor.</summary>
+    public Cfe CrearEFactura() => CrearCfe(TipoCfe.EFactura);
+
+    /// <summary>Crea un nuevo e-Remito pre-configurado con los datos del emisor.</summary>
+    public Cfe CrearERemito() => CrearCfe(TipoCfe.ERemito);
+
+    /// <summary>Crea una nota de crédito de e-Ticket.</summary>
+    public Cfe CrearNotaCreditoETicket() => CrearCfe(TipoCfe.NotaCreditoETicket);
+
+    /// <summary>Crea una nota de débito de e-Ticket.</summary>
+    public Cfe CrearNotaDebitoETicket() => CrearCfe(TipoCfe.NotaDebitoETicket);
+
+    /// <summary>Crea una nota de crédito de e-Factura.</summary>
+    public Cfe CrearNotaCreditoEFactura() => CrearCfe(TipoCfe.NotaCreditoEFactura);
+
+    /// <summary>Crea una nota de débito de e-Factura.</summary>
+    public Cfe CrearNotaDebitoEFactura() => CrearCfe(TipoCfe.NotaDebitoEFactura);
+
+    /// <summary>Crea una e-Factura de exportación.</summary>
+    public Cfe CrearEFacturaExportacion() => CrearCfe(TipoCfe.EFacturaExportacion);
+
+    /// <summary>Crea una nota de crédito de e-Factura de exportación.</summary>
+    public Cfe CrearNotaCreditoEFacturaExportacion() => CrearCfe(TipoCfe.NotaCreditoEFacturaExportacion);
+
+    /// <summary>Crea una nota de débito de e-Factura de exportación.</summary>
+    public Cfe CrearNotaDebitoEFacturaExportacion() => CrearCfe(TipoCfe.NotaDebitoEFacturaExportacion);
+
+    /// <summary>Crea un e-Remito de despachante (131).</summary>
+    public Cfe CrearERemitoDespachante() => CrearCfe(TipoCfe.ERemitoDespachante);
+
+    /// <summary>Crea un e-Resguardo (151).</summary>
+    public Cfe CrearEResguardo() => CrearCfe(TipoCfe.EResguardo);
+
+    /// <summary>Crea una nota de crédito de e-Remito (182).</summary>
+    public Cfe CrearNotaCreditoERemito() => CrearCfe(TipoCfe.NotaCreditoERemito);
+
+    private Cfe CrearCfe(TipoCfe tipo) => new()
+    {
+        Tipo = tipo,
+        RutEmisor = _config.RutEmisor,
+        RazonSocialEmisor = _config.RazonSocialEmisor,
+        NombreComercialEmisor = _config.NombreComercialEmisor,
+        Giro = _config.Giro,
+        DomicilioFiscalEmisor = _config.DomicilioFiscal,
+        CiudadEmisor = _config.Ciudad,
+        DepartamentoEmisor = _config.Departamento,
+        FechaEmision = DateTime.Today,
+    };
+
+    // -----------------------------------------------------------------------
+    // XML y Firma
+    // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Genera el XML sin firmar del CFE.
+    /// </summary>
+    /// <param name="cfe">El CFE a serializar.</param>
+    /// <returns>XML sin firmar.</returns>
+    public string GenerarXml(Cfe cfe)
+    {
+        ThrowIfDisposed();
+        var xml = _xmlBuilder.Generar(cfe);
+        cfe.XmlSinFirmar = xml;
+        return xml;
     }
 
     /// <summary>
-    /// Inicializa el cliente de UruFactura con la configuración y un generador de PDF personalizado.
+    /// Firma digitalmente el CFE con XAdES-BES.
     /// </summary>
-    /// <param name="config">Configuración del SDK.</param>
-    /// <param name="pdfGenerator">Implementación de <see cref="ICfePdfGenerator"/> a utilizar.</param>
-    public UruFacturaClient(UruFacturaConfig config, ICfePdfGenerator pdfGenerator)
-        : base(config)
+    /// <param name="cfe">El CFE (debe haberse generado el XML previamente).</param>
+    /// <returns>XML firmado.</returns>
+    public string FirmarCfe(Cfe cfe)
     {
-        _pdfGenerator = pdfGenerator;
+        ThrowIfDisposed();
+        if (string.IsNullOrWhiteSpace(cfe.XmlSinFirmar))
+            GenerarXml(cfe);
+
+        var xmlFirmado = _firmante.Firmar(cfe.XmlSinFirmar!);
+        cfe.XmlFirmado = xmlFirmado;
+        return xmlFirmado;
+    }
+
+    /// <summary>
+    /// Genera y firma el CFE en un solo paso.
+    /// </summary>
+    /// <param name="cfe">El CFE a procesar.</param>
+    /// <returns>XML firmado.</returns>
+    public string GenerarYFirmar(Cfe cfe)
+    {
+        ThrowIfDisposed();
+        GenerarXml(cfe);
+        return FirmarCfe(cfe);
+    }
+
+    // -----------------------------------------------------------------------
+    // Comunicación con DGI
+    // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Envía el CFE firmado a la DGI.
+    /// Si el CFE aún no está firmado, lo firma primero.
+    /// </summary>
+    /// <param name="cfe">El CFE a enviar.</param>
+    /// <param name="cancellationToken">Token de cancelación.</param>
+    /// <returns>Respuesta de la DGI.</returns>
+    public async Task<RespuestaDgi> EnviarCfeAsync(
+        Cfe cfe,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        if (string.IsNullOrWhiteSpace(cfe.XmlFirmado))
+            GenerarYFirmar(cfe);
+
+        var cliente = ObtenerSoapClient();
+        var respuesta = await cliente.EnviarCfeAsync(cfe.XmlFirmado!, cancellationToken);
+
+        cfe.CodigoRespuestaDgi = respuesta.Codigo;
+        cfe.MensajeRespuestaDgi = respuesta.Mensaje;
+        cfe.AceptadoPorDgi = respuesta.Exitoso;
+
+        return respuesta;
+    }
+
+    /// <summary>
+    /// Consulta el estado de un CFE en los servidores de la DGI.
+    /// </summary>
+    public async Task<RespuestaDgi> ConsultarEstadoCfeAsync(
+        Cfe cfe,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        var cliente = ObtenerSoapClient();
+        return await cliente.ConsultarEstadoCfeAsync(
+            cfe.RutEmisor, (int)cfe.Tipo,
+            cfe.Serie ?? string.Empty, cfe.Numero,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Envía el Reporte Diario a la DGI con los CFE del día.
+    /// </summary>
+    public async Task<RespuestaReporteDiario> EnviarReporteDiarioAsync(
+        DateTime fecha,
+        IEnumerable<Cfe> cfes,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        var xmlsFirmados = cfes
+            .Select(c => string.IsNullOrWhiteSpace(c.XmlFirmado)
+                ? GenerarYFirmar(c)
+                : c.XmlFirmado!)
+            .ToList();
+
+        var cliente = ObtenerSoapClient();
+        return await cliente.EnviarReporteDiarioAsync(fecha, xmlsFirmados, cancellationToken);
     }
 
     // -----------------------------------------------------------------------
@@ -40,10 +219,15 @@ public class UruFacturaClient : UruFacturaClientBase, IUruFacturaClient
     /// </summary>
     /// <param name="cfe">El CFE.</param>
     /// <returns>Bytes del PDF.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Si el cliente fue construido sin un generador de PDF.
+    /// Pase una implementación de <see cref="ICfePdfGenerator"/> al constructor.
+    /// </exception>
     public byte[] GenerarPdfA4(Cfe cfe)
     {
         ThrowIfDisposed();
-        return _pdfGenerator.GenerarA4(cfe);
+        ThrowIfNoPdfGenerator();
+        return _pdfGenerator!.GenerarA4(cfe);
     }
 
     /// <summary>
@@ -51,10 +235,47 @@ public class UruFacturaClient : UruFacturaClientBase, IUruFacturaClient
     /// </summary>
     /// <param name="cfe">El CFE.</param>
     /// <returns>Bytes del PDF.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Si el cliente fue construido sin un generador de PDF.
+    /// Pase una implementación de <see cref="ICfePdfGenerator"/> al constructor.
+    /// </exception>
     public byte[] GenerarPdfTermico(Cfe cfe)
     {
         ThrowIfDisposed();
-        return _pdfGenerator.GenerarTermico(cfe);
+        ThrowIfNoPdfGenerator();
+        return _pdfGenerator!.GenerarTermico(cfe);
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    private DgiSoapClient ObtenerSoapClient()
+    {
+        _soapClient ??= new DgiSoapClient(_config);
+        return _soapClient;
+    }
+
+    private void ThrowIfDisposed() =>
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+    private void ThrowIfNoPdfGenerator()
+    {
+        if (_pdfGenerator is null)
+            throw new InvalidOperationException(
+                "Este cliente no tiene un generador de PDF configurado. " +
+                "Pase una implementación de ICfePdfGenerator al constructor.");
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _soapClient?.Dispose();
+        _firmante.Dispose();
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }
+
 

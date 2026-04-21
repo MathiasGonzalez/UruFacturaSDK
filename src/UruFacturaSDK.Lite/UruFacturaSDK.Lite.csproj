@@ -33,8 +33,12 @@
 
   <!-- Share source files from the main project, excluding the Pdf folder -->
   <ItemGroup>
-    <Compile Include="../UruFacturaSDK/UruFacturaClientBase.cs"
-             Link="UruFacturaClientBase.cs" />
+    <!-- Single client class shared between full and Lite builds -->
+    <Compile Include="../UruFacturaSDK/UruFacturaClient.cs"
+             Link="UruFacturaClient.cs" />
+    <!-- ICfePdfGenerator is interface-only; no QuestPDF/SkiaSharp dependency -->
+    <Compile Include="../UruFacturaSDK/Pdf/ICfePdfGenerator.cs"
+             Link="Pdf/ICfePdfGenerator.cs" />
     <Compile Include="../UruFacturaSDK/Cae/**/*.cs"
              Link="Cae/%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="../UruFacturaSDK/Configuration/**/*.cs"

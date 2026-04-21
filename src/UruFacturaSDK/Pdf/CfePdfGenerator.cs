@@ -45,6 +45,7 @@ public class CfePdfGenerator : ICfePdfGenerator
     /// <param name="qrGenerator">Implementación de <see cref="ICfeQrGenerator"/> a utilizar.</param>
     public CfePdfGenerator(UruFacturaConfig config, ICfeQrGenerator qrGenerator)
     {
+        ArgumentNullException.ThrowIfNull(qrGenerator);
         _config = config;
         _qrGenerator = qrGenerator;
     }

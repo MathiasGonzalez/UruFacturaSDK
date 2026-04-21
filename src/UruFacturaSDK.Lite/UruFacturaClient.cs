@@ -1,19 +1,20 @@
 using UruFacturaSDK.Configuration;
+using UruFacturaSDK.Pdf;
 
 namespace UruFacturaSDK;
 
-/// <summary>
-/// Punto de entrada principal del SDK de UruFactura (versión Lite, sin generación de PDF).
-/// Extiende <see cref="UruFacturaClientBase"/> sin añadir dependencias de terceros para PDF.
-/// </summary>
-public class UruFacturaClient : UruFacturaClientBase, IUruFacturaClient
+public partial class UruFacturaClient
 {
     /// <summary>
-    /// Inicializa el cliente de UruFactura con la configuración provista.
+    /// Inicializa el cliente de UruFactura (versión Lite, sin generador de PDF predeterminado).
+    /// Para habilitar la generación de PDF, use el constructor
+    /// <see cref="UruFacturaClient(UruFacturaConfig, ICfePdfGenerator?)"/> con su propia implementación.
     /// </summary>
     /// <param name="config">Configuración del SDK.</param>
-    public UruFacturaClient(UruFacturaConfig config) : base(config)
+    public UruFacturaClient(UruFacturaConfig config)
+        : this(config, null)
     {
     }
 }
+
 
