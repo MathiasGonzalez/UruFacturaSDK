@@ -263,8 +263,8 @@ public partial class UruFacturaClient : IUruFacturaClient
         if (_pdfGenerator is null)
             throw new InvalidOperationException(
                 "Este cliente no tiene un generador de PDF configurado. " +
-                "Use UruFacturaClientBuilder.WithDefaults(config).ConGeneradorPdf(generador).Build() " +
-                "o el constructor que acepta ICfePdfGenerator.");
+                "Use UruFacturaClientBuilder.WithDefaults(config).ConPdfPorDefecto().Build() (paquete completo) " +
+                "o .ConGeneradorPdf(miGenerador).Build() para inyectar una implementación personalizada.");
     }
 
     /// <inheritdoc />

@@ -36,7 +36,13 @@ var config = new UruFacturaConfig
     PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
 };
 
+// Constructor de conveniencia (paquete completo — incluye PDF por defecto)
 using var client = new UruFacturaClient(config);
+
+// Alternativa recomendada con el builder fluido:
+using var client = UruFacturaClientBuilder.WithDefaults(config)
+    .ConPdfPorDefecto()   // disponible solo en UruFacturaSDK (no en Lite)
+    .Build();
 ```
 
 ---

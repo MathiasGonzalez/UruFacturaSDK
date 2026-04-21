@@ -21,35 +21,50 @@ Antes de instalar el SDK, asegurate de tener:
 
 ---
 
+## Elegir el paquete
+
+UruFactura SDK se distribuye en dos variantes NuGet:
+
+| Paquete | Descripción | Cuándo usarlo |
+|---------|-------------|--------------|
+| **`UruFacturaSDK`** | Paquete completo con generación de PDF A4 y térmico (QuestPDF + SkiaSharp + ZXing) | Uso general |
+| **`UruFacturaSDK.Lite`** | Sin dependencias de PDF. Incluye `ICfePdfGenerator` para inyectar tu propio generador | Microservicios, Azure Functions, entornos con restricciones de peso |
+
+---
+
 ## Instalar el paquete NuGet
 
-El paquete está disponible en **[NuGet Gallery → UruFacturaSDK](https://www.nuget.org/packages/UruFacturaSDK/)**.
-
 <Tabs>
-  <TabItem label=".NET CLI">
+  <TabItem label="Paquete completo">
   ```bash
   dotnet add package UruFacturaSDK
+  ```
+  </TabItem>
+  <TabItem label="Paquete Lite">
+  ```bash
+  dotnet add package UruFacturaSDK.Lite
   ```
   </TabItem>
   <TabItem label="Package Manager Console">
   ```powershell
   Install-Package UruFacturaSDK
+  # o para la versión Lite:
+  Install-Package UruFacturaSDK.Lite
   ```
   </TabItem>
   <TabItem label="PackageReference (csproj)">
   ```xml
+  <!-- Paquete completo -->
   <PackageReference Include="UruFacturaSDK" Version="*" />
-  ```
-  </TabItem>
-  <TabItem label="Paket">
-  ```
-  paket add UruFacturaSDK
+
+  <!-- Paquete Lite -->
+  <PackageReference Include="UruFacturaSDK.Lite" Version="*" />
   ```
   </TabItem>
 </Tabs>
 
 <Aside type="tip">
-  Para fijar una versión específica en producción, reemplazá `*` por el número de versión que encontrás en la [página de NuGet](https://www.nuget.org/packages/UruFacturaSDK/), por ejemplo `Version="1.0.0"`.
+  Para fijar una versión específica en producción, reemplazá `*` por el número de versión que encontrás en la página de NuGet, por ejemplo `Version="1.0.0"`.
 </Aside>
 
 ---
@@ -105,9 +120,26 @@ Deberías ver algo como:
 
 3. **Instanciar el cliente**
 
-   ```csharp
-   using var client = new UruFacturaClient(config);
-   ```
+   <Tabs>
+     <TabItem label="Constructor (paquete completo)">
+     ```csharp
+     // Todas las implementaciones predeterminadas, incluyendo PDF
+     using var client = new UruFacturaClient(config);
+     ```
+     </TabItem>
+     <TabItem label="Builder (recomendado)">
+     ```csharp
+     // Paquete completo con PDF
+     using var client = UruFacturaClientBuilder.WithDefaults(config)
+         .ConPdfPorDefecto()
+         .Build();
+
+     // Paquete Lite (sin PDF, o con generador personalizado)
+     using var client = UruFacturaClientBuilder.WithDefaults(config)
+         .Build();
+     ```
+     </TabItem>
+   </Tabs>
 
    El cliente implementa `IDisposable`, por lo que se recomienda usarlo dentro de un bloque `using`.
 
@@ -149,7 +181,14 @@ builder.Services.AddSingleton<UruFacturaConfig>(sp =>
     };
 });
 
-builder.Services.AddSingleton<UruFacturaClient>();
+// Registrar como IUruFacturaClient para inyección por interfaz
+builder.Services.AddSingleton<IUruFacturaClient>(sp =>
+{
+    var config = sp.GetRequiredService<UruFacturaConfig>();
+    return UruFacturaClientBuilder.WithDefaults(config)
+        .ConPdfPorDefecto()   // omitir si usás UruFacturaSDK.Lite
+        .Build();
+});
 ```
 
 ```json

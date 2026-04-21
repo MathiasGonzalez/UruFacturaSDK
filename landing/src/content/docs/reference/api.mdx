@@ -9,15 +9,17 @@ import { Aside } from '@astrojs/starlight/components';
 
 La fachada principal del SDK. Punto de entrada para todas las operaciones.
 
-```csharp
-using var client = new UruFacturaClient(config);
-```
+### Constructores
 
-### Constructor
+| Constructor | Paquete | Descripción |
+|-------------|---------|-------------|
+| `UruFacturaClient(UruFacturaConfig config)` | Completo | Crea el cliente con PDF predeterminado (QuestPDF) |
+| `UruFacturaClient(UruFacturaConfig config, ICfePdfGenerator? pdfGenerator)` | Ambos | Crea el cliente con generador PDF personalizado o `null` |
+| `UruFacturaClient(config, xmlBuilder, firmante, caeManager, soapClient, pdfGenerator)` | Ambos | Constructor principal con todas las dependencias — usado por el builder |
 
-| Parámetro | Tipo | Descripción |
-|-----------|------|-------------|
-| `config` | `UruFacturaConfig` | Configuración del emisor y ambiente |
+<Aside type="tip">
+  Preferí usar `UruFacturaClientBuilder.WithDefaults(config)` en lugar del constructor directo. El builder permite reemplazar cualquier dependencia individualmente, lo que facilita los tests.
+</Aside>
 
 ### Métodos de creación de CFE
 
@@ -45,14 +47,51 @@ using var client = new UruFacturaClient(config);
 | `EnviarCfeAsync` | `Task<RespuestaDgi> EnviarCfeAsync(Cfe cfe)` | Genera, firma y envía el CFE a DGI. |
 | `ConsultarEstadoCfeAsync` | `Task<RespuestaDgi> ConsultarEstadoCfeAsync(Cfe cfe)` | Consulta el estado de un CFE ya enviado. |
 | `EnviarReporteDiarioAsync` | `Task<RespuestaReporteDiario> EnviarReporteDiarioAsync(DateTime fecha, IEnumerable<Cfe> cfes)` | Envía el reporte diario a DGI. |
-| `GenerarPdfA4` | `byte[] GenerarPdfA4(Cfe cfe)` | Genera representación impresa A4 en PDF. |
-| `GenerarPdfTermico` | `byte[] GenerarPdfTermico(Cfe cfe)` | Genera representación térmica 80mm en PDF. |
+| `GenerarPdfA4` | `byte[] GenerarPdfA4(Cfe cfe)` | Genera representación impresa A4 en PDF. Requiere `ICfePdfGenerator` configurado. |
+| `GenerarPdfTermico` | `byte[] GenerarPdfTermico(Cfe cfe)` | Genera representación térmica 80mm en PDF. Requiere `ICfePdfGenerator` configurado. |
 
 ### Propiedades
 
 | Propiedad | Tipo | Descripción |
 |-----------|------|-------------|
 | `Cae` | `ICaeManager` | Gestor de CAEs del emisor |
+
+---
+
+## `UruFacturaClientBuilder`
+
+Builder fluido para construir un `UruFacturaClient` con pleno control sobre cada dependencia.
+
+```csharp
+// Caso habitual — paquete completo con PDF predeterminado:
+using var client = UruFacturaClientBuilder.WithDefaults(config)
+    .ConPdfPorDefecto()
+    .Build();
+
+// Paquete Lite — sin PDF, o con generador personalizado:
+using var client = UruFacturaClientBuilder.WithDefaults(config)
+    .ConGeneradorPdf(miGeneradorPdf)  // opcional
+    .Build();
+
+// Tests — reemplazar solo lo que interesa:
+using var client = UruFacturaClientBuilder.WithDefaults(config)
+    .ConGestorCae(miCaeMock)
+    .ConClienteSoap(miSoapMock)
+    .Build();
+```
+
+### Métodos del builder
+
+| Método | Descripción |
+|--------|-------------|
+| `WithDefaults(UruFacturaConfig config)` | *(static)* Crea el builder con todas las implementaciones predeterminadas |
+| `ConGeneradorXml(ICfeXmlBuilder)` | Reemplaza el generador de XML |
+| `ConFirmante(ICfeFirmante)` | Reemplaza el firmante digital |
+| `ConGestorCae(ICaeManager)` | Reemplaza el gestor de CAEs |
+| `ConClienteSoap(IDgiSoapClient)` | Reemplaza el cliente SOAP hacia DGI |
+| `ConGeneradorPdf(ICfePdfGenerator?)` | Establece el generador de PDF (puede ser `null`) |
+| `ConPdfPorDefecto()` | Agrega el generador PDF predeterminado (solo `UruFacturaSDK`, no Lite) |
+| `Build()` | Construye y retorna el `UruFacturaClient` |
 
 ---
 
@@ -77,6 +116,21 @@ public class UruFacturaConfig
 ```
 
 Ver [Configuración](../getting-started/configuration/) para detalles de cada propiedad.
+
+---
+
+## Interfaces de dependencias
+
+Todas las dependencias internas del cliente tienen interfaces para facilitar el testing y la extensibilidad:
+
+| Interfaz | Implementación | Descripción |
+|----------|---------------|-------------|
+| `ICaeManager` | `CaeManager` | Gestión de CAEs — thread-safe |
+| `ICfePdfGenerator` | `CfePdfGenerator` | Generación de PDF A4 y térmico (solo paquete completo) |
+| `ICfeQrGenerator` | `CfeQrGenerator` | Generación del código QR DGI |
+| `ICfeFirmante` | `CfeFirmante` | Firma XAdES-BES del XML |
+| `ICfeXmlBuilder` | `CfeXmlBuilder` | Serialización del XML según esquema DGI |
+| `IDgiSoapClient` | `DgiSoapClient` | Transporte SOAP hacia DGI |
 
 ---
 
