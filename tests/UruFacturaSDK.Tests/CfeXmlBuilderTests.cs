@@ -275,4 +275,86 @@ public class CfeXmlBuilderTests
         Assert.Contains("encoding=\"utf-8\"", xml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("utf-16", xml, StringComparison.OrdinalIgnoreCase);
     }
+
+    // --- Nuevos campos DGI ---
+
+    [Fact]
+    public void Generar_CfeValido_XmlContieneMntPagar()
+    {
+        var cfe = CriarCfeCompleto();
+        var xml = _builder.Generar(cfe);
+
+        // MntPagar es obligatorio en Totales y debe coincidir con MntTotal
+        Assert.Contains("<MntPagar>1220.00</MntPagar>", xml);
+    }
+
+    [Fact]
+    public void Generar_ConIvaSuspendido_XmlContieneMntSuspenso()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
+        cfe.Detalle[0].Cantidad = 1;
+        cfe.Detalle[0].PrecioUnitario = 500m;
+
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<MntSuspenso>500.00</MntSuspenso>", xml);
+        Assert.DoesNotContain("<MntExe>", xml);
+    }
+
+    [Fact]
+    public void Generar_ConIvaSuspendido_NoMezclaMntExe()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
+
+        var xml = _builder.Generar(cfe);
+
+        // Suspendido debe ir en MntSuspenso, no en MntExe
+        Assert.Contains("MntSuspenso", xml);
+        Assert.DoesNotContain("<MntExe>", xml);
+    }
+
+    [Fact]
+    public void Generar_ERemito_XmlContieneIndTraslado()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Tipo = TipoCfe.ERemito;
+        cfe.IndTraslado = IndTraslado.TrasladoPropio;
+
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<IndTraslado>1</IndTraslado>", xml);
+    }
+
+    [Fact]
+    public void Generar_ETicket_XmlNoContieneIndTraslado()
+    {
+        var cfe = CriarCfeCompleto();
+        var xml = _builder.Generar(cfe);
+
+        Assert.DoesNotContain("IndTraslado", xml);
+    }
+
+    [Fact]
+    public void Generar_ConGiro_XmlContieneGiroNegocio()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Giro = "Comercio minorista";
+
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<GiroNegocio>Comercio minorista</GiroNegocio>", xml);
+    }
+
+    [Fact]
+    public void Generar_SinGiro_XmlNoContieneGiroNegocio()
+    {
+        var cfe = CriarCfeCompleto();
+        cfe.Giro = null;
+
+        var xml = _builder.Generar(cfe);
+
+        Assert.DoesNotContain("GiroNegocio", xml);
+    }
 }

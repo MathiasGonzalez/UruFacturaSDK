@@ -120,6 +120,7 @@ public class UruFacturaClient : IUruFacturaClient
             RutEmisor = _config.RutEmisor,
             RazonSocialEmisor = _config.RazonSocialEmisor,
             NombreComercialEmisor = _config.NombreComercialEmisor,
+            Giro = _config.Giro,
             DomicilioFiscalEmisor = _config.DomicilioFiscal,
             CiudadEmisor = _config.Ciudad,
             DepartamentoEmisor = _config.Departamento,

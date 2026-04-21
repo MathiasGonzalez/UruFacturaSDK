@@ -32,6 +32,9 @@ public class Cfe
     /// <summary>Nombre comercial del emisor (opcional).</summary>
     public string? NombreComercialEmisor { get; set; }
 
+    /// <summary>Giro o actividad económica del emisor (opcional).</summary>
+    public string? Giro { get; set; }
+
     /// <summary>Domicilio fiscal del emisor.</summary>
     public string DomicilioFiscalEmisor { get; set; } = string.Empty;
 
@@ -45,6 +48,11 @@ public class Cfe
 
     /// <summary>Datos del receptor del comprobante.</summary>
     public Receptor? Receptor { get; set; }
+
+    /// <summary>
+    /// Indicador del motivo del traslado. Obligatorio para e-Remito (181) y e-Remito Despachante (131).
+    /// </summary>
+    public IndTraslado? IndTraslado { get; set; }
 
     // --- Condiciones ---
 
@@ -71,6 +79,9 @@ public class Cfe
 
     /// <summary>Monto neto exento de IVA.</summary>
     public decimal MontoNetoExento { get; set; }
+
+    /// <summary>Monto neto con IVA suspendido.</summary>
+    public decimal MontoNetoSuspendido { get; set; }
 
     /// <summary>Monto neto gravado a IVA mínimo (10%).</summary>
     public decimal MontoNetoMinimo { get; set; }
@@ -111,6 +122,7 @@ public class Cfe
     public void CalcularTotales()
     {
         MontoNetoExento = 0;
+        MontoNetoSuspendido = 0;
         MontoNetoMinimo = 0;
         MontoNetoBasico = 0;
 
@@ -119,8 +131,10 @@ public class Cfe
             switch (linea.IndFactIva)
             {
                 case TipoIva.Exento:
-                case TipoIva.Suspendido:
                     MontoNetoExento += linea.MontoTotal;
+                    break;
+                case TipoIva.Suspendido:
+                    MontoNetoSuspendido += linea.MontoTotal;
                     break;
                 case TipoIva.Minimo:
                     MontoNetoMinimo += linea.MontoTotal;
@@ -132,13 +146,15 @@ public class Cfe
         }
 
         MontoNetoExento = Math.Round(MontoNetoExento, 2);
+        MontoNetoSuspendido = Math.Round(MontoNetoSuspendido, 2);
         MontoNetoMinimo = Math.Round(MontoNetoMinimo, 2);
         MontoNetoBasico = Math.Round(MontoNetoBasico, 2);
 
         IvaMinimo = Math.Round(MontoNetoMinimo * 0.10m, 2);
         IvaBasico = Math.Round(MontoNetoBasico * 0.22m, 2);
 
-        MontoTotal = MontoNetoExento + MontoNetoMinimo + IvaMinimo
+        MontoTotal = MontoNetoExento + MontoNetoSuspendido
+                   + MontoNetoMinimo + IvaMinimo
                    + MontoNetoBasico + IvaBasico;
         MontoTotal = Math.Round(MontoTotal, 2);
     }
@@ -149,6 +165,18 @@ public class Cfe
         TipoCfe.NotaCreditoEFactura, TipoCfe.NotaDebitoEFactura,
         TipoCfe.NotaCreditoEFacturaExportacion, TipoCfe.NotaDebitoEFacturaExportacion,
         TipoCfe.NotaCreditoERemito,
+    ];
+
+    private static readonly TipoCfe[] TiposFactura =
+    [
+        TipoCfe.EFactura, TipoCfe.NotaCreditoEFactura, TipoCfe.NotaDebitoEFactura,
+        TipoCfe.EFacturaExportacion, TipoCfe.NotaCreditoEFacturaExportacion, TipoCfe.NotaDebitoEFacturaExportacion,
+        TipoCfe.EResguardo,
+    ];
+
+    private static readonly TipoCfe[] TiposRemito =
+    [
+        TipoCfe.ERemito, TipoCfe.ERemitoDespachante,
     ];
 
     /// <summary>
@@ -184,6 +212,17 @@ public class Cfe
         // Notas de corrección requieren referencias
         if (Array.Exists(TiposCorreccion, t => t == Tipo) && Referencias.Count == 0)
             errors.Add("Las notas de crédito/débito deben referenciar al menos un CFE.");
+
+        // e-Factura y tipos relacionados requieren datos del receptor
+        if (Array.Exists(TiposFactura, t => t == Tipo) && Receptor == null)
+            errors.Add("Las e-Facturas y e-Resguardos requieren datos del receptor.");
+
+        // e-Remito y e-Remito Despachante requieren IndTraslado válido
+        if (Array.Exists(TiposRemito, t => t == Tipo) && IndTraslado == null)
+            errors.Add("Los e-Remitos requieren indicar el motivo de traslado (IndTraslado).");
+        else if (Array.Exists(TiposRemito, t => t == Tipo) && IndTraslado.HasValue
+                 && !Enum.IsDefined(typeof(IndTraslado), IndTraslado.Value))
+            errors.Add("IndTraslado contiene un valor no soportado para e-Remitos.");
 
         return errors;
     }

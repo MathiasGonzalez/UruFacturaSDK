@@ -65,6 +65,7 @@ var config = new UruFacturaConfig
     DomicilioFiscal     = "Av. 18 de Julio 1234",
     Ciudad              = "Montevideo",
     Departamento        = "Montevideo",
+    Giro                = "Comercio al por mayor", // Actividad económica (opcional)
     Ambiente            = Ambiente.Homologacion,
     RutaCertificado     = "/ruta/al/certificado.p12",
     PasswordCertificado = Environment.GetEnvironmentVariable("CERT_PASSWORD")!,
