@@ -31,6 +31,20 @@ jobs:
       - name: Test
         run: dotnet test UruFacturaSDK.slnx --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --settings tests/UruFacturaSDK.Tests/coverlet.runsettings
 
+      - name: Pack UruFacturaSDK (verify)
+        run: >
+          dotnet pack src/UruFacturaSDK/UruFacturaSDK.csproj
+          --no-build
+          --configuration Release
+          --output /tmp/nupkg-ci
+
+      - name: Pack UruFacturaSDK.Lite (verify)
+        run: >
+          dotnet pack src/UruFacturaSDK.Lite/UruFacturaSDK.Lite.csproj
+          --no-build
+          --configuration Release
+          --output /tmp/nupkg-ci
+
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()

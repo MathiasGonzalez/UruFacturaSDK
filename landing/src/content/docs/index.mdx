@@ -15,8 +15,12 @@ hero:
       link: getting-started/installation/
       icon: right-arrow
       variant: primary
-    - text: Ver en NuGet
+    - text: UruFacturaSDK en NuGet
       link: https://www.nuget.org/packages/UruFacturaSDK/
+      icon: external
+      variant: secondary
+    - text: UruFacturaSDK.Lite en NuGet
+      link: https://www.nuget.org/packages/UruFacturaSDK.Lite/
       icon: external
       variant: secondary
     - text: Ver en GitHub
@@ -48,22 +52,31 @@ import { Card, CardGrid, LinkCard, Tabs, TabItem, Badge, Aside } from '@astrojs/
 
 ## Instalación en 30 segundos
 
-El paquete está publicado en **[NuGet Gallery → UruFacturaSDK](https://www.nuget.org/packages/UruFacturaSDK/)**.
+Ambos paquetes están disponibles en NuGet Gallery:
 
 <Tabs>
-  <TabItem label=".NET CLI">
+  <TabItem label="Paquete completo (con PDF)">
   ```bash
   dotnet add package UruFacturaSDK
+  ```
+  </TabItem>
+  <TabItem label="Lite (sin QuestPDF / SkiaSharp)">
+  ```bash
+  dotnet add package UruFacturaSDK.Lite
   ```
   </TabItem>
   <TabItem label="Package Manager">
   ```powershell
   Install-Package UruFacturaSDK
+  # o Lite:
+  Install-Package UruFacturaSDK.Lite
   ```
   </TabItem>
   <TabItem label="PackageReference">
   ```xml
   <PackageReference Include="UruFacturaSDK" Version="*" />
+  <!-- o Lite: -->
+  <PackageReference Include="UruFacturaSDK.Lite" Version="*" />
   ```
   </TabItem>
 </Tabs>
@@ -174,8 +187,13 @@ if (respuesta.Exitoso)
     href="reference/api/"
   />
   <LinkCard
-    title="📦 Paquete en NuGet"
-    description="Versiones publicadas, dependencias y estadísticas de descarga."
+    title="📦 UruFacturaSDK en NuGet"
+    description="Paquete completo con PDF. Versiones publicadas, dependencias y descargas."
     href="https://www.nuget.org/packages/UruFacturaSDK/"
+  />
+  <LinkCard
+    title="📦 UruFacturaSDK.Lite en NuGet"
+    description="Paquete sin dependencias de PDF, ideal para microservicios y Azure Functions."
+    href="https://www.nuget.org/packages/UruFacturaSDK.Lite/"
   />
 </CardGrid>

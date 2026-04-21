@@ -10,7 +10,7 @@ namespace UruFacturaSDK.Xml;
 /// <summary>
 /// Genera el XML de un CFE según el esquema de la DGI de Uruguay (versión 23.01).
 /// </summary>
-public class CfeXmlBuilder
+public class CfeXmlBuilder : ICfeXmlBuilder
 {
     private const string NsUri = "http://cfe.dgi.gub.uy";
 

@@ -13,7 +13,7 @@ namespace UruFacturaSDK.Soap;
 /// Cliente SOAP para comunicarse con los servicios web de la DGI de Uruguay
 /// (envío de CFE, consulta de estado y envío de reporte diario).
 /// </summary>
-public class DgiSoapClient : IDisposable
+public class DgiSoapClient : IDgiSoapClient
 {
     private readonly UruFacturaConfig _config;
     private readonly HttpClient _httpClient;

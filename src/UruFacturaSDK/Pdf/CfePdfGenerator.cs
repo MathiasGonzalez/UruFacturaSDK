@@ -18,9 +18,10 @@ namespace UruFacturaSDK.Pdf;
 /// Genera la representación impresa (PDF) de los CFE en formato A4 o térmico (ticket),
 /// incluyendo el código QR y los datos requeridos por normativa DGI.
 /// </summary>
-public class CfePdfGenerator
+public class CfePdfGenerator : ICfePdfGenerator
 {
     private readonly UruFacturaConfig _config;
+    private readonly ICfeQrGenerator _qrGenerator;
 
     static CfePdfGenerator()
     {
@@ -28,21 +29,33 @@ public class CfePdfGenerator
         QuestPDF.Settings.License = LicenseType.Community;
     }
 
+    /// <summary>
+    /// Inicializa el generador usando el motor de QR predeterminado.
+    /// </summary>
+    /// <param name="config">Configuración del SDK.</param>
     public CfePdfGenerator(UruFacturaConfig config)
+        : this(config, new CfeQrGenerator())
     {
-        _config = config;
     }
 
     /// <summary>
-    /// Genera el PDF en formato A4 del CFE.
+    /// Inicializa el generador con un motor de QR personalizado.
     /// </summary>
-    /// <param name="cfe">El CFE con datos completos.</param>
-    /// <returns>Array de bytes del PDF generado.</returns>
+    /// <param name="config">Configuración del SDK.</param>
+    /// <param name="qrGenerator">Implementación de <see cref="ICfeQrGenerator"/> a utilizar.</param>
+    public CfePdfGenerator(UruFacturaConfig config, ICfeQrGenerator qrGenerator)
+    {
+        ArgumentNullException.ThrowIfNull(qrGenerator);
+        _config = config;
+        _qrGenerator = qrGenerator;
+    }
+
+    /// <inheritdoc />
     public byte[] GenerarA4(Cfe cfe)
     {
         try
         {
-            var qrBytes = GenerarQrCode(cfe, _config.Ambiente);
+            var qrBytes = _qrGenerator.GenerarQrCode(cfe, _config.Ambiente);
             var document = new CfeDocumentoA4(cfe, _config, qrBytes);
             return document.GeneratePdf();
         }
@@ -52,16 +65,12 @@ public class CfePdfGenerator
         }
     }
 
-    /// <summary>
-    /// Genera el PDF en formato térmico (ticket de 80mm) del CFE.
-    /// </summary>
-    /// <param name="cfe">El CFE con datos completos.</param>
-    /// <returns>Array de bytes del PDF generado.</returns>
+    /// <inheritdoc />
     public byte[] GenerarTermico(Cfe cfe)
     {
         try
         {
-            var qrBytes = GenerarQrCode(cfe, _config.Ambiente);
+            var qrBytes = _qrGenerator.GenerarQrCode(cfe, _config.Ambiente);
             var document = new CfeDocumentoTermico(cfe, _config, qrBytes);
             return document.GeneratePdf();
         }

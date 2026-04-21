@@ -22,11 +22,13 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Extract version from csproj
+      - name: Extract versions from csproj
         id: version
         run: |
           VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/UruFacturaSDK/UruFacturaSDK.csproj)
+          VERSION_LITE=$(grep -oP '(?<=<Version>)[^<]+' src/UruFacturaSDK.Lite/UruFacturaSDK.Lite.csproj)
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "VERSION_LITE=$VERSION_LITE" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies
         run: dotnet restore UruFacturaSDK.slnx
@@ -37,17 +39,24 @@ jobs:
       - name: Test
         run: dotnet test UruFacturaSDK.slnx --no-build --configuration Release --verbosity normal
 
-      - name: Pack
+      - name: Pack UruFacturaSDK
         run: >
           dotnet pack src/UruFacturaSDK/UruFacturaSDK.csproj
           --no-build
           --configuration Release
           --output ./nupkg
 
-      - name: Upload NuGet package artifact
+      - name: Pack UruFacturaSDK.Lite
+        run: >
+          dotnet pack src/UruFacturaSDK.Lite/UruFacturaSDK.Lite.csproj
+          --no-build
+          --configuration Release
+          --output ./nupkg
+
+      - name: Upload NuGet package artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: nuget-package-${{ steps.version.outputs.VERSION }}
+          name: nuget-packages-${{ steps.version.outputs.VERSION }}
           path: ./nupkg/*.nupkg
           retention-days: 30
 

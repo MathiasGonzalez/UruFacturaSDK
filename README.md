@@ -10,6 +10,8 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+> 📖 **Documentación completa:** [mathiasgonzalez.github.io/UruFacturaSDK](https://mathiasgonzalez.github.io/UruFacturaSDK/)
+
 UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseñada para simplificar la integración de sistemas locales con el ecosistema de la DGI. Olvídate de lidiar con la complejidad manual de los sobres SOAP o la estructura rígida de los esquemas XML; esta herramienta actúa como un puente amigable entre tu lógica de negocio y los requisitos impositivos uruguayos.
 
 ---
@@ -31,23 +33,28 @@ UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseña
 ```
 UruFacturaSDK/
 ├── src/
-│   └── UruFacturaSDK/
-│       ├── Configuration/      # UruFacturaConfig
-│       ├── Enums/              # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, TipoDocumentoReceptor
-│       ├── Exceptions/         # CaeException, CfeValidationException, DgiCommunicationException,
-│       │                       # FirmaDigitalException, PdfGenerationException, UruFacturaException
-│       ├── Models/             # Cfe, Cae, Receptor, LineaDetalle, RefCfe,
-│       │                       # RespuestaDgi, RespuestaReporteDiario, TotalesIva
-│       ├── Formatting/         # CfeFormat (formateadores internos de fecha y moneda)
-│       ├── Xml/                # CfeXmlBuilder (generación XML DGI)
-│       ├── Signature/          # CfeFirmante (XAdES-BES)
-│       ├── Soap/               # DgiSoapClient (comunicación con DGI)
-│       ├── Cae/                # CaeManager / ICaeManager (gestión de CAE)
-│       ├── Pdf/                # CfePdfGenerator (PDF A4 y térmico)
-│       ├── IUruFacturaClient.cs # Interfaz pública (para mocking en tests)
-│       └── UruFacturaClient.cs  # Fachada principal del SDK
+│   ├── UruFacturaSDK/                  # Paquete completo (con PDF)
+│   │   ├── Configuration/              # UruFacturaConfig
+│   │   ├── Enums/                      # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, TipoDocumentoReceptor
+│   │   ├── Exceptions/                 # CaeException, CfeValidationException, DgiCommunicationException,
+│   │   │                               # FirmaDigitalException, PdfGenerationException, UruFacturaException
+│   │   ├── Models/                     # Cfe, Cae, Receptor, LineaDetalle, RefCfe,
+│   │   │                               # RespuestaDgi, RespuestaReporteDiario, TotalesIva
+│   │   ├── Formatting/                 # CfeFormat (formateadores internos de fecha y moneda)
+│   │   ├── Xml/                        # CfeXmlBuilder / ICfeXmlBuilder (generación XML DGI)
+│   │   ├── Signature/                  # CfeFirmante / ICfeFirmante (XAdES-BES)
+│   │   ├── Soap/                       # DgiSoapClient / IDgiSoapClient (comunicación con DGI)
+│   │   ├── Cae/                        # CaeManager / ICaeManager (gestión de CAE)
+│   │   ├── Pdf/                        # CfePdfGenerator / ICfePdfGenerator (PDF A4 y térmico)
+│   │   │                               # CfeQrGenerator / ICfeQrGenerator (código QR)
+│   │   ├── IUruFacturaClient.cs        # Interfaz pública (para mocking en tests)
+│   │   ├── UruFacturaClient.cs         # Fachada principal del SDK
+│   │   ├── UruFacturaClientBuilder.cs  # Builder fluido con WithDefaults()
+│   │   └── UruFacturaClientBuilderPdf.cs # Extensión del builder para PDF (solo paquete completo)
+│   └── UruFacturaSDK.Lite/             # Paquete Lite (sin QuestPDF/SkiaSharp/ZXing)
+│       └── UruFacturaClient.cs         # Constructores de conveniencia (sin PDF por defecto)
 └── tests/
-    └── UruFacturaSDK.Tests/    # Tests unitarios xUnit
+    └── UruFacturaSDK.Tests/            # Tests unitarios xUnit
 ```
 
 ---
@@ -76,7 +83,13 @@ var config = new UruFacturaConfig
     OmitirValidacionSsl   = true,               // solo en Homologación con CA no confiable
 };
 
+// Constructor de conveniencia (paquete completo — incluye PDF)
 using var client = new UruFacturaClient(config);
+
+// O usando el builder fluido (recomendado para DI o tests):
+using var client = UruFacturaClientBuilder.WithDefaults(config)
+    .WithDefaultPdf()   // omitir si usás UruFacturaSDK.Lite
+    .Build();
 ```
 
 > ⚠️ Nunca almacenes `PasswordCertificado` en texto plano. Usá variables de entorno o un gestor de secretos.
@@ -233,6 +246,39 @@ public class MiServicioFacturacion(IUruFacturaClient client) { ... }
 var mockClient = Substitute.For<IUruFacturaClient>(); // NSubstitute, Moq, etc.
 ```
 
+### Interfaces de dependencias
+
+Todas las dependencias internas del cliente también tienen interfaces, lo que permite reemplazar
+cualquier componente sin subclasear `UruFacturaClient`:
+
+| Interfaz | Implementación predeterminada | Descripción |
+|---|---|---|
+| `ICaeManager` | `CaeManager` | Gestión de CAEs |
+| `ICfePdfGenerator` | `CfePdfGenerator` | Generación de PDF (solo paquete completo) |
+| `ICfeQrGenerator` | `CfeQrGenerator` | Generación del código QR |
+| `ICfeFirmante` | `CfeFirmante` | Firma XAdES-BES |
+| `ICfeXmlBuilder` | `CfeXmlBuilder` | Serialización XML DGI |
+| `IDgiSoapClient` | `DgiSoapClient` | Transporte SOAP hacia DGI |
+
+### `UruFacturaClientBuilder`
+
+El builder fluido es la forma recomendada de construir el cliente, especialmente cuando se necesita
+inyectar dependencias personalizadas (p.ej. mocks en tests o transporte SOAP propio):
+
+```csharp
+// Caso más habitual — todas las implementaciones predeterminadas:
+using var client = UruFacturaClientBuilder.WithDefaults(config)
+    .WithDefaultPdf()   // solo disponible en UruFacturaSDK (no en Lite)
+    .Build();
+
+// Reemplazar solo lo que necesitás:
+using var client = UruFacturaClientBuilder.WithDefaults(config)
+    .WithCaeManager(miCaeManager)
+    .WithSoapClient(miSoapMock)
+    .WithPdfGenerator(miGeneradorPdf)
+    .Build();
+```
+
 ---
 
 ## ⚠️ Excepciones tipadas
@@ -262,6 +308,23 @@ var mockClient = Substitute.For<IUruFacturaClient>(); // NSubstitute, Moq, etc.
 |-----------|-------------|
 | [FACTURACION_URUGUAY.md](docs/FACTURACION_URUGUAY.md) | Marco normativo, ejemplos por tipo de empresa y consideraciones fiscales |
 | [CERTIFICACION_DGI.md](docs/CERTIFICACION_DGI.md) | Proceso de homologación y puesta en producción paso a paso |
+
+---
+
+## 📦 Paquetes NuGet
+
+| Paquete | Cuándo usarlo |
+|---------|--------------|
+| [`UruFacturaSDK`](https://www.nuget.org/packages/UruFacturaSDK/) | Uso general — incluye generación de PDF A4 y térmico (QuestPDF + SkiaSharp + ZXing) |
+| [`UruFacturaSDK.Lite`](https://www.nuget.org/packages/UruFacturaSDK.Lite/) | Entornos donde el peso de las dependencias de PDF no es deseable (microservicios, Azure Functions, etc.). Podés inyectar tu propio `ICfePdfGenerator` si lo necesitás. |
+
+```bash
+# Paquete completo
+dotnet add package UruFacturaSDK
+
+# Paquete Lite (sin QuestPDF / SkiaSharp / ZXing)
+dotnet add package UruFacturaSDK.Lite
+```
 
 ---
 
