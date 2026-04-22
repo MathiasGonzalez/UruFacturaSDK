@@ -95,9 +95,7 @@ public class UruFacturaClientTests
     [Fact]
     public void CrearETicket_PropagaDatosEmisorDesdeConfig()
     {
-        var config = ConfigValida();
-        config.NombreComercialEmisor = "Comercio X";
-        config.Giro = "Venta de servicios";
+        var config = ConfigValida() with { NombreComercialEmisor = "Comercio X", Giro = "Venta de servicios" };
         using var client = new UruFacturaClient(
             config,
             new XmlBuilderStub(),
@@ -115,7 +113,7 @@ public class UruFacturaClientTests
         Assert.Equal("Av. 18 de Julio 1234", cfe.DomicilioFiscalEmisor);
         Assert.Equal("Montevideo", cfe.CiudadEmisor);
         Assert.Equal("Montevideo", cfe.DepartamentoEmisor);
-        Assert.Equal(DateTime.Today, cfe.FechaEmision);
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), cfe.FechaEmision);
     }
 
     [Fact]
@@ -123,7 +121,7 @@ public class UruFacturaClientTests
     {
         using var client = CrearCliente();
         var cfe = client.CrearETicket();
-        Assert.Equal(DateTime.Today, cfe.FechaEmision);
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), cfe.FechaEmision);
     }
 
     // -----------------------------------------------------------------------
@@ -532,6 +530,7 @@ public class UruFacturaClientTests
             });
         }
 
+        public IDgiSoapClient WithHttpClient(HttpClient httpClient) => this;
         public void Dispose() { Disposed = true; }
     }
 

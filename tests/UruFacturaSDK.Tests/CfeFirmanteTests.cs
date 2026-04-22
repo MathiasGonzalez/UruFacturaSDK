@@ -51,12 +51,12 @@ public class CfeFirmanteTests : IDisposable
             X509KeyStorageFlags.EphemeralKeySet);
     }
 
-    private static Cfe CriarCfeBasico() => new()
+    private static Cfe CrearCfeBasico() => new()
     {
         Tipo = TipoCfe.ETicket,
         Serie = "A",
         Numero = 1,
-        FechaEmision = new DateTime(2025, 6, 15),
+        FechaEmision = new DateOnly(2025, 6, 15),
         RutEmisor = "210000000012",
         RazonSocialEmisor = "Empresa Test S.A.",
         DomicilioFiscalEmisor = "Av. 18 de Julio 1234",
@@ -82,7 +82,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void Firmar_XmlFirmado_ContieneElementoSignature()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         Assert.Contains("<Signature", xmlFirmado);
@@ -91,7 +91,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void Firmar_XmlFirmado_ContieneQualifyingPropertiesConTarget()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         var doc = new XmlDocument { PreserveWhitespace = true };
@@ -112,7 +112,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void Firmar_XmlFirmado_ContieneSignedPropertiesConId()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         var doc = new XmlDocument { PreserveWhitespace = true };
@@ -131,7 +131,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void Firmar_XmlFirmado_SignedInfoContieneReferenciaASignedProperties()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         var doc = new XmlDocument { PreserveWhitespace = true };
@@ -164,7 +164,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void Firmar_XmlFirmado_ContieneSigningTime()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         var doc = new XmlDocument { PreserveWhitespace = true };
@@ -181,7 +181,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void Firmar_XmlFirmado_ContieneSigningCertificate()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         var doc = new XmlDocument { PreserveWhitespace = true };
@@ -197,7 +197,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void VerificarFirma_XmlFirmado_RetornaTrue()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         Assert.True(CfeFirmante.VerificarFirma(xmlFirmado));
@@ -206,7 +206,7 @@ public class CfeFirmanteTests : IDisposable
     [Fact]
     public void VerificarFirma_XmlModificadoPostFirma_RetornaFalse()
     {
-        var xml = _builder.Generar(CriarCfeBasico());
+        var xml = _builder.Generar(CrearCfeBasico());
         var xmlFirmado = _firmante.Firmar(xml);
 
         // Modificar el contenido firmado

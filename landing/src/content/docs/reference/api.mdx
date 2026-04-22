@@ -43,10 +43,12 @@ La fachada principal del SDK. Punto de entrada para todas las operaciones.
 
 | Método | Firma | Descripción |
 |--------|-------|-------------|
+| `GenerarXml` | `string GenerarXml(Cfe cfe)` | Genera el XML sin firmar y lo guarda en `cfe.XmlSinFirmar`. |
+| `FirmarCfe` | `string FirmarCfe(Cfe cfe)` | Firma el CFE con XAdES-BES y guarda el resultado en `cfe.XmlFirmado`. |
 | `GenerarYFirmar` | `string GenerarYFirmar(Cfe cfe)` | Genera XML y lo firma con XAdES-BES. Retorna el XML firmado. |
-| `EnviarCfeAsync` | `Task<RespuestaDgi> EnviarCfeAsync(Cfe cfe)` | Genera, firma y envía el CFE a DGI. |
-| `ConsultarEstadoCfeAsync` | `Task<RespuestaDgi> ConsultarEstadoCfeAsync(Cfe cfe)` | Consulta el estado de un CFE ya enviado. |
-| `EnviarReporteDiarioAsync` | `Task<RespuestaReporteDiario> EnviarReporteDiarioAsync(DateTime fecha, IEnumerable<Cfe> cfes)` | Envía el reporte diario a DGI. |
+| `EnviarCfeAsync` | `Task<RespuestaDgi> EnviarCfeAsync(Cfe cfe, CancellationToken cancellationToken = default)` | Genera, firma y envía el CFE a DGI. |
+| `ConsultarEstadoCfeAsync` | `Task<RespuestaDgi> ConsultarEstadoCfeAsync(Cfe cfe, CancellationToken cancellationToken = default)` | Consulta el estado de un CFE ya enviado. |
+| `EnviarReporteDiarioAsync` | `Task<RespuestaReporteDiario> EnviarReporteDiarioAsync(DateTime fecha, IEnumerable<Cfe> cfes, CancellationToken cancellationToken = default)` | Envía el reporte diario a DGI. |
 | `GenerarPdfA4` | `byte[] GenerarPdfA4(Cfe cfe)` | Genera representación impresa A4 en PDF. Requiere `ICfePdfGenerator` configurado. |
 | `GenerarPdfTermico` | `byte[] GenerarPdfTermico(Cfe cfe)` | Genera representación térmica 80mm en PDF. Requiere `ICfePdfGenerator` configurado. |
 
@@ -89,6 +91,7 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
 | `WithSigner(ICfeFirmante)` | Reemplaza el firmante digital |
 | `WithCaeManager(ICaeManager)` | Reemplaza el gestor de CAEs |
 | `WithSoapClient(IDgiSoapClient)` | Reemplaza el cliente SOAP hacia DGI |
+| `WithHttpClient(HttpClient)` | Inyecta un `HttpClient` externo (recomendado en APIs de alto tráfico con `IHttpClientFactory`) |
 | `WithPdfGenerator(ICfePdfGenerator?)` | Establece el generador de PDF (puede ser `null`) |
 | `WithDefaultPdf()` | Agrega el generador PDF predeterminado (solo `UruFacturaSDK`, no Lite) |
 | `Build()` | Construye y retorna el `UruFacturaClient` |
@@ -100,10 +103,12 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
 Configuración del cliente SDK.
 
 ```csharp
-public class UruFacturaConfig
+public record UruFacturaConfig
 {
     public string RutEmisor { get; set; }
     public string RazonSocialEmisor { get; set; }
+    public string? NombreComercialEmisor { get; set; }
+    public string? Giro { get; set; }
     public string DomicilioFiscal { get; set; }
     public string Ciudad { get; set; }
     public string Departamento { get; set; }
@@ -112,6 +117,7 @@ public class UruFacturaConfig
     public Ambiente Ambiente { get; set; }
     public int SoapTimeoutSegundos { get; set; }  // default: 30
     public bool OmitirValidacionSsl { get; set; } // default: false
+    public string DgiSoapBaseUrl { get; }         // según Ambiente
 }
 ```
 
@@ -143,7 +149,7 @@ Clase base de todos los comprobantes. No se instancia directamente — usá los 
 | Propiedad | Tipo | Descripción |
 |-----------|------|-------------|
 | `Numero` | `long` | Número del comprobante (dentro del rango CAE) |
-| `FechaEmision` | `DateTime` | Fecha de emisión (default: `DateTime.Today`) |
+| `FechaEmision` | `DateOnly` | Fecha de emisión (default: `DateOnly.FromDateTime(DateTime.Today)`) |
 | `Detalle` | `List<LineaDetalle>` | Líneas de detalle del comprobante |
 | `Referencias` | `List<RefCfe>` | Referencias a comprobantes (para NC/ND) |
 
@@ -187,7 +193,11 @@ Constancia de Autorización de Emisión.
 | `TipoCfe` | `TipoCfe` | ✅ | Tipo de CFE al que aplica |
 | `RangoDesde` | `long` | ✅ | Primer número autorizado |
 | `RangoHasta` | `long` | ✅ | Último número autorizado |
-| `FechaVencimiento` | `DateTime` | ✅ | Fecha de vencimiento del CAE |
+| `FechaVencimiento` | `DateOnly` | ✅ | Fecha de vencimiento del CAE |
+| `UltimoNroUsado` | `long` | — | Último número emitido dentro del rango (solo lectura en instancias en uso) |
+| `EsVigente` | `bool` | — | `true` si la fecha actual es anterior o igual a `FechaVencimiento` |
+| `TieneNumerosDisponibles` | `bool` | — | `true` si `UltimoNroUsado < RangoHasta` |
+| `PorcentajeUso` | `decimal` | — | Porcentaje del rango utilizado (0–100) |
 
 ### `RefCfe`
 
@@ -210,6 +220,18 @@ Respuesta del servidor DGI tras el envío de un CFE.
 | `Exitoso` | `bool` | `true` si el código es `00` o `01` |
 | `Codigo` | `string` | Código de respuesta DGI |
 | `Mensaje` | `string` | Descripción de la respuesta |
+| `FechaRespuesta` | `DateTime` | Timestamp UTC de la respuesta |
+| `XmlRespuesta` | `string?` | XML de respuesta en bruto (opcional) |
+
+### `RespuestaReporteDiario`
+
+Resultado del envío del reporte diario.
+
+| Propiedad | Tipo | Descripción |
+|-----------|------|-------------|
+| `FechaReporte` | `DateTime` | Fecha del reporte enviado |
+| `CantidadCfe` | `int` | Cantidad de CFE incluidos en el reporte |
+| `Respuesta` | `RespuestaDgi` | Resultado de la operación |
 
 ---
 
@@ -270,6 +292,43 @@ public enum TipoDocumentoReceptor
 }
 ```
 
+### `Moneda`
+
+```csharp
+public enum Moneda
+{
+    PesoUruguayo   = 0,   // Código interno DGI para moneda local
+    DolarAmericano = 840, // ISO 4217
+    Euro           = 978, // ISO 4217
+}
+```
+
+### `FormaPago`
+
+```csharp
+public enum FormaPago
+{
+    Contado = 1,
+    Credito = 2,
+}
+```
+
+### `IndTraslado`
+
+Obligatorio para e-Remito (181) y e-Remito Despachante (131).
+
+```csharp
+public enum IndTraslado
+{
+    TrasladoPropio         = 1, // Traslado entre depósitos/locales del mismo emisor
+    TrasladoEnComision     = 2, // Traslado en comisión
+    Devolucion             = 3, // Devolución al proveedor
+    TrasladoPorVenta       = 4, // Traslado por venta
+    TrasladoEnConsignacion = 5, // Traslado en consignación
+    TrasladoPorExposicion  = 6, // Traslado por exposición / feria
+}
+```
+
 ---
 
 ## `ICaeManager` / `CaeManager`
@@ -284,7 +343,7 @@ Gestiona los CAEs registrados en el cliente. Accedido a través de `client.Cae`.
 | `RegistrarCaes` | `void RegistrarCaes(IEnumerable<Cae> caes)` | Registra múltiples CAEs |
 | `ObtenerProximoNumero` | `(Cae, long) ObtenerProximoNumero(TipoCfe tipoCfe)` | Retorna el próximo número disponible e incrementa el contador |
 | `ObtenerCaeActivo` | `Cae? ObtenerCaeActivo(TipoCfe tipoCfe)` | Retorna el CAE activo para el tipo indicado |
-| `ObtenerAdvertencias` | `IReadOnlyList<string> ObtenerAdvertencias()` | Retorna advertencias de vencimiento/agotamiento |
+| `ObtenerAdvertencias` | `IReadOnlyList<string> ObtenerAdvertencias(int diasAlertaVencimiento = 7, decimal porcentajeAlertaUso = 80m)` | Retorna advertencias de vencimiento/agotamiento |
 | `ObtenerTodosLosCaes` | `IReadOnlyList<Cae> ObtenerTodosLosCaes()` | Retorna todos los CAEs registrados |
 | `ObtenerCaesActivos` | `IReadOnlyList<Cae> ObtenerCaesActivos()` | Retorna los CAEs vigentes con números disponibles |
 | `ResumenEstado` | `string ResumenEstado()` | Texto con el estado de todos los CAEs |

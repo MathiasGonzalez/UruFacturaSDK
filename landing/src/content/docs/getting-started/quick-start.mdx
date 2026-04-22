@@ -37,7 +37,7 @@ var config = new UruFacturaConfig
 };
 
 // Constructor de conveniencia (paquete completo — incluye PDF por defecto)
-using var client = new UruFacturaClient(config);
+// using var client = new UruFacturaClient(config);
 
 // Alternativa recomendada con el builder fluido:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
@@ -58,7 +58,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 ```
 
@@ -236,7 +236,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 
 // Crear e-Ticket

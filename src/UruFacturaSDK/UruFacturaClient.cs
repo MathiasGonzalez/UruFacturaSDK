@@ -19,7 +19,7 @@ namespace UruFacturaSDK;
 /// implementaciones personalizadas.
 /// </para>
 /// </summary>
-public partial class UruFacturaClient : IUruFacturaClient
+public sealed partial class UruFacturaClient : IUruFacturaClient
 {
     private readonly UruFacturaConfig _config;
     private readonly ICfeXmlBuilder _xmlBuilder;
@@ -45,7 +45,6 @@ public partial class UruFacturaClient : IUruFacturaClient
         IDgiSoapClient soapClient,
         ICfePdfGenerator? pdfGenerator)
     {
-        config.Validate();
         _config = config;
         _xmlBuilder = xmlBuilder;
         _firmante = firmante;
@@ -107,7 +106,7 @@ public partial class UruFacturaClient : IUruFacturaClient
         DomicilioFiscalEmisor = _config.DomicilioFiscal,
         CiudadEmisor = _config.Ciudad,
         DepartamentoEmisor = _config.Departamento,
-        FechaEmision = DateTime.Today,
+        FechaEmision = DateOnly.FromDateTime(DateTime.Today),
     };
 
     // -----------------------------------------------------------------------
@@ -122,6 +121,7 @@ public partial class UruFacturaClient : IUruFacturaClient
     public string GenerarXml(Cfe cfe)
     {
         ThrowIfDisposed();
+        cfe.CalcularTotales();
         var xml = _xmlBuilder.Generar(cfe);
         cfe.XmlSinFirmar = xml;
         return xml;
