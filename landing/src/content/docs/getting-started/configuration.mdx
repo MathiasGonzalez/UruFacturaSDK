@@ -29,6 +29,8 @@ using var client = new UruFacturaClient(config);
 |-----------|------|-----------|-------------|
 | `RutEmisor` | `string` | ✅ | RUT del emisor — 12 dígitos sin puntos ni guión (ej: `"210000000012"`) |
 | `RazonSocialEmisor` | `string` | ✅ | Razón social del emisor tal como figura en DGI |
+| `NombreComercialEmisor` | `string?` | — | Nombre comercial o de fantasía del emisor |
+| `Giro` | `string?` | — | Giro o actividad económica del emisor |
 | `DomicilioFiscal` | `string` | ✅ | Domicilio fiscal del emisor |
 | `Ciudad` | `string` | ✅ | Ciudad del domicilio fiscal |
 | `Departamento` | `string` | ✅ | Departamento del domicilio fiscal |
@@ -49,6 +51,7 @@ using var client = new UruFacturaClient(config);
 | Propiedad | Tipo | Valor por defecto | Descripción |
 |-----------|------|-------------------|-------------|
 | `Ambiente` | `Ambiente` | `Ambiente.Homologacion` | Define el endpoint DGI a usar |
+| `DgiSoapBaseUrl` | `string` | *(derivado)* | URL SOAP DGI calculada automáticamente según `Ambiente` |
 | `SoapTimeoutSegundos` | `int` | `30` | Timeout en segundos para las llamadas SOAP a DGI |
 | `OmitirValidacionSsl` | `bool` | `false` | Deshabilita la validación TLS del servidor. Activar solo cuando el ambiente de Homologación tenga una CA no reconocida por el sistema. **Nunca activar en Producción.** |
 
