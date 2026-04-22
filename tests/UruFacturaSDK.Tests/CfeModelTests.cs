@@ -12,7 +12,7 @@ public class CfeModelTests
         {
             Tipo = TipoCfe.ETicket,
             Numero = 1,
-            FechaEmision = DateTime.Today,
+            FechaEmision = DateOnly.FromDateTime(DateTime.Today),
             RutEmisor = "210000000012",
             RazonSocialEmisor = "Empresa Test S.A.",
             DomicilioFiscalEmisor = "Av. 18 de Julio 1234",

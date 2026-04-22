@@ -30,24 +30,21 @@ public class UruFacturaConfigTests
     [Fact]
     public void Validate_SinRut_LanzaExcepcion()
     {
-        var config = ConfigValida();
-        config.RutEmisor = "";
+        var config = ConfigValida() with { RutEmisor = "" };
         Assert.Throws<UruFacturaException>(() => config.Validate());
     }
 
     [Fact]
     public void Validate_SinRazonSocial_LanzaExcepcion()
     {
-        var config = ConfigValida();
-        config.RazonSocialEmisor = "";
+        var config = ConfigValida() with { RazonSocialEmisor = "" };
         Assert.Throws<UruFacturaException>(() => config.Validate());
     }
 
     [Fact]
     public void Validate_SinCertificado_LanzaExcepcion()
     {
-        var config = ConfigValida();
-        config.RutaCertificado = "";
+        var config = ConfigValida() with { RutaCertificado = "" };
         Assert.Throws<UruFacturaException>(() => config.Validate());
     }
 
@@ -55,15 +52,13 @@ public class UruFacturaConfigTests
     public void DgiSoapBaseUrl_Homologacion_UrlCorrecta()
     {
         var config = ConfigValida();
-        config.Ambiente = Ambiente.Homologacion;
         Assert.Contains("homologacion", config.DgiSoapBaseUrl, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
     public void DgiSoapBaseUrl_Produccion_UrlCorrecta()
     {
-        var config = ConfigValida();
-        config.Ambiente = Ambiente.Produccion;
+        var config = ConfigValida() with { Ambiente = Ambiente.Produccion };
         Assert.DoesNotContain("homologacion", config.DgiSoapBaseUrl, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("efactura.dgi.gub.uy", config.DgiSoapBaseUrl);
     }
@@ -78,8 +73,7 @@ public class UruFacturaConfigTests
     [Fact]
     public void OmitirValidacionSsl_CuandoSeActiva_EsTrue()
     {
-        var config = ConfigValida();
-        config.OmitirValidacionSsl = true;
+        var config = ConfigValida() with { OmitirValidacionSsl = true };
         Assert.True(config.OmitirValidacionSsl);
     }
 

@@ -12,14 +12,14 @@ public class CaeRepositoryTests
         long desde = 1,
         long hasta = 100,
         long ultimoUsado = 0,
-        DateTime? fechaVencimiento = null) =>
+        DateOnly? fechaVencimiento = null) =>
         new()
         {
             NroSerie         = nroSerie,
             TipoCfe          = tipo,
             RangoDesde       = desde,
             RangoHasta       = hasta,
-            FechaVencimiento = fechaVencimiento ?? DateTime.Today.AddMonths(3),
+            FechaVencimiento = fechaVencimiento ?? DateOnly.FromDateTime(DateTime.Today.AddMonths(3)),
             UltimoNroUsado   = ultimoUsado,
         };
 
@@ -95,7 +95,7 @@ public class CaeRepositoryTests
         var repo = new InMemoryCaeRepository();
 
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => repo.GuardarCaeAsync(null!));
+            async () => await repo.GuardarCaeAsync(null!));
     }
 
     // ── ActualizarUltimoNroUsadoAsync ─────────────────────────────────────────
@@ -118,7 +118,7 @@ public class CaeRepositoryTests
         var repo = new InMemoryCaeRepository();
 
         await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => repo.ActualizarUltimoNroUsadoAsync("NO-EXISTE", 1));
+            async () => await repo.ActualizarUltimoNroUsadoAsync("NO-EXISTE", 1));
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class CaeRepositoryTests
         var repo = new InMemoryCaeRepository();
 
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => repo.ActualizarUltimoNroUsadoAsync(null!, 1));
+            async () => await repo.ActualizarUltimoNroUsadoAsync(null!, 1));
     }
 
     [Fact]

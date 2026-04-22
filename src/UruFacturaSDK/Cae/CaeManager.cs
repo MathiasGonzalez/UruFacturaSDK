@@ -1,3 +1,4 @@
+using System.Text;
 using UruFacturaSDK.Enums;
 using UruFacturaSDK.Exceptions;
 using UruFacturaSDK.Models;
@@ -160,7 +161,7 @@ public class CaeManager : ICaeManager
                 kvp => kvp.Value.ToList());
         }
 
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("=== Estado de CAEs ===");
 
         foreach (var (tipo, lista) in snapshot)
@@ -191,11 +192,11 @@ public class CaeManager : ICaeManager
         // Criterio de selección: primero el CAE con mayor fecha de vencimiento;
         // en caso de empate, el que tenga más números disponibles.
         // La comparación lexicográfica de ValueTuple codifica ambos criterios en una sola expresión.
-        static (DateTime Vencimiento, long Disponibles) Prioridad(Models.Cae c) =>
+        static (DateOnly Vencimiento, long Disponibles) Prioridad(Models.Cae c) =>
             (c.FechaVencimiento, c.RangoHasta - c.UltimoNroUsado);
 
         Models.Cae? mejor = null;
-        (DateTime, long) mejorPrioridad = default;
+        (DateOnly, long) mejorPrioridad = default;
 
         foreach (var cae in lista)
         {

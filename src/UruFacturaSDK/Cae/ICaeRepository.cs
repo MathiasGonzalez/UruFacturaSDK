@@ -30,13 +30,13 @@ public interface ICaeRepository
     /// Carga todos los CAEs persistidos.
     /// </summary>
     /// <returns>Colección de CAEs, vacía si no hay ninguno registrado.</returns>
-    Task<IEnumerable<Models.Cae>> CargarTodosAsync();
+    ValueTask<IEnumerable<Models.Cae>> CargarTodosAsync();
 
     /// <summary>
     /// Persiste un nuevo CAE o sobreescribe uno existente con el mismo <see cref="Models.Cae.NroSerie"/>.
     /// </summary>
     /// <param name="cae">CAE a guardar.</param>
-    Task GuardarCaeAsync(Models.Cae cae);
+    ValueTask GuardarCaeAsync(Models.Cae cae);
 
     /// <summary>
     /// Actualiza el último número de comprobante utilizado de un CAE ya guardado.
@@ -45,5 +45,5 @@ public interface ICaeRepository
     /// <param name="nroSerie">Número de serie del CAE a actualizar.</param>
     /// <param name="ultimoNroUsado">Último número emitido.</param>
     /// <exception cref="KeyNotFoundException">Si no existe un CAE con ese <paramref name="nroSerie"/>.</exception>
-    Task ActualizarUltimoNroUsadoAsync(string nroSerie, long ultimoNroUsado);
+    ValueTask ActualizarUltimoNroUsadoAsync(string nroSerie, long ultimoNroUsado);
 }

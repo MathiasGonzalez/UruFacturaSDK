@@ -16,7 +16,7 @@ public class CfeXmlBuilderTests
             Tipo = TipoCfe.ETicket,
             Serie = "A",
             Numero = 42,
-            FechaEmision = new DateTime(2025, 6, 15),
+            FechaEmision = new DateOnly(2025, 6, 15),
             RutEmisor = "210000000012",
             RazonSocialEmisor = "Empresa Test S.A.",
             DomicilioFiscalEmisor = "Av. 18 de Julio 1234",
@@ -111,9 +111,8 @@ public class CfeXmlBuilderTests
     public void Generar_CfeValido_XmlContieneTotales()
     {
         var cfe = CrearCfeCompleto();
-        var xml = _builder.Generar(cfe);
-
-        // 1000 neto basico, 22% IVA = 220, Total = 1220
+        cfe.CalcularTotales();
+        var xml = _builder.Generar(cfe); // 1000 neto basico, 22% IVA = 220, Total = 1220
         Assert.Contains("<MntNetoIVA>1000.00</MntNetoIVA>", xml);
         Assert.Contains("<MntIVA>220.00</MntIVA>", xml);
         Assert.Contains("<MntTotal>1220.00</MntTotal>", xml);
@@ -177,7 +176,7 @@ public class CfeXmlBuilderTests
         {
             Tipo = TipoCfe.ETicket,
             Numero = 0, // inválido
-            FechaEmision = DateTime.Today,
+            FechaEmision = DateOnly.FromDateTime(DateTime.Today),
         };
 
         Assert.Throws<CfeValidationException>(() => _builder.Generar(cfe));
@@ -282,6 +281,7 @@ public class CfeXmlBuilderTests
     public void Generar_CfeValido_XmlContieneMntPagar()
     {
         var cfe = CrearCfeCompleto();
+        cfe.CalcularTotales();
         var xml = _builder.Generar(cfe);
 
         // MntPagar es obligatorio en Totales y debe coincidir con MntTotal
@@ -295,7 +295,7 @@ public class CfeXmlBuilderTests
         cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
         cfe.Detalle[0].Cantidad = 1;
         cfe.Detalle[0].PrecioUnitario = 500m;
-
+        cfe.CalcularTotales();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<MntSuspenso>500.00</MntSuspenso>", xml);
@@ -307,7 +307,7 @@ public class CfeXmlBuilderTests
     {
         var cfe = CrearCfeCompleto();
         cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
-
+        cfe.CalcularTotales();
         var xml = _builder.Generar(cfe);
 
         // Suspendido debe ir en MntSuspenso, no en MntExe

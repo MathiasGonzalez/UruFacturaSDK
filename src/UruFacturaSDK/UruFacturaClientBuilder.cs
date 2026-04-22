@@ -32,6 +32,7 @@ public sealed partial class UruFacturaClientBuilder
     private ICaeManager _caeManager;
     private IDgiSoapClient _soapClient;
     private ICfePdfGenerator? _pdfGenerator;
+    private HttpClient? _httpClient;
 
     private UruFacturaClientBuilder(UruFacturaConfig config)
     {
@@ -112,7 +113,7 @@ public sealed partial class UruFacturaClientBuilder
     public UruFacturaClientBuilder WithHttpClient(HttpClient httpClient)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
-        _soapClient = new DgiSoapClient(_config, httpClient);
+        _httpClient = httpClient;
         return this;
     }
 
@@ -126,6 +127,11 @@ public sealed partial class UruFacturaClientBuilder
     /// <summary>
     /// Construye el <see cref="UruFacturaClient"/> con las dependencias configuradas.
     /// </summary>
-    public UruFacturaClient Build() =>
-        new(_config, _xmlBuilder, _firmante, _caeManager, _soapClient, _pdfGenerator);
+    public UruFacturaClient Build()
+    {
+        if (_httpClient is not null)
+            _soapClient = _soapClient.WithHttpClient(_httpClient);
+
+        return new(_config, _xmlBuilder, _firmante, _caeManager, _soapClient, _pdfGenerator);
+    }
 }

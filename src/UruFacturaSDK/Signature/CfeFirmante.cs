@@ -138,7 +138,7 @@ public class CfeFirmante : ICfeFirmante
             signedXml.LoadXml((XmlElement)signatureNodes[0]!);
             return signedXml.CheckSignature();
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
@@ -204,15 +204,17 @@ public class CfeFirmante : ICfeFirmante
         qualProps.AppendChild(signedProps);
         doc.AppendChild(qualProps);
 
-        var dataObject = new DataObject();
-        dataObject.Id = objectId;
-        // doc.ChildNodes = [qualProps], lo que produce la estructura completa:
-        // <Object Id="XadesObject">
-        //   <xades:QualifyingProperties Target="#Signature">
-        //     <xades:SignedProperties Id="SignedProperties">...</xades:SignedProperties>
-        //   </xades:QualifyingProperties>
-        // </Object>
-        dataObject.Data = doc.ChildNodes;
+        var dataObject = new DataObject
+        {
+            Id = objectId,
+            // doc.ChildNodes = [qualProps], lo que produce la estructura completa:
+            // <Object Id="XadesObject">
+            //   <xades:QualifyingProperties Target="#Signature">
+            //     <xades:SignedProperties Id="SignedProperties">...</xades:SignedProperties>
+            //   </xades:QualifyingProperties>
+            // </Object>
+            Data = doc.ChildNodes
+        };
 
         return dataObject;
     }

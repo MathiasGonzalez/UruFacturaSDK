@@ -18,17 +18,17 @@ public class InMemoryCaeRepository : ICaeRepository
     private readonly Lock _lock = new();
 
     /// <inheritdoc/>
-    public Task<IEnumerable<Models.Cae>> CargarTodosAsync()
+    public ValueTask<IEnumerable<Models.Cae>> CargarTodosAsync()
     {
         lock (_lock)
         {
             var caes = _datos.Values.Select(s => s.ToCae()).ToList();
-            return Task.FromResult<IEnumerable<Models.Cae>>(caes);
+            return new ValueTask<IEnumerable<Models.Cae>>(caes);
         }
     }
 
     /// <inheritdoc/>
-    public Task GuardarCaeAsync(Models.Cae cae)
+    public ValueTask GuardarCaeAsync(Models.Cae cae)
     {
         ArgumentNullException.ThrowIfNull(cae);
 
@@ -37,11 +37,11 @@ public class InMemoryCaeRepository : ICaeRepository
             _datos[cae.NroSerie] = CaeSnapshot.FromCae(cae);
         }
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     /// <inheritdoc/>
-    public Task ActualizarUltimoNroUsadoAsync(string nroSerie, long ultimoNroUsado)
+    public ValueTask ActualizarUltimoNroUsadoAsync(string nroSerie, long ultimoNroUsado)
     {
         ArgumentNullException.ThrowIfNull(nroSerie);
 
@@ -54,7 +54,7 @@ public class InMemoryCaeRepository : ICaeRepository
             snapshot.UltimoNroUsado = ultimoNroUsado;
         }
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     // Clase privada con estado mutable para almacenar datos del CAE en memoria.
@@ -65,7 +65,7 @@ public class InMemoryCaeRepository : ICaeRepository
         public TipoCfe TipoCfe { get; set; }
         public long RangoDesde { get; set; }
         public long RangoHasta { get; set; }
-        public DateTime FechaVencimiento { get; set; }
+        public DateOnly FechaVencimiento { get; set; }
         public long UltimoNroUsado { get; set; }
 
         public static CaeSnapshot FromCae(Models.Cae cae) => new()

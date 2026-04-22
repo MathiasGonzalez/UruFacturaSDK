@@ -56,7 +56,7 @@ public class CfeFirmanteTests : IDisposable
         Tipo = TipoCfe.ETicket,
         Serie = "A",
         Numero = 1,
-        FechaEmision = new DateTime(2025, 6, 15),
+        FechaEmision = new DateOnly(2025, 6, 15),
         RutEmisor = "210000000012",
         RazonSocialEmisor = "Empresa Test S.A.",
         DomicilioFiscalEmisor = "Av. 18 de Julio 1234",

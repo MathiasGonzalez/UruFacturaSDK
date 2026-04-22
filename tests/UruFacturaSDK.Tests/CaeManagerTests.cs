@@ -12,14 +12,14 @@ public class CaeManagerTests
         long desde = 1,
         long hasta = 100,
         long ultimoUsado = 0,
-        DateTime? fechaVencimiento = null) =>
+        DateOnly? fechaVencimiento = null) =>
         new()
         {
             NroSerie = "CAE-001",
             TipoCfe = tipo,
             RangoDesde = desde,
             RangoHasta = hasta,
-            FechaVencimiento = fechaVencimiento ?? DateTime.Today.AddMonths(3),
+            FechaVencimiento = fechaVencimiento ?? DateOnly.FromDateTime(DateTime.Today.AddMonths(3)),
             UltimoNroUsado = ultimoUsado,
         };
 
@@ -30,7 +30,7 @@ public class CaeManagerTests
             TipoCfe = TipoCfe.ETicket,
             RangoDesde = 1,
             RangoHasta = 100,
-            FechaVencimiento = DateTime.Today.AddDays(-1),
+            FechaVencimiento = DateOnly.FromDateTime(DateTime.Today.AddDays(-1)),
             UltimoNroUsado = 0,
         };
 
@@ -69,7 +69,7 @@ public class CaeManagerTests
     {
         var manager = new Cae.CaeManager();
         manager.RegistrarCae(CrearCaeVigente(
-            desde: 1, hasta: 100, ultimoUsado: 10, fechaVencimiento: DateTime.Today.AddDays(10)));
+            desde: 1, hasta: 100, ultimoUsado: 10, fechaVencimiento: DateOnly.FromDateTime(DateTime.Today.AddDays(10))));
         manager.RegistrarCae(new Models.Cae
         {
             NroSerie = "CAE-MAS-LARGO",
@@ -77,7 +77,7 @@ public class CaeManagerTests
             RangoDesde = 1,
             RangoHasta = 20,
             UltimoNroUsado = 1,
-            FechaVencimiento = DateTime.Today.AddDays(30),
+            FechaVencimiento = DateOnly.FromDateTime(DateTime.Today.AddDays(30)),
         });
 
         var activo = manager.ObtenerCaeActivo(TipoCfe.ETicket);
@@ -89,7 +89,7 @@ public class CaeManagerTests
     public void ObtenerCaeActivo_MismaFechaPriorizaMasDisponibles()
     {
         var manager = new Cae.CaeManager();
-        var mismaFecha = DateTime.Today.AddDays(20);
+        var mismaFecha = DateOnly.FromDateTime(DateTime.Today.AddDays(20));
         manager.RegistrarCae(new Models.Cae
         {
             NroSerie = "CAE-POCOS",
@@ -161,7 +161,7 @@ public class CaeManagerTests
             TipoCfe = TipoCfe.ETicket,
             RangoDesde = 1,
             RangoHasta = 100,
-            FechaVencimiento = DateTime.Today.AddDays(3), // vence en 3 días
+            FechaVencimiento = DateOnly.FromDateTime(DateTime.Today.AddDays(3)), // vence en 3 días
             UltimoNroUsado = 0,
         };
         manager.RegistrarCae(cae);

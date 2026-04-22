@@ -1,4 +1,3 @@
-using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
@@ -16,7 +15,7 @@ namespace UruFacturaSDK.Soap;
 public class DgiSoapClient : IDgiSoapClient
 {
     private readonly UruFacturaConfig _config;
-    private readonly HttpClient _httpClient;
+    private HttpClient? _httpClient;
     private bool _disposed;
 
     private const string SoapAction = "\"\"";
@@ -28,7 +27,43 @@ public class DgiSoapClient : IDgiSoapClient
     public DgiSoapClient(UruFacturaConfig config, HttpClient? httpClient = null)
     {
         _config = config;
-        _httpClient = httpClient ?? CrearHttpClient();
+        if (httpClient is not null)
+        {
+            ValidarHttpClientExterno(config, httpClient);
+            _httpClient = httpClient;
+        }
+        else
+        {
+            _httpClient = CrearHttpClient();
+        }
+    }
+
+    public IDgiSoapClient WithHttpClient(HttpClient httpClient)
+    {
+        ValidarHttpClientExterno(_config, httpClient);
+        _httpClient?.Dispose();
+        _httpClient = httpClient;
+        return this;
+    }
+
+    /// <summary>
+    /// Valida que el <see cref="HttpClient"/> externo cumpla los requisitos mínimos para
+    /// comunicarse correctamente con la DGI.
+    /// </summary>
+    private static void ValidarHttpClientExterno(UruFacturaConfig config, HttpClient httpClient)
+    {
+        if (httpClient.Timeout == TimeSpan.Zero)
+            throw new ArgumentException(
+                "El HttpClient externo tiene Timeout en cero. " +
+                "Configure un timeout mayor a cero (p.ej. TimeSpan.FromSeconds(30)).",
+                nameof(httpClient));
+
+        if (config.OmitirValidacionSsl)
+            throw new InvalidOperationException(
+                "La configuración tiene OmitirValidacionSsl = true, pero se está inyectando " +
+                "un HttpClient externo. El SDK no puede aplicar esa opción sobre un handler " +
+                "ajeno. Configure ServerCertificateCustomValidationCallback directamente en " +
+                "el HttpClientHandler del HttpClient que está inyectando.");
     }
 
     /// <summary>
@@ -94,10 +129,13 @@ public class DgiSoapClient : IDgiSoapClient
     {
         try
         {
+            var client = _httpClient ?? throw new InvalidOperationException(
+                "No se ha inicializado el HttpClient.");
+
             var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
             content.Headers.Add("SOAPAction", SoapAction);
 
-            var response = await _httpClient.PostAsync(
+            var response = await client.PostAsync(
                 _config.DgiSoapBaseUrl, content, cancellationToken);
 
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -254,7 +292,7 @@ public class DgiSoapClient : IDgiSoapClient
     public void Dispose()
     {
         if (_disposed) return;
-        _httpClient.Dispose();
+        _httpClient?.Dispose();
         _disposed = true;
         GC.SuppressFinalize(this);
     }

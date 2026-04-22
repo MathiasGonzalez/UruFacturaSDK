@@ -26,8 +26,6 @@ public class CfeXmlBuilder : ICfeXmlBuilder
         if (errores.Count > 0)
             throw new CfeValidationException(errores);
 
-        cfe.CalcularTotales();
-
         // Use MemoryStream so XmlWriter writes the declaration as encoding="utf-8".
         // Writing to a StringBuilder always produces encoding="utf-16" regardless of
         // XmlWriterSettings.Encoding, because StringBuilder is internally UTF-16.
