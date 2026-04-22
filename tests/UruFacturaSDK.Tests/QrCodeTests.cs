@@ -8,7 +8,7 @@ namespace UruFacturaSDK.Tests;
 
 public class QrCodeTests
 {
-    private static Cfe CriarCfeBase() =>
+    private static Cfe CrearCfeBase() =>
         new()
         {
             Tipo = TipoCfe.ETicket,
@@ -23,7 +23,7 @@ public class QrCodeTests
     [Fact]
     public void GenerarQrCode_CfeValido_RetornaBytesNoVacios()
     {
-        var cfe = CriarCfeBase();
+        var cfe = CrearCfeBase();
         var bytes = CfePdfGenerator.GenerarQrCode(cfe);
 
         Assert.NotNull(bytes);
@@ -33,7 +33,7 @@ public class QrCodeTests
     [Fact]
     public void GenerarQrCode_RetornaPng()
     {
-        var cfe = CriarCfeBase();
+        var cfe = CrearCfeBase();
         var bytes = CfePdfGenerator.GenerarQrCode(cfe);
 
         // Los PNG comienzan con la firma \x89PNG

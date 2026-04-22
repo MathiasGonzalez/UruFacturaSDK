@@ -37,7 +37,7 @@ Cuando el comprador es una **empresa o contribuyente** y necesita el documento p
 
 ```csharp
 var factura = client.CrearEFactura();
-factura.Receptor = new Receptor { Documento = "...", TipoDocumento = 2, ... };
+factura.Receptor = new Receptor { Documento = "...", TipoDocumento = TipoDocumentoReceptor.Rut, ... };
 ```
 
 ### e-Factura de Exportación (121)

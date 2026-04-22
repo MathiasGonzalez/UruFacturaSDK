@@ -7,7 +7,7 @@ namespace UruFacturaSDK.Tests;
 
 public class CfeModelTests
 {
-    private static Cfe CriarCfeValido() =>
+    private static Cfe CrearCfeValido() =>
         new()
         {
             Tipo = TipoCfe.ETicket,
@@ -34,7 +34,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_CfeValido_NoRetornaErrores()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         var errores = cfe.Validar();
         Assert.Empty(errores);
     }
@@ -42,7 +42,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_SinDetalle_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle.Clear();
         var errores = cfe.Validar();
         Assert.Contains(errores, e => e.Contains("línea de detalle"));
@@ -51,7 +51,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_NumeroInvalido_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Numero = 0;
         var errores = cfe.Validar();
         Assert.Contains(errores, e => e.Contains("número"));
@@ -60,7 +60,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_LineaSinNombre_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle[0].NombreItem = "";
         var errores = cfe.Validar();
         Assert.Contains(errores, e => e.Contains("NombreItem"));
@@ -69,7 +69,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_LineaCantidadCero_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle[0].Cantidad = 0;
         var errores = cfe.Validar();
         Assert.Contains(errores, e => e.Contains("Cantidad"));
@@ -78,7 +78,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_NotaCreditoSinReferencias_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.NotaCreditoETicket;
         // No añadimos referencias
         var errores = cfe.Validar();
@@ -88,7 +88,7 @@ public class CfeModelTests
     [Fact]
     public void CalcularTotales_IvaBasico_CalculaCorrectamente()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         // 2 unidades × $100 = $200 neto
         cfe.CalcularTotales();
 
@@ -100,7 +100,7 @@ public class CfeModelTests
     [Fact]
     public void CalcularTotales_IvaMinimo_CalculaCorrectamente()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle[0].IndFactIva = TipoIva.Minimo;
         cfe.Detalle[0].Cantidad = 1;
         cfe.Detalle[0].PrecioUnitario = 1000m;
@@ -114,7 +114,7 @@ public class CfeModelTests
     [Fact]
     public void CalcularTotales_Exento_NoAplicaIva()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle[0].IndFactIva = TipoIva.Exento;
         cfe.CalcularTotales();
 
@@ -126,7 +126,7 @@ public class CfeModelTests
     [Fact]
     public void CalcularTotales_MixtoIvas_TotalesCorrectos()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle.Add(new LineaDetalle
         {
             NroLinea = 2,
@@ -162,7 +162,7 @@ public class CfeModelTests
     [Fact]
     public void CalcularTotales_Suspendido_SeParaDeExento()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
         cfe.Detalle[0].Cantidad = 1;
         cfe.Detalle[0].PrecioUnitario = 500m;
@@ -177,7 +177,7 @@ public class CfeModelTests
     [Fact]
     public void CalcularTotales_ExentoYSuspendido_SonCamposSeparados()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Detalle[0].IndFactIva = TipoIva.Exento;
         cfe.Detalle[0].PrecioUnitario = 300m;
         cfe.Detalle[0].Cantidad = 1;
@@ -201,7 +201,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_EFacturaSinReceptor_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.EFactura;
         cfe.Receptor = null;
         var errores = cfe.Validar();
@@ -211,7 +211,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_EFacturaConReceptor_NoRetornaErrorReceptor()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.EFactura;
         cfe.Receptor = new Receptor { Documento = "210000000013", TipoDocumento = TipoDocumentoReceptor.Rut };
         var errores = cfe.Validar();
@@ -221,7 +221,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_EFacturaExportacionSinReceptor_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.EFacturaExportacion;
         cfe.Receptor = null;
         var errores = cfe.Validar();
@@ -233,7 +233,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_ERemitoConIndTraslado_NoRetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.ERemito;
         cfe.IndTraslado = IndTraslado.TrasladoPropio;
         var errores = cfe.Validar();
@@ -243,7 +243,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_ERemito_SinIndTraslado_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.ERemito;
         cfe.IndTraslado = null;
         var errores = cfe.Validar();
@@ -253,7 +253,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_ERemitoDespachante_SinIndTraslado_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.ERemitoDespachante;
         cfe.IndTraslado = null;
         var errores = cfe.Validar();
@@ -263,7 +263,7 @@ public class CfeModelTests
     [Fact]
     public void Validar_ERemitoConIndTrasladoFueraDeRango_RetornaError()
     {
-        var cfe = CriarCfeValido();
+        var cfe = CrearCfeValido();
         cfe.Tipo = TipoCfe.ERemito;
         cfe.IndTraslado = (IndTraslado)99; // valor fuera del enum
         var errores = cfe.Validar();
