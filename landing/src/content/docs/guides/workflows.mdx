@@ -190,7 +190,7 @@ classDiagram
         +RegistrarCae(cae)
         +RegistrarCaes(caes)
         +ObtenerProximoNumero(tipo)
-        +ObtenerAdvertencias()
+        +ObtenerAdvertencias(diasAlertaVencimiento?, porcentajeAlertaUso?)
         +ResumenEstado() string
     }
 
@@ -225,7 +225,8 @@ classDiagram
     }
 
     class CaeManager {
-        -_caes: ConcurrentDictionary
+        -_caesPorTipo: Dictionary
+        -_lock: Lock
     }
 
     class InMemoryCaeRepository

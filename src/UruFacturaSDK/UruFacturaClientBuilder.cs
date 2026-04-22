@@ -89,6 +89,14 @@ public sealed partial class UruFacturaClientBuilder
     /// agotamiento de sockets (socket exhaustion) que ocurre cuando se crean y descartan
     /// instancias de <see cref="HttpClient"/> por cada request.
     /// </para>
+    /// <para>
+    /// <b>Importante:</b> al inyectar un <see cref="HttpClient"/> propio, el SDK <b>no</b>
+    /// configura el <see cref="System.Net.Http.HttpClientHandler"/> interno (certificado de
+    /// cliente desde <c>RutaCertificado</c> / <c>PasswordCertificado</c> ni la opción
+    /// <c>OmitirValidacionSsl</c>). Es responsabilidad del caller asegurarse de que el
+    /// <see cref="HttpClient"/> tenga el certificado de cliente y la validación TLS
+    /// correctamente configurados antes de pasarlo a este método.
+    /// </para>
     /// <example>
     /// <code>
     /// // Ejemplo en Startup / Program.cs (ASP.NET Core)

@@ -11,7 +11,7 @@ import Default from '@astrojs/starlight/components/Head.astro';
   import mermaid from 'mermaid';
 
   function renderMermaid() {
-    const nodes = document.querySelectorAll<HTMLElement>('pre.mermaid:not([data-processed])');
+    const nodes = document.querySelectorAll('pre.mermaid:not([data-processed])');
     if (nodes.length === 0) return;
     mermaid.run({ nodes });
   }
