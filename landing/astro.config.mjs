@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightClientMermaid from '@pasqal-io/starlight-client-mermaid';
 
 // https://astro.build/config
 export default defineConfig({
@@ -7,6 +8,7 @@ export default defineConfig({
   base: '/UruFacturaSDK',
   integrations: [
     starlight({
+      plugins: [starlightClientMermaid()],
       title: 'UruFactura SDK',
       description: 'La vía rápida hacia la Facturación Electrónica en Uruguay. SDK .NET open-source para integración con DGI.',
       logo: {

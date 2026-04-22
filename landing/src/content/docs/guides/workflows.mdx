@@ -1,0 +1,241 @@
+---
+title: Flujos de trabajo
+description: Diagramas de los flujos principales del SDK — emisión de CFE, firma digital, gestión de CAE, certificación DGI y reporte diario.
+sidebar:
+  order: 0
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Esta página reúne los flujos de trabajo principales del SDK en formato de diagrama para facilitar la comprensión del ciclo de vida completo de un comprobante fiscal electrónico.
+
+---
+
+## Flujo completo de emisión de un CFE
+
+Desde la configuración inicial hasta obtener el PDF listo para entregar al cliente.
+
+```mermaid
+flowchart TD
+    A([Inicio]) --> B[Configurar UruFacturaConfig\ncertificado · RUT · ambiente]
+    B --> C[Instanciar UruFacturaClient\nvia constructor o builder]
+    C --> D[Registrar CAE\nclient.Cae.RegistrarCae]
+    D --> E{CAE válido?}
+    E -- No --> F[❌ Sin CAE no se puede emitir\nSolicitar CAE en DGI en línea]
+    F --> D
+    E -- Sí --> G[Crear CFE\nCrearETicket / CrearEFactura / …]
+    G --> H[Completar datos\nDetalle · Receptor · Referencias]
+    H --> I[GenerarXml\nSerialización al esquema DGI]
+    I --> J[FirmarCfe\nXAdES-BES con certificado .p12]
+    J --> K[EnviarCfeAsync\nSOAP hacia endpoint DGI]
+    K --> L{Respuesta DGI}
+    L -- Código 00/01\naceptado --> M[✅ CFE aceptado]
+    L -- Código 05+\nrechazado --> N[❌ Revisar error\nrespuesta.Mensaje]
+    M --> O[GenerarPdfA4 / GenerarPdfTermico]
+    O --> P[Archivar XML firmado\nobligatorio 5 años]
+    P --> Q([Fin])
+```
+
+---
+
+## Pipeline interno de EnviarCfeAsync
+
+Lo que ocurre dentro del SDK al llamar a `EnviarCfeAsync`.
+
+```mermaid
+sequenceDiagram
+    participant App as Tu aplicación
+    participant Client as UruFacturaClient
+    participant Xml as ICfeXmlBuilder
+    participant Firma as ICfeFirmante
+    participant Soap as IDgiSoapClient
+    participant DGI as DGI (SOAP)
+
+    App->>Client: EnviarCfeAsync(cfe)
+    Client->>Xml: Generar(cfe)
+    Xml-->>Client: xmlSinFirmar
+    Client->>Firma: Firmar(xmlSinFirmar)
+    Note over Firma: XAdES-BES con certificado .p12/.pfx
+    Firma-->>Client: xmlFirmado
+    Client->>Soap: EnviarCfeAsync(xmlFirmado)
+    Soap->>DGI: POST SOAP envelope
+    DGI-->>Soap: RespuestaDgi (código, mensaje)
+    Soap-->>Client: RespuestaDgi
+    Client-->>App: RespuestaDgi
+```
+
+---
+
+## Flujo de firma digital
+
+Detalle del proceso de firma XAdES-BES que aplica el SDK a cada CFE.
+
+```mermaid
+flowchart LR
+    A[CFE en memoria] --> B[Serializar a XML\nesquema DGI]
+    B --> C[Calcular digest\nSHA-1 / SHA-256]
+    C --> D[Construir SignedInfo\nCanonicalization · SignatureMethod]
+    D --> E[Firmar SignedInfo\ncon clave privada del .p12]
+    E --> F[Adjuntar certificado\npúblico KeyInfo X509]
+    F --> G[XML con nodo\nds:Signature embebido]
+    G --> H[Sobre SOAP\nSOAPEnvelope]
+    H --> I[Envío HTTPS\na endpoint DGI]
+```
+
+---
+
+## Gestión del ciclo de vida de un CAE
+
+```mermaid
+stateDiagram-v2
+    [*] --> Registrado : client.Cae.RegistrarCae()
+
+    Registrado --> Activo : Primer número usado
+    Activo --> Activo : Emitir CFE\n(incrementa UltimoNroUsado)
+
+    Activo --> AdvertenciaRango : > 80% del rango utilizado
+    AdvertenciaRango --> Activo : Se registra CAE adicional
+    AdvertenciaRango --> Agotado : Rango = RangoHasta
+
+    Activo --> AdvertenciaVencimiento : < 7 días para vencer
+    AdvertenciaVencimiento --> Activo : Se registra CAE renovado
+    AdvertenciaVencimiento --> Vencido : Fecha > FechaVencimiento
+
+    Agotado --> [*] : Requiere nuevo CAE en DGI
+    Vencido --> [*] : Requiere nuevo CAE en DGI
+```
+
+<Aside type="tip">
+  Monitoreá los CAEs con `client.Cae.ObtenerAdvertencias()` al iniciar tu aplicación para detectar problemas antes de que bloqueen la emisión.
+</Aside>
+
+---
+
+## Proceso de certificación DGI
+
+Pasos necesarios para pasar de cero a emitir en producción.
+
+```mermaid
+flowchart TD
+    A([Empresa sin habilitación]) --> B[1. Inscripción\nDGI en línea → Gestión CFE\n→ Inscripción como Emisor Electrónico]
+    B --> C{Aprobada?}
+    C -- No --> D[Esperar resolución DGI\ngeneralmente días hábiles]
+    D --> C
+    C -- Sí --> E[2. Obtener certificado digital\nABITAB · Correo Uruguayo · CertiSur\nFormato .p12/.pfx · vinculado al RUT]
+    E --> F[3. Solicitar CAE\nDGI en línea → Solicitud de CAE\nPor tipo de CFE y rango]
+    F --> G[4. Configurar SDK en Homologación\nAmbiente.Homologacion]
+    G --> H[5. Emitir CFEs de prueba\nsegún instructivo DGI]
+    H --> I[6. Enviar Reporte Diario de prueba\nEnviarReporteDiarioAsync]
+    I --> J[7. Consultar estado de cada CFE\nConsultarEstadoCfeAsync]
+    J --> K{Todo OK?}
+    K -- No --> L[Corregir errores\nrevisando respuesta.Mensaje]
+    L --> H
+    K -- Sí --> M[8. Notificar finalización\na DGI vía portal]
+    M --> N{DGI aprueba?}
+    N -- No --> O[Atender observaciones DGI]
+    O --> H
+    N -- Sí --> P[9. Cambiar a Producción\nAmbiente.Produccion]
+    P --> Q([✅ Habilitado para emitir en producción])
+```
+
+---
+
+## Flujo del Reporte Diario
+
+DGI exige enviar un resumen de todos los CFE emitidos cada día.
+
+```mermaid
+flowchart TD
+    A([Fin de la jornada]) --> B{¿Se emitió\nalgún CFE hoy?}
+    B -- No --> C[No es obligatorio\npero recomendable enviar\nreporte vacío]
+    B -- Sí --> D[Recopilar todos los CFEs\ndel día]
+    D --> E[Para cada CFE sin firma:\nGenerarYFirmar automático]
+    E --> F[EnviarReporteDiarioAsync\nfecha · lista de CFEs]
+    F --> G[SDK construye sobre SOAP\ncon todos los XML firmados]
+    G --> H[POST a endpoint DGI]
+    H --> I{Respuesta DGI}
+    I -- Exitoso --> J[✅ Reporte aceptado\nArchivar confirmación]
+    I -- Error --> K[❌ Reintentar\nrevisando respuesta.Mensaje]
+    K --> F
+    J --> L([Fin del día])
+    C --> L
+```
+
+<Aside type="caution">
+  El Reporte Diario es **obligatorio** incluso si solo emitiste un CFE. No enviarlo puede generar infracciones ante DGI.
+</Aside>
+
+---
+
+## Arquitectura de componentes del SDK
+
+Relación entre las principales interfaces y quién las implementa por defecto.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class UruFacturaClient {
+        +Cae: ICaeManager
+        +CrearETicket() Cfe
+        +EnviarCfeAsync(cfe) Task~RespuestaDgi~
+        +GenerarYFirmar(cfe) string
+        +GenerarPdfA4(cfe) byte[]
+        +EnviarReporteDiarioAsync(...) Task
+        +ConsultarEstadoCfeAsync(cfe) Task
+    }
+
+    class ICaeManager {
+        <<interface>>
+        +RegistrarCae(cae)
+        +RegistrarCaes(caes)
+        +ObtenerProximoNumero(tipo)
+        +ObtenerAdvertencias()
+        +ResumenEstado() string
+    }
+
+    class ICfeXmlBuilder {
+        <<interface>>
+        +Generar(cfe) string
+    }
+
+    class ICfeFirmante {
+        <<interface>>
+        +Firmar(xml) string
+    }
+
+    class IDgiSoapClient {
+        <<interface>>
+        +EnviarCfeAsync(xml) Task
+        +EnviarReporteDiarioAsync(...) Task
+        +ConsultarEstadoCfeAsync(...) Task
+    }
+
+    class ICfePdfGenerator {
+        <<interface>>
+        +GenerarA4(cfe) byte[]
+        +GenerarTermico(cfe) byte[]
+    }
+
+    class ICaeRepository {
+        <<interface>>
+        +CargarTodosAsync() Task~IEnumerable~
+        +GuardarCaeAsync(cae) Task
+        +ActualizarUltimoNroUsadoAsync(nroSerie, ultimo) Task
+    }
+
+    class CaeManager {
+        -_caes: ConcurrentDictionary
+    }
+
+    class InMemoryCaeRepository
+
+    UruFacturaClient --> ICaeManager
+    UruFacturaClient --> ICfeXmlBuilder
+    UruFacturaClient --> ICfeFirmante
+    UruFacturaClient --> IDgiSoapClient
+    UruFacturaClient --> ICfePdfGenerator
+
+    ICaeManager <|.. CaeManager
+    ICaeRepository <|.. InMemoryCaeRepository
+```
