@@ -227,9 +227,12 @@ public class DgiSoapClient : IDgiSoapClient
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
         }
 
-        if (!string.IsNullOrWhiteSpace(_config.RutaCertificado)
-            && File.Exists(_config.RutaCertificado))
+        if (!string.IsNullOrWhiteSpace(_config.RutaCertificado))
         {
+            if (!File.Exists(_config.RutaCertificado))
+                throw new Exceptions.UruFacturaException(
+                    $"No se encontró el archivo de certificado: '{_config.RutaCertificado}'.");
+
             var cert = X509CertificateLoader.LoadPkcs12FromFile(
                 _config.RutaCertificado, _config.PasswordCertificado);
             handler.ClientCertificates.Add(cert);

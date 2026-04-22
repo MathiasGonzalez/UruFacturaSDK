@@ -45,7 +45,7 @@ public class CfeXmlBuilder : ICfeXmlBuilder
         EscribirCfe(writer, cfe);
         writer.Flush();
 
-        return Encoding.UTF8.GetString(ms.ToArray());
+        return Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Length);
     }
 
     private static void EscribirCfe(XmlWriter w, Cfe cfe)

@@ -81,6 +81,33 @@ public sealed partial class UruFacturaClientBuilder
         return this;
     }
 
+    /// <summary>
+    /// Usa el <see cref="HttpClient"/> provisto en lugar de crear uno interno.
+    /// <para>
+    /// <b>Recomendado en APIs de alto tráfico:</b> registre el SDK como singleton e inyecte
+    /// un <see cref="HttpClient"/> administrado por <c>IHttpClientFactory</c> para evitar el
+    /// agotamiento de sockets (socket exhaustion) que ocurre cuando se crean y descartan
+    /// instancias de <see cref="HttpClient"/> por cada request.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// // Ejemplo en Startup / Program.cs (ASP.NET Core)
+    /// builder.Services.AddHttpClient("DGI");
+    /// builder.Services.AddSingleton(sp =>
+    ///     UruFacturaClientBuilder
+    ///         .WithDefaults(config)
+    ///         .WithHttpClient(sp.GetRequiredService&lt;IHttpClientFactory&gt;().CreateClient("DGI"))
+    ///         .Build());
+    /// </code>
+    /// </example>
+    /// </summary>
+    public UruFacturaClientBuilder WithHttpClient(HttpClient httpClient)
+    {
+        ArgumentNullException.ThrowIfNull(httpClient);
+        _soapClient = new DgiSoapClient(_config, httpClient);
+        return this;
+    }
+
     /// <summary>Establece el generador de PDF a utilizar.</summary>
     public UruFacturaClientBuilder WithPdfGenerator(ICfePdfGenerator? pdfGenerator)
     {
