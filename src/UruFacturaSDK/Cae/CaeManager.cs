@@ -27,23 +27,26 @@ public class CaeManager : ICaeManager
     }
 
     /// <summary>
-    /// Registra múltiples CAEs a la vez de forma atómica (un solo lock para el lote completo).
+    /// Registra múltiples CAEs a la vez usando un solo lock para el lote completo.
+    /// Valida que ningún elemento sea null antes de modificar el estado interno.
     /// </summary>
     public void RegistrarCaes(IEnumerable<Models.Cae> caes)
     {
         ArgumentNullException.ThrowIfNull(caes);
 
-        // Materializar fuera del lock para no mantenerlo durante la iteración de una
-        // secuencia potencialmente diferida (lazy).
-        var lista = caes as IList<Models.Cae> ?? caes.ToList();
+        // Snapshotear siempre (ToList) para evitar que un caller mute la colección entre la
+        // validación y el lock. Luego validar la copia antes de modificar el estado interno.
+        var lista = caes.ToList();
+        for (var i = 0; i < lista.Count; i++)
+        {
+            if (lista[i] is null)
+                throw new ArgumentNullException(nameof(caes), $"El elemento en el índice {i} es null.");
+        }
 
         lock (_lock)
         {
             foreach (var cae in lista)
-            {
-                ArgumentNullException.ThrowIfNull(cae);
                 AgregarCaeSinLock(cae);
-            }
         }
     }
 
