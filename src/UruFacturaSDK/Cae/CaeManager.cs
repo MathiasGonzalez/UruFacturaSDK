@@ -169,10 +169,24 @@ public class CaeManager : ICaeManager
         if (!_caesPorTipo.TryGetValue(tipoCfe, out var lista))
             return null;
 
-        return lista
-            .Where(c => c.EsVigente && c.TieneNumerosDisponibles)
-            .OrderByDescending(c => c.FechaVencimiento)
-            .ThenByDescending(c => c.RangoHasta - c.UltimoNroUsado)
-            .FirstOrDefault();
+        Models.Cae? mejor = null;
+        long mejorDisponibles = long.MinValue;
+
+        foreach (var cae in lista)
+        {
+            if (!cae.EsVigente || !cae.TieneNumerosDisponibles)
+                continue;
+
+            var disponibles = cae.RangoHasta - cae.UltimoNroUsado;
+            if (mejor is null
+                || cae.FechaVencimiento > mejor.FechaVencimiento
+                || (cae.FechaVencimiento == mejor.FechaVencimiento && disponibles > mejorDisponibles))
+            {
+                mejor = cae;
+                mejorDisponibles = disponibles;
+            }
+        }
+
+        return mejor;
     }
 }
