@@ -88,6 +88,11 @@ client.Cae.RegistrarCae(new Cae
 });
 ```
 
+> 💡 **En producción, persistí el estado del CAE.** Usá `ICaeRepository` para cargar los CAEs
+> al arrancar la app y actualizar `UltimoNroUsado` después de cada emisión. Si la app reinicia
+> sin persistencia, el contador vuelve a cero y la DGI rechazará los comprobantes duplicados.
+> Ver [Persistencia de CAEs en README](../README.md#-persistencia-de-caes) para el patrón completo.
+
 ### Monitorear el estado del CAE
 
 ```csharp

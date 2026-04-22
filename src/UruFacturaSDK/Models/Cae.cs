@@ -7,7 +7,7 @@ namespace UruFacturaSDK.Models;
 /// </summary>
 public class Cae
 {
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private long _ultimoNroUsado;
 
     /// <summary>Número de serie del CAE.</summary>

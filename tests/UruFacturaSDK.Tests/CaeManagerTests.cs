@@ -11,14 +11,15 @@ public class CaeManagerTests
         TipoCfe tipo = TipoCfe.ETicket,
         long desde = 1,
         long hasta = 100,
-        long ultimoUsado = 0) =>
+        long ultimoUsado = 0,
+        DateTime? fechaVencimiento = null) =>
         new()
         {
             NroSerie = "CAE-001",
             TipoCfe = tipo,
             RangoDesde = desde,
             RangoHasta = hasta,
-            FechaVencimiento = DateTime.Today.AddMonths(3),
+            FechaVencimiento = fechaVencimiento ?? DateTime.Today.AddMonths(3),
             UltimoNroUsado = ultimoUsado,
         };
 
@@ -61,6 +62,56 @@ public class CaeManagerTests
 
         var activo = manager.ObtenerCaeActivo(TipoCfe.ETicket);
         Assert.Null(activo);
+    }
+
+    [Fact]
+    public void ObtenerCaeActivo_PriorizaMayorFechaVencimiento()
+    {
+        var manager = new Cae.CaeManager();
+        manager.RegistrarCae(CrearCaeVigente(
+            desde: 1, hasta: 100, ultimoUsado: 10, fechaVencimiento: DateTime.Today.AddDays(10)));
+        manager.RegistrarCae(new Models.Cae
+        {
+            NroSerie = "CAE-MAS-LARGO",
+            TipoCfe = TipoCfe.ETicket,
+            RangoDesde = 1,
+            RangoHasta = 20,
+            UltimoNroUsado = 1,
+            FechaVencimiento = DateTime.Today.AddDays(30),
+        });
+
+        var activo = manager.ObtenerCaeActivo(TipoCfe.ETicket);
+        Assert.NotNull(activo);
+        Assert.Equal("CAE-MAS-LARGO", activo.NroSerie);
+    }
+
+    [Fact]
+    public void ObtenerCaeActivo_MismaFechaPriorizaMasDisponibles()
+    {
+        var manager = new Cae.CaeManager();
+        var mismaFecha = DateTime.Today.AddDays(20);
+        manager.RegistrarCae(new Models.Cae
+        {
+            NroSerie = "CAE-POCOS",
+            TipoCfe = TipoCfe.ETicket,
+            RangoDesde = 1,
+            RangoHasta = 100,
+            UltimoNroUsado = 95,
+            FechaVencimiento = mismaFecha,
+        });
+        manager.RegistrarCae(new Models.Cae
+        {
+            NroSerie = "CAE-MUCHOS",
+            TipoCfe = TipoCfe.ETicket,
+            RangoDesde = 1,
+            RangoHasta = 100,
+            UltimoNroUsado = 10,
+            FechaVencimiento = mismaFecha,
+        });
+
+        var activo = manager.ObtenerCaeActivo(TipoCfe.ETicket);
+        Assert.NotNull(activo);
+        Assert.Equal("CAE-MUCHOS", activo.NroSerie);
     }
 
     [Fact]

@@ -12,7 +12,7 @@ namespace UruFacturaSDK.Cae;
 public class CaeManager : ICaeManager
 {
     private readonly Dictionary<TipoCfe, List<Models.Cae>> _caesPorTipo = new();
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     /// <summary>
     /// Registra un CAE en el gestor.
@@ -23,21 +23,37 @@ public class CaeManager : ICaeManager
         ArgumentNullException.ThrowIfNull(cae);
 
         lock (_lock)
-        {
-            if (!_caesPorTipo.TryGetValue(cae.TipoCfe, out var lista))
-                _caesPorTipo[cae.TipoCfe] = lista = [];
-
-            lista.Add(cae);
-        }
+            AgregarCaeSinLock(cae);
     }
 
     /// <summary>
-    /// Registra múltiples CAEs a la vez.
+    /// Registra múltiples CAEs a la vez de forma atómica (un solo lock para el lote completo).
     /// </summary>
     public void RegistrarCaes(IEnumerable<Models.Cae> caes)
     {
-        foreach (var cae in caes)
-            RegistrarCae(cae);
+        ArgumentNullException.ThrowIfNull(caes);
+
+        // Materializar fuera del lock para no mantenerlo durante la iteración de una
+        // secuencia potencialmente diferida (lazy).
+        var lista = caes as IList<Models.Cae> ?? caes.ToList();
+
+        lock (_lock)
+        {
+            foreach (var cae in lista)
+            {
+                ArgumentNullException.ThrowIfNull(cae);
+                AgregarCaeSinLock(cae);
+            }
+        }
+    }
+
+    // Debe llamarse con _lock adquirido.
+    private void AgregarCaeSinLock(Models.Cae cae)
+    {
+        if (!_caesPorTipo.TryGetValue(cae.TipoCfe, out var lista))
+            _caesPorTipo[cae.TipoCfe] = lista = [];
+
+        lista.Add(cae);
     }
 
     /// <summary>
@@ -169,10 +185,28 @@ public class CaeManager : ICaeManager
         if (!_caesPorTipo.TryGetValue(tipoCfe, out var lista))
             return null;
 
-        return lista
-            .Where(c => c.EsVigente && c.TieneNumerosDisponibles)
-            .OrderByDescending(c => c.FechaVencimiento)
-            .ThenByDescending(c => c.RangoHasta - c.UltimoNroUsado)
-            .FirstOrDefault();
+        // Criterio de selección: primero el CAE con mayor fecha de vencimiento;
+        // en caso de empate, el que tenga más números disponibles.
+        // La comparación lexicográfica de ValueTuple codifica ambos criterios en una sola expresión.
+        static (DateTime Vencimiento, long Disponibles) Prioridad(Models.Cae c) =>
+            (c.FechaVencimiento, c.RangoHasta - c.UltimoNroUsado);
+
+        Models.Cae? mejor = null;
+        (DateTime, long) mejorPrioridad = default;
+
+        foreach (var cae in lista)
+        {
+            if (!cae.EsVigente || !cae.TieneNumerosDisponibles)
+                continue;
+
+            var prioridad = Prioridad(cae);
+            if (mejor is null || prioridad.CompareTo(mejorPrioridad) > 0)
+            {
+                mejor = cae;
+                mejorPrioridad = prioridad;
+            }
+        }
+
+        return mejor;
     }
 }

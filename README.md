@@ -45,6 +45,7 @@ UruFacturaSDK/
 │   │   ├── Signature/                  # CfeFirmante / ICfeFirmante (XAdES-BES)
 │   │   ├── Soap/                       # DgiSoapClient / IDgiSoapClient (comunicación con DGI)
 │   │   ├── Cae/                        # CaeManager / ICaeManager (gestión de CAE)
+│   │   │                               # InMemoryCaeRepository / ICaeRepository (persistencia)
 │   │   ├── Pdf/                        # CfePdfGenerator / ICfePdfGenerator (PDF A4 y térmico)
 │   │   │                               # CfeQrGenerator / ICfeQrGenerator (código QR)
 │   │   ├── IUruFacturaClient.cs        # Interfaz pública (para mocking en tests)
@@ -253,7 +254,8 @@ cualquier componente sin subclasear `UruFacturaClient`:
 
 | Interfaz | Implementación predeterminada | Descripción |
 |---|---|---|
-| `ICaeManager` | `CaeManager` | Gestión de CAEs |
+| `ICaeManager` | `CaeManager` | Gestión de CAEs en memoria (thread-safe) |
+| `ICaeRepository` | `InMemoryCaeRepository` | Persistencia de CAEs (ver [sección de persistencia](#-persistencia-de-caes)) |
 | `ICfePdfGenerator` | `CfePdfGenerator` | Generación de PDF (solo paquete completo) |
 | `ICfeQrGenerator` | `CfeQrGenerator` | Generación del código QR |
 | `ICfeFirmante` | `CfeFirmante` | Firma XAdES-BES |
@@ -278,6 +280,73 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
     .WithPdfGenerator(miGeneradorPdf)
     .Build();
 ```
+
+---
+
+## 💾 Persistencia de CAEs
+
+En producción, el estado de los CAEs —especialmente `UltimoNroUsado`— debe sobrevivir reinicios
+de la aplicación. Si la app arranca con el contador en cero, volvería a emitir números ya usados,
+lo que la DGI rechazaría por duplicado.
+
+El SDK separa la gestión en memoria (`ICaeManager`) de la persistencia (`ICaeRepository`):
+
+```
+Al iniciar la app:   repo.CargarTodosAsync() → manager.RegistrarCaes()
+Al emitir un CFE:    manager.ObtenerProximoNumero() → repo.ActualizarUltimoNroUsadoAsync()
+```
+
+### Uso con la implementación en memoria (tests / desarrollo)
+
+```csharp
+// InMemoryCaeRepository: los datos se pierden al reiniciar (solo para tests/dev)
+var repo = new InMemoryCaeRepository();
+await repo.GuardarCaeAsync(new Cae
+{
+    NroSerie         = "CAE2025001",
+    TipoCfe          = TipoCfe.ETicket,
+    RangoDesde       = 1,
+    RangoHasta       = 1000,
+    FechaVencimiento = new DateTime(2026, 12, 31),
+});
+
+// Al iniciar: cargar y registrar en el manager
+client.Cae.RegistrarCaes(await repo.CargarTodosAsync());
+
+// Al emitir: obtener número y persistir inmediatamente
+var (cae, numero) = client.Cae.ObtenerProximoNumero(TipoCfe.ETicket);
+await repo.ActualizarUltimoNroUsadoAsync(cae.NroSerie, cae.UltimoNroUsado);
+```
+
+### Implementar persistencia real (producción)
+
+Implementá `ICaeRepository` con tu mecanismo de almacenamiento:
+
+```csharp
+public class MiCaeRepository : ICaeRepository
+{
+    public async Task<IEnumerable<Cae>> CargarTodosAsync()
+    {
+        // Leer de base de datos / archivo / Redis / etc.
+    }
+
+    public async Task GuardarCaeAsync(Cae cae)
+    {
+        // INSERT o UPDATE en tu store
+    }
+
+    public async Task ActualizarUltimoNroUsadoAsync(string nroSerie, long ultimoNroUsado)
+    {
+        // UPDATE ultimo_nro_usado WHERE nro_serie = nroSerie
+        // ¡Llamar en cada emisión exitosa antes de considerar la operación completa!
+    }
+}
+```
+
+> ⚠️ `ActualizarUltimoNroUsadoAsync` debe ejecutarse **antes** de considerar la emisión
+> finalizada. Si la app cae entre la emisión y la persistencia, el siguiente arranque
+> repetirá ese número. En escenarios críticos, usá transacciones de base de datos o
+> idempotencia en el endpoint de la DGI.
 
 ---
 
