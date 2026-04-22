@@ -34,10 +34,9 @@ public class CaeManager : ICaeManager
     {
         ArgumentNullException.ThrowIfNull(caes);
 
-        // Materializar y validar fuera del lock para no mantenerlo durante la iteración de una
-        // secuencia potencialmente diferida (lazy) y para garantizar que no haya nulls
-        // antes de comenzar a modificar el estado interno.
-        var lista = caes as IList<Models.Cae> ?? caes.ToList();
+        // Snapshotear siempre (ToList) para evitar que un caller mute la colección entre la
+        // validación y el lock. Luego validar la copia antes de modificar el estado interno.
+        var lista = caes.ToList();
         for (var i = 0; i < lista.Count; i++)
         {
             if (lista[i] is null)
