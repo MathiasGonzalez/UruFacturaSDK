@@ -468,6 +468,15 @@ public class UruFacturaClientTests
         Assert.Throws<ObjectDisposedException>(() => client.GenerarPdfA4(new Cfe { Tipo = TipoCfe.ETicket }));
     }
 
+    [Fact]
+    public void GenerarPdfTermico_PostDispose_LanzaObjectDisposedException()
+    {
+        var pdfStub = new PdfGeneratorStub();
+        var client = CrearCliente(pdfGenerator: pdfStub);
+        client.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => client.GenerarPdfTermico(new Cfe { Tipo = TipoCfe.ETicket }));
+    }
+
     // -----------------------------------------------------------------------
     // Stubs internos
     // -----------------------------------------------------------------------
