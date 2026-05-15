@@ -9,7 +9,13 @@ internal static class CfeFormat
     internal static string DateIso(DateTime value) =>
         value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
+    internal static string DateIso(DateOnly value) =>
+        value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
     internal static string DateCompact(DateTime value) =>
+        value.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+
+    internal static string DateCompact(DateOnly value) =>
         value.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
 
     internal static string DecimalInvariant(decimal value, string format) =>

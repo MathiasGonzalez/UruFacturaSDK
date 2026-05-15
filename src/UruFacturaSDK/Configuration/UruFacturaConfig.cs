@@ -5,40 +5,40 @@ namespace UruFacturaSDK.Configuration;
 /// <summary>
 /// Configuración principal del SDK de UruFactura.
 /// </summary>
-public class UruFacturaConfig
+public record UruFacturaConfig
 {
     /// <summary>RUT de la empresa emisora (sin puntos ni guión, 12 dígitos).</summary>
-    public string RutEmisor { get; set; } = string.Empty;
+    public string RutEmisor { get; init; } = string.Empty;
 
     /// <summary>Razón social del emisor.</summary>
-    public string RazonSocialEmisor { get; set; } = string.Empty;
+    public string RazonSocialEmisor { get; init; } = string.Empty;
 
     /// <summary>Nombre comercial del emisor (opcional).</summary>
-    public string? NombreComercialEmisor { get; set; }
+    public string? NombreComercialEmisor { get; init; }
 
     /// <summary>Giro o actividad económica del emisor (opcional).</summary>
-    public string? Giro { get; set; }
+    public string? Giro { get; init; }
 
     /// <summary>Domicilio fiscal del emisor.</summary>
-    public string DomicilioFiscal { get; set; } = string.Empty;
+    public string DomicilioFiscal { get; init; } = string.Empty;
 
     /// <summary>Ciudad del emisor.</summary>
-    public string Ciudad { get; set; } = string.Empty;
+    public string Ciudad { get; init; } = string.Empty;
 
     /// <summary>Departamento del emisor.</summary>
-    public string Departamento { get; set; } = string.Empty;
+    public string Departamento { get; init; } = string.Empty;
 
     /// <summary>Ambiente de operación (Homologación o Producción).</summary>
-    public Ambiente Ambiente { get; set; } = Ambiente.Homologacion;
+    public Ambiente Ambiente { get; init; } = Ambiente.Homologacion;
 
     /// <summary>Ruta al certificado digital .p12/.pfx.</summary>
-    public string RutaCertificado { get; set; } = string.Empty;
+    public string RutaCertificado { get; init; } = string.Empty;
 
     /// <summary>Contraseña del certificado digital.</summary>
-    public string PasswordCertificado { get; set; } = string.Empty;
+    public string PasswordCertificado { get; init; } = string.Empty;
 
     /// <summary>Timeout en segundos para las llamadas SOAP (por defecto 30 s).</summary>
-    public int SoapTimeoutSegundos { get; set; } = 30;
+    public int SoapTimeoutSegundos { get; init; } = 30;
 
     /// <summary>
     /// Cuando es <c>true</c>, deshabilita la validación del certificado TLS del servidor.
@@ -46,7 +46,7 @@ public class UruFacturaConfig
     /// <b>No habilitar en Producción.</b>
     /// Por defecto es <c>false</c>; el SDK no desactiva la validación automáticamente.
     /// </summary>
-    public bool OmitirValidacionSsl { get; set; }
+    public bool OmitirValidacionSsl { get; init; }
 
     /// <summary>
     /// URL base del servicio SOAP de la DGI según el ambiente configurado.

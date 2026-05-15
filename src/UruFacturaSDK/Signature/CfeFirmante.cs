@@ -138,7 +138,7 @@ public class CfeFirmante : ICfeFirmante
             signedXml.LoadXml((XmlElement)signatureNodes[0]!);
             return signedXml.CheckSignature();
         }
-        catch
+        catch (Exception)
         {
             return false;
         }
@@ -204,31 +204,38 @@ public class CfeFirmante : ICfeFirmante
         qualProps.AppendChild(signedProps);
         doc.AppendChild(qualProps);
 
-        var dataObject = new DataObject();
-        dataObject.Id = objectId;
-        // doc.ChildNodes = [qualProps], lo que produce la estructura completa:
-        // <Object Id="XadesObject">
-        //   <xades:QualifyingProperties Target="#Signature">
-        //     <xades:SignedProperties Id="SignedProperties">...</xades:SignedProperties>
-        //   </xades:QualifyingProperties>
-        // </Object>
-        dataObject.Data = doc.ChildNodes;
+        var dataObject = new DataObject
+        {
+            Id = objectId,
+            // doc.ChildNodes = [qualProps], lo que produce la estructura completa:
+            // <Object Id="XadesObject">
+            //   <xades:QualifyingProperties Target="#Signature">
+            //     <xades:SignedProperties Id="SignedProperties">...</xades:SignedProperties>
+            //   </xades:QualifyingProperties>
+            // </Object>
+            Data = doc.ChildNodes
+        };
 
         return dataObject;
     }
 
     private static string PrettyPrint(XmlDocument doc)
     {
-        var sb = new StringBuilder();
+        // StringBuilder-backed XmlWriter ignora la propiedad Encoding y siempre emite
+        // encoding="utf-16". Escribir a MemoryStream garantiza encoding="utf-8" en la declaración,
+        // coherente con la codificación de transporte SOAP (UTF-8).
+        using var ms = new MemoryStream();
         var settings = new XmlWriterSettings
         {
             Indent = true,
-            Encoding = Encoding.UTF8,
+            Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
             OmitXmlDeclaration = false,
         };
-        using var writer = XmlWriter.Create(sb, settings);
+        using var writer = XmlWriter.Create(ms, settings);
         doc.Save(writer);
-        return sb.ToString();
+        writer.Flush();
+        // GetBuffer() evita copiar el buffer interno (ms.ToArray() asignaría un arreglo adicional).
+        return Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Length);
     }
 
     /// <inheritdoc />

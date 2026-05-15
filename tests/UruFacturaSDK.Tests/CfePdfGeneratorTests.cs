@@ -28,7 +28,7 @@ public class CfePdfGeneratorTests
         Tipo = TipoCfe.ETicket,
         Numero = 1,
         Serie = "A",
-        FechaEmision = new DateTime(2025, 6, 15),
+        FechaEmision = new DateOnly(2025, 6, 15),
         RutEmisor = "210000000012",
         RazonSocialEmisor = "Empresa Test S.A.",
         MontoTotal = 1220m,

@@ -18,7 +18,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,        // Tipo de CFE al que aplica
     RangoDesde       = 1,                      // Primer número autorizado
     RangoHasta       = 1000,                   // Último número autorizado
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 ```
 
@@ -32,7 +32,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 5000,
-    FechaVencimiento = new DateTime(2026, 6, 30),
+    FechaVencimiento = new DateOnly(2026, 6, 30),
 });
 
 // CAE para e-Facturas
@@ -42,7 +42,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.EFactura,
     RangoDesde       = 1,
     RangoHasta       = 500,
-    FechaVencimiento = new DateTime(2026, 6, 30),
+    FechaVencimiento = new DateOnly(2026, 6, 30),
 });
 ```
 
@@ -149,7 +149,7 @@ builder.Services.AddHostedService<CaeMonitorService>();
        TipoCfe          = TipoCfe.ETicket,
        RangoDesde       = 1001,               // Continuar desde donde terminó el anterior
        RangoHasta       = 2000,
-       FechaVencimiento = new DateTime(2027, 12, 31),
+       FechaVencimiento = new DateOnly(2027, 12, 31),
    });
    ```
 

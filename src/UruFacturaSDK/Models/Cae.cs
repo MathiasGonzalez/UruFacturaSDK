@@ -7,7 +7,7 @@ namespace UruFacturaSDK.Models;
 /// </summary>
 public class Cae
 {
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private long _ultimoNroUsado;
 
     /// <summary>Número de serie del CAE.</summary>
@@ -23,7 +23,7 @@ public class Cae
     public long RangoHasta { get; set; }
 
     /// <summary>Fecha de vencimiento del CAE.</summary>
-    public DateTime FechaVencimiento { get; set; }
+    public DateOnly FechaVencimiento { get; set; }
 
     /// <summary>
     /// Último número utilizado dentro del rango.
@@ -39,7 +39,7 @@ public class Cae
     /// <summary>
     /// Indica si el CAE está vigente (no vencido).
     /// </summary>
-    public bool EsVigente => DateTime.Today <= FechaVencimiento;
+    public bool EsVigente => DateOnly.FromDateTime(DateTime.Today) <= FechaVencimiento;
 
     /// <summary>
     /// Indica si el CAE tiene números disponibles.
@@ -91,7 +91,7 @@ public class Cae
         if (!EsVigente)
             return $"⚠️ CAE {NroSerie} VENCIDO el {FechaVencimiento:dd/MM/yyyy}.";
 
-        var diasRestantes = (FechaVencimiento - DateTime.Today).Days;
+        var diasRestantes = FechaVencimiento.DayNumber - DateOnly.FromDateTime(DateTime.Today).DayNumber;
         if (diasRestantes <= diasAlertaVencimiento)
             return $"⚠️ CAE {NroSerie} vence en {diasRestantes} día(s) ({FechaVencimiento:dd/MM/yyyy}).";
 

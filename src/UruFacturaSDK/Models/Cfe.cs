@@ -19,7 +19,7 @@ public class Cfe
     public long Numero { get; set; }
 
     /// <summary>Fecha de emisión del comprobante.</summary>
-    public DateTime FechaEmision { get; set; } = DateTime.Today;
+    public DateOnly FechaEmision { get; set; } = DateOnly.FromDateTime(DateTime.Today);
 
     // --- Emisor (completado por SDK desde configuración) ---
 
@@ -68,12 +68,12 @@ public class Cfe
     // --- Detalle ---
 
     /// <summary>Líneas de detalle del comprobante.</summary>
-    public List<LineaDetalle> Detalle { get; set; } = new();
+    public List<LineaDetalle> Detalle { get; set; } = [];
 
     // --- Referencias ---
 
     /// <summary>Referencias a otros CFE (para notas correctivas).</summary>
-    public List<RefCfe> Referencias { get; set; } = new();
+    public List<RefCfe> Referencias { get; set; } = [];
 
     // --- Totales calculados ---
 

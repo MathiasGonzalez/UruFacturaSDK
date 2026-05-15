@@ -1,3 +1,4 @@
+using System.Text;
 using UruFacturaSDK.Enums;
 using UruFacturaSDK.Exceptions;
 using UruFacturaSDK.Models;
@@ -12,7 +13,7 @@ namespace UruFacturaSDK.Cae;
 public class CaeManager : ICaeManager
 {
     private readonly Dictionary<TipoCfe, List<Models.Cae>> _caesPorTipo = new();
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     /// <summary>
     /// Registra un CAE en el gestor.
@@ -23,21 +24,40 @@ public class CaeManager : ICaeManager
         ArgumentNullException.ThrowIfNull(cae);
 
         lock (_lock)
-        {
-            if (!_caesPorTipo.TryGetValue(cae.TipoCfe, out var lista))
-                _caesPorTipo[cae.TipoCfe] = lista = [];
-
-            lista.Add(cae);
-        }
+            AgregarCaeSinLock(cae);
     }
 
     /// <summary>
-    /// Registra múltiples CAEs a la vez.
+    /// Registra múltiples CAEs a la vez usando un solo lock para el lote completo.
+    /// Valida que ningún elemento sea null antes de modificar el estado interno.
     /// </summary>
     public void RegistrarCaes(IEnumerable<Models.Cae> caes)
     {
-        foreach (var cae in caes)
-            RegistrarCae(cae);
+        ArgumentNullException.ThrowIfNull(caes);
+
+        // Snapshotear siempre (ToList) para evitar que un caller mute la colección entre la
+        // validación y el lock. Luego validar la copia antes de modificar el estado interno.
+        var lista = caes.ToList();
+        for (var i = 0; i < lista.Count; i++)
+        {
+            if (lista[i] is null)
+                throw new ArgumentNullException(nameof(caes), $"El elemento en el índice {i} es null.");
+        }
+
+        lock (_lock)
+        {
+            foreach (var cae in lista)
+                AgregarCaeSinLock(cae);
+        }
+    }
+
+    // Debe llamarse con _lock adquirido.
+    private void AgregarCaeSinLock(Models.Cae cae)
+    {
+        if (!_caesPorTipo.TryGetValue(cae.TipoCfe, out var lista))
+            _caesPorTipo[cae.TipoCfe] = lista = [];
+
+        lista.Add(cae);
     }
 
     /// <summary>
@@ -141,7 +161,7 @@ public class CaeManager : ICaeManager
                 kvp => kvp.Value.ToList());
         }
 
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("=== Estado de CAEs ===");
 
         foreach (var (tipo, lista) in snapshot)
@@ -169,10 +189,28 @@ public class CaeManager : ICaeManager
         if (!_caesPorTipo.TryGetValue(tipoCfe, out var lista))
             return null;
 
-        return lista
-            .Where(c => c.EsVigente && c.TieneNumerosDisponibles)
-            .OrderByDescending(c => c.FechaVencimiento)
-            .ThenByDescending(c => c.RangoHasta - c.UltimoNroUsado)
-            .FirstOrDefault();
+        // Criterio de selección: primero el CAE con mayor fecha de vencimiento;
+        // en caso de empate, el que tenga más números disponibles.
+        // La comparación lexicográfica de ValueTuple codifica ambos criterios en una sola expresión.
+        static (DateOnly Vencimiento, long Disponibles) Prioridad(Models.Cae c) =>
+            (c.FechaVencimiento, c.RangoHasta - c.UltimoNroUsado);
+
+        Models.Cae? mejor = null;
+        (DateOnly, long) mejorPrioridad = default;
+
+        foreach (var cae in lista)
+        {
+            if (!cae.EsVigente || !cae.TieneNumerosDisponibles)
+                continue;
+
+            var prioridad = Prioridad(cae);
+            if (mejor is null || prioridad.CompareTo(mejorPrioridad) > 0)
+            {
+                mejor = cae;
+                mejorPrioridad = prioridad;
+            }
+        }
+
+        return mejor;
     }
 }

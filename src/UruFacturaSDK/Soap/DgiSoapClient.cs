@@ -1,4 +1,3 @@
-using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
@@ -16,7 +15,8 @@ namespace UruFacturaSDK.Soap;
 public class DgiSoapClient : IDgiSoapClient
 {
     private readonly UruFacturaConfig _config;
-    private readonly HttpClient _httpClient;
+    private HttpClient? _httpClient;
+    private bool _ownsHttpClient;
     private bool _disposed;
 
     private const string SoapAction = "\"\"";
@@ -28,7 +28,41 @@ public class DgiSoapClient : IDgiSoapClient
     public DgiSoapClient(UruFacturaConfig config, HttpClient? httpClient = null)
     {
         _config = config;
-        _httpClient = httpClient ?? CrearHttpClient();
+        if (httpClient is not null)
+        {
+            ValidarHttpClientExterno(httpClient);
+            _httpClient = httpClient;
+            _ownsHttpClient = false;
+        }
+        else
+        {
+            _httpClient = CrearHttpClient();
+            _ownsHttpClient = true;
+        }
+    }
+
+    public IDgiSoapClient WithHttpClient(HttpClient httpClient)
+    {
+        ValidarHttpClientExterno(httpClient);
+        if (_ownsHttpClient)
+            _httpClient?.Dispose();
+
+        _httpClient = httpClient;
+        _ownsHttpClient = false;
+        return this;
+    }
+
+    /// <summary>
+    /// Valida que el <see cref="HttpClient"/> externo cumpla los requisitos mínimos para
+    /// comunicarse correctamente con la DGI.
+    /// </summary>
+    private static void ValidarHttpClientExterno(HttpClient httpClient)
+    {
+        if (httpClient.Timeout == Timeout.InfiniteTimeSpan)
+            throw new ArgumentException(
+                "El HttpClient externo tiene Timeout infinito. " +
+                "Configure un timeout finito (p.ej. TimeSpan.FromSeconds(30)).",
+                nameof(httpClient));
     }
 
     /// <summary>
@@ -94,10 +128,13 @@ public class DgiSoapClient : IDgiSoapClient
     {
         try
         {
+            var client = _httpClient ?? throw new InvalidOperationException(
+                "No se ha inicializado el HttpClient.");
+
             var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
             content.Headers.Add("SOAPAction", SoapAction);
 
-            var response = await _httpClient.PostAsync(
+            var response = await client.PostAsync(
                 _config.DgiSoapBaseUrl, content, cancellationToken);
 
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -227,9 +264,12 @@ public class DgiSoapClient : IDgiSoapClient
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
         }
 
-        if (!string.IsNullOrWhiteSpace(_config.RutaCertificado)
-            && File.Exists(_config.RutaCertificado))
+        if (!string.IsNullOrWhiteSpace(_config.RutaCertificado))
         {
+            if (!File.Exists(_config.RutaCertificado))
+                throw new Exceptions.UruFacturaException(
+                    $"No se encontró el archivo de certificado: '{_config.RutaCertificado}'.");
+
             var cert = X509CertificateLoader.LoadPkcs12FromFile(
                 _config.RutaCertificado, _config.PasswordCertificado);
             handler.ClientCertificates.Add(cert);
@@ -251,7 +291,8 @@ public class DgiSoapClient : IDgiSoapClient
     public void Dispose()
     {
         if (_disposed) return;
-        _httpClient.Dispose();
+        if (_ownsHttpClient)
+            _httpClient?.Dispose();
         _disposed = true;
         GC.SuppressFinalize(this);
     }

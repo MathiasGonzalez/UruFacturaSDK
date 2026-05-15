@@ -24,4 +24,6 @@ public interface IDgiSoapClient : IDisposable
         DateTime fecha,
         IEnumerable<string> cfesFirmados,
         CancellationToken cancellationToken = default);
+
+    IDgiSoapClient WithHttpClient(HttpClient httpClient);
 }

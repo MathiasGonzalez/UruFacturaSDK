@@ -34,7 +34,7 @@ El e-Ticket es el comprobante más común para ventas al consumidor final (sin i
 ```csharp
 var eticket = client.CrearETicket();
 eticket.Numero = 1;                           // Número del comprobante
-eticket.FechaEmision = DateTime.Today;        // Opcional, por defecto DateTime.Today
+eticket.FechaEmision = DateOnly.FromDateTime(DateTime.Today); // Opcional, por defecto hoy
 
 // Agregar líneas de detalle
 eticket.Detalle.Add(new LineaDetalle

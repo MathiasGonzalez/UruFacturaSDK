@@ -1,0 +1,26 @@
+---
+// Starlight Head override that initialises Mermaid.js for client-side rendering.
+// rehype-mermaid (strategy: 'pre-mermaid') outputs <pre class="mermaid"> elements;
+// this script picks them up and renders the diagrams in the browser.
+import Default from '@astrojs/starlight/components/Head.astro';
+---
+
+<Default {...Astro.props}><slot /></Default>
+
+<script>
+  import mermaid from 'mermaid';
+
+  function renderMermaid() {
+    const nodes = document.querySelectorAll('pre.mermaid:not([data-processed])');
+    if (nodes.length === 0) return;
+    mermaid.run({ nodes });
+  }
+
+  mermaid.initialize({ startOnLoad: false });
+
+  // Initial page load
+  renderMermaid();
+
+  // Astro View Transitions: re-run after each navigation
+  document.addEventListener('astro:page-load', renderMermaid);
+</script>

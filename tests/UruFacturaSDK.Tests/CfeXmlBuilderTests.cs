@@ -10,13 +10,13 @@ public class CfeXmlBuilderTests
 {
     private readonly CfeXmlBuilder _builder = new();
 
-    private static Cfe CriarCfeCompleto() =>
+    private static Cfe CrearCfeCompleto() =>
         new()
         {
             Tipo = TipoCfe.ETicket,
             Serie = "A",
             Numero = 42,
-            FechaEmision = new DateTime(2025, 6, 15),
+            FechaEmision = new DateOnly(2025, 6, 15),
             RutEmisor = "210000000012",
             RazonSocialEmisor = "Empresa Test S.A.",
             DomicilioFiscalEmisor = "Av. 18 de Julio 1234",
@@ -40,7 +40,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_RetornaXmlNoVacio()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.NotNull(xml);
@@ -50,7 +50,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneNodoCfe()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<CFE", xml);
@@ -60,7 +60,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneEncabezado()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<Encabezado", xml);
@@ -72,7 +72,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneTipoCorrecto()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<TipoCFE>101</TipoCFE>", xml);
@@ -81,7 +81,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneNumero()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<Nro>42</Nro>", xml);
@@ -90,7 +90,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneRutEmisor()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<RUCEmisor>210000000012</RUCEmisor>", xml);
@@ -99,7 +99,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneDetalle()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<Detalle", xml);
@@ -110,10 +110,9 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneTotales()
     {
-        var cfe = CriarCfeCompleto();
-        var xml = _builder.Generar(cfe);
-
-        // 1000 neto basico, 22% IVA = 220, Total = 1220
+        var cfe = CrearCfeCompleto();
+        cfe.CalcularTotales();
+        var xml = _builder.Generar(cfe); // 1000 neto basico, 22% IVA = 220, Total = 1220
         Assert.Contains("<MntNetoIVA>1000.00</MntNetoIVA>", xml);
         Assert.Contains("<MntIVA>220.00</MntIVA>", xml);
         Assert.Contains("<MntTotal>1220.00</MntTotal>", xml);
@@ -122,7 +121,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlEsXmlValido()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         // Verificar que el XML es parseable
@@ -134,7 +133,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeConReceptor_XmlContieneReceptor()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Receptor = new Models.Receptor
         {
             RazonSocial = "Cliente Test S.R.L.",
@@ -152,7 +151,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeConReferencia_XmlContieneReferencia()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Tipo = TipoCfe.NotaCreditoETicket;
         cfe.Referencias.Add(new Models.RefCfe
         {
@@ -177,7 +176,7 @@ public class CfeXmlBuilderTests
         {
             Tipo = TipoCfe.ETicket,
             Numero = 0, // inválido
-            FechaEmision = DateTime.Today,
+            FechaEmision = DateOnly.FromDateTime(DateTime.Today),
         };
 
         Assert.Throws<CfeValidationException>(() => _builder.Generar(cfe));
@@ -186,7 +185,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_XmlGenerado_EsXmlBienFormado()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         // Verificar que el XML comienza con declaración XML y contiene el elemento raíz
@@ -200,7 +199,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_MntBruto_EsCero_PreciosNetos()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         // MntBruto=0 significa que los precios en <Detalle> son netos (sin IVA).
@@ -212,7 +211,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_MonedaDolar_TipoMonedaUsaCodigoAlfa()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Moneda = Moneda.DolarAmericano;
         cfe.TipoCambio = 42.5m;
         var xml = _builder.Generar(cfe);
@@ -225,7 +224,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_MonedaEuro_TipoMonedaUsaCodigoAlfa()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Moneda = Moneda.Euro;
         cfe.TipoCambio = 50.0m;
         var xml = _builder.Generar(cfe);
@@ -236,7 +235,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_MonedaPeso_OmiteTipoMoneda()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Moneda = Moneda.PesoUruguayo;
         var xml = _builder.Generar(cfe);
 
@@ -247,7 +246,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Validar_MonedaExtranjeraSinTipoCambio_RetornaError()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Moneda = Moneda.DolarAmericano;
         // TipoCambio = null → debe dar error
         var errores = cfe.Validar();
@@ -257,7 +256,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Validar_MonedaExtranjeraConTipoCambio_NoRetornaErrorMoneda()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Moneda = Moneda.DolarAmericano;
         cfe.TipoCambio = 42.5m;
         var errores = cfe.Validar();
@@ -267,7 +266,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_XmlGenerado_DeclaracionContieneEncodingUtf8()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         // La declaración XML debe indicar encoding="utf-8" (no utf-16).
@@ -281,7 +280,8 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_CfeValido_XmlContieneMntPagar()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
+        cfe.CalcularTotales();
         var xml = _builder.Generar(cfe);
 
         // MntPagar es obligatorio en Totales y debe coincidir con MntTotal
@@ -291,11 +291,11 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_ConIvaSuspendido_XmlContieneMntSuspenso()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
         cfe.Detalle[0].Cantidad = 1;
         cfe.Detalle[0].PrecioUnitario = 500m;
-
+        cfe.CalcularTotales();
         var xml = _builder.Generar(cfe);
 
         Assert.Contains("<MntSuspenso>500.00</MntSuspenso>", xml);
@@ -305,9 +305,9 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_ConIvaSuspendido_NoMezclaMntExe()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Detalle[0].IndFactIva = TipoIva.Suspendido;
-
+        cfe.CalcularTotales();
         var xml = _builder.Generar(cfe);
 
         // Suspendido debe ir en MntSuspenso, no en MntExe
@@ -318,7 +318,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_ERemito_XmlContieneIndTraslado()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Tipo = TipoCfe.ERemito;
         cfe.IndTraslado = IndTraslado.TrasladoPropio;
 
@@ -330,7 +330,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_ETicket_XmlNoContieneIndTraslado()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
         Assert.DoesNotContain("IndTraslado", xml);
@@ -339,7 +339,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_ConGiro_XmlContieneGiroNegocio()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Giro = "Comercio minorista";
 
         var xml = _builder.Generar(cfe);
@@ -350,7 +350,7 @@ public class CfeXmlBuilderTests
     [Fact]
     public void Generar_SinGiro_XmlNoContieneGiroNegocio()
     {
-        var cfe = CriarCfeCompleto();
+        var cfe = CrearCfeCompleto();
         cfe.Giro = null;
 
         var xml = _builder.Generar(cfe);

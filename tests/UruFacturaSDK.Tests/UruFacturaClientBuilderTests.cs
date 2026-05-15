@@ -68,8 +68,7 @@ public class UruFacturaClientBuilderTests : IDisposable
     [Fact]
     public void WithDefaults_ConfigInvalida_LanzaExcepcion()
     {
-        var config = ConfigValida();
-        config.RutEmisor = "";
+        var config = ConfigValida() with { RutEmisor = "" };
         Assert.Throws<Exceptions.UruFacturaException>(() => UruFacturaClientBuilder.WithDefaults(config));
     }
 
@@ -255,6 +254,8 @@ public class UruFacturaClientBuilderTests : IDisposable
         public Task<RespuestaReporteDiario> EnviarReporteDiarioAsync(
             DateTime fecha, IEnumerable<string> cfes, CancellationToken ct = default)
             => Task.FromResult(new RespuestaReporteDiario { Respuesta = RespuestaDgi.Exito("00", "OK") });
+
+        public IDgiSoapClient WithHttpClient(HttpClient httpClient) => this;
 
         public void Dispose() { }
     }
