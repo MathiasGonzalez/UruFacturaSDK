@@ -107,7 +107,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe         = TipoCfe.ETicket,
     RangoDesde      = 1,
     RangoHasta      = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 
 // Crear comprobante
@@ -325,20 +325,23 @@ Implementá `ICaeRepository` con tu mecanismo de almacenamiento:
 ```csharp
 public class MiCaeRepository : ICaeRepository
 {
-    public async Task<IEnumerable<Cae>> CargarTodosAsync()
+    public ValueTask<IEnumerable<Cae>> CargarTodosAsync()
     {
         // Leer de base de datos / archivo / Redis / etc.
+        throw new NotImplementedException();
     }
 
-    public async Task GuardarCaeAsync(Cae cae)
+    public ValueTask GuardarCaeAsync(Cae cae)
     {
         // INSERT o UPDATE en tu store
+        throw new NotImplementedException();
     }
 
-    public async Task ActualizarUltimoNroUsadoAsync(string nroSerie, long ultimoNroUsado)
+    public ValueTask ActualizarUltimoNroUsadoAsync(string nroSerie, long ultimoNroUsado)
     {
         // UPDATE ultimo_nro_usado WHERE nro_serie = nroSerie
         // ¡Llamar en cada emisión exitosa antes de considerar la operación completa!
+        throw new NotImplementedException();
     }
 }
 ```

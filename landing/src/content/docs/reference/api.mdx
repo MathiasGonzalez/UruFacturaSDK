@@ -105,18 +105,18 @@ Configuración del cliente SDK.
 ```csharp
 public record UruFacturaConfig
 {
-    public string RutEmisor { get; set; }
-    public string RazonSocialEmisor { get; set; }
-    public string? NombreComercialEmisor { get; set; }
-    public string? Giro { get; set; }
-    public string DomicilioFiscal { get; set; }
-    public string Ciudad { get; set; }
-    public string Departamento { get; set; }
-    public string RutaCertificado { get; set; }
-    public string PasswordCertificado { get; set; }
-    public Ambiente Ambiente { get; set; }
-    public int SoapTimeoutSegundos { get; set; }  // default: 30
-    public bool OmitirValidacionSsl { get; set; } // default: false
+    public string RutEmisor { get; init; }
+    public string RazonSocialEmisor { get; init; }
+    public string? NombreComercialEmisor { get; init; }
+    public string? Giro { get; init; }
+    public string DomicilioFiscal { get; init; }
+    public string Ciudad { get; init; }
+    public string Departamento { get; init; }
+    public string RutaCertificado { get; init; }
+    public string PasswordCertificado { get; init; }
+    public Ambiente Ambiente { get; init; }
+    public int SoapTimeoutSegundos { get; init; }  // default: 30
+    public bool OmitirValidacionSsl { get; init; } // default: false
     public string DgiSoapBaseUrl { get; }         // según Ambiente
 }
 ```

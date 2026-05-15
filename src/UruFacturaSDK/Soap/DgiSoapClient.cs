@@ -16,6 +16,7 @@ public class DgiSoapClient : IDgiSoapClient
 {
     private readonly UruFacturaConfig _config;
     private HttpClient? _httpClient;
+    private bool _ownsHttpClient;
     private bool _disposed;
 
     private const string SoapAction = "\"\"";
@@ -29,20 +30,25 @@ public class DgiSoapClient : IDgiSoapClient
         _config = config;
         if (httpClient is not null)
         {
-            ValidarHttpClientExterno(config, httpClient);
+            ValidarHttpClientExterno(httpClient);
             _httpClient = httpClient;
+            _ownsHttpClient = false;
         }
         else
         {
             _httpClient = CrearHttpClient();
+            _ownsHttpClient = true;
         }
     }
 
     public IDgiSoapClient WithHttpClient(HttpClient httpClient)
     {
-        ValidarHttpClientExterno(_config, httpClient);
-        _httpClient?.Dispose();
+        ValidarHttpClientExterno(httpClient);
+        if (_ownsHttpClient)
+            _httpClient?.Dispose();
+
         _httpClient = httpClient;
+        _ownsHttpClient = false;
         return this;
     }
 
@@ -50,20 +56,13 @@ public class DgiSoapClient : IDgiSoapClient
     /// Valida que el <see cref="HttpClient"/> externo cumpla los requisitos mínimos para
     /// comunicarse correctamente con la DGI.
     /// </summary>
-    private static void ValidarHttpClientExterno(UruFacturaConfig config, HttpClient httpClient)
+    private static void ValidarHttpClientExterno(HttpClient httpClient)
     {
-        if (httpClient.Timeout == TimeSpan.Zero)
+        if (httpClient.Timeout == Timeout.InfiniteTimeSpan)
             throw new ArgumentException(
-                "El HttpClient externo tiene Timeout en cero. " +
-                "Configure un timeout mayor a cero (p.ej. TimeSpan.FromSeconds(30)).",
+                "El HttpClient externo tiene Timeout infinito. " +
+                "Configure un timeout finito (p.ej. TimeSpan.FromSeconds(30)).",
                 nameof(httpClient));
-
-        if (config.OmitirValidacionSsl)
-            throw new InvalidOperationException(
-                "La configuración tiene OmitirValidacionSsl = true, pero se está inyectando " +
-                "un HttpClient externo. El SDK no puede aplicar esa opción sobre un handler " +
-                "ajeno. Configure ServerCertificateCustomValidationCallback directamente en " +
-                "el HttpClientHandler del HttpClient que está inyectando.");
     }
 
     /// <summary>
@@ -292,7 +291,8 @@ public class DgiSoapClient : IDgiSoapClient
     public void Dispose()
     {
         if (_disposed) return;
-        _httpClient?.Dispose();
+        if (_ownsHttpClient)
+            _httpClient?.Dispose();
         _disposed = true;
         GC.SuppressFinalize(this);
     }

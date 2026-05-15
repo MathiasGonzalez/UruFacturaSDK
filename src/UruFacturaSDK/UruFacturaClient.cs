@@ -19,7 +19,7 @@ namespace UruFacturaSDK;
 /// implementaciones personalizadas.
 /// </para>
 /// </summary>
-public sealed partial class UruFacturaClient : IUruFacturaClient
+public partial class UruFacturaClient : IUruFacturaClient
 {
     private readonly UruFacturaConfig _config;
     private readonly ICfeXmlBuilder _xmlBuilder;

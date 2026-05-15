@@ -179,31 +179,7 @@ static void MapRequest(Cfe doc, CfeRequest req)
     doc.Receptor   = req.Receptor;
     doc.Detalle    = req.Detalle;
 
-    // Totales calculados a partir del detalle
-    foreach (var linea in doc.Detalle)
-    {
-        switch (linea.IndFactIva)
-        {
-            case TipoIva.Basico:
-                doc.MontoNetoBasico += linea.MontoTotal;
-                break;
-            case TipoIva.Minimo:
-                doc.MontoNetoMinimo += linea.MontoTotal;
-                break;
-            case TipoIva.Exento:
-                doc.MontoNetoExento += linea.MontoTotal;
-                break;
-            case TipoIva.Suspendido:
-                doc.MontoNetoSuspendido += linea.MontoTotal;
-                break;
-        }
-    }
-
-    doc.IvaBasico  = Math.Round(doc.MontoNetoBasico * 0.22m, 2);
-    doc.IvaMinimo  = Math.Round(doc.MontoNetoMinimo * 0.10m, 2);
-    doc.MontoTotal = doc.MontoNetoBasico + doc.IvaBasico
-                   + doc.MontoNetoMinimo + doc.IvaMinimo
-                   + doc.MontoNetoExento + doc.MontoNetoSuspendido;
+    doc.CalcularTotales();
 }
 
 // ---------------------------------------------------------------------------
