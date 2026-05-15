@@ -86,10 +86,11 @@ public class CfePdfGeneratorTests
     }
 
     [Fact]
-    public void GenerarA4_CfeConReceptor_NoLanzaExcepcion()
+    public void GenerarA4_CfeConReceptor_PdfEsMayorQueSinReceptor()
     {
-        var cfe = CfeBase();
-        cfe.Receptor = new Receptor
+        var sinReceptor = CfeBase();
+        var conReceptor = CfeBase();
+        conReceptor.Receptor = new Receptor
         {
             RazonSocial = "Cliente S.A.",
             Documento = "210000000099",
@@ -97,21 +98,28 @@ public class CfePdfGeneratorTests
         };
 
         var generator = new CfePdfGenerator(ConfigValida());
-        var ex = Record.Exception(() => generator.GenerarA4(cfe));
+        var bytesSinReceptor = generator.GenerarA4(sinReceptor);
+        var bytesConReceptor = generator.GenerarA4(conReceptor);
 
-        Assert.Null(ex);
+        // Con receptor se renderizan más líneas de texto, el PDF debe ser más grande.
+        Assert.True(bytesConReceptor.Length > bytesSinReceptor.Length,
+            $"Se esperaba PDF con receptor ({bytesConReceptor.Length} bytes) > sin receptor ({bytesSinReceptor.Length} bytes).");
     }
 
     [Fact]
-    public void GenerarA4_CfeAceptadoPorDgi_NoLanzaExcepcion()
+    public void GenerarA4_CfeAceptadoPorDgi_PdfContieneMarcaAceptado()
     {
-        var cfe = CfeBase();
-        cfe.AceptadoPorDgi = true;
+        var sinAceptar = CfeBase();
+        var aceptado = CfeBase();
+        aceptado.AceptadoPorDgi = true;
 
         var generator = new CfePdfGenerator(ConfigValida());
-        var ex = Record.Exception(() => generator.GenerarA4(cfe));
+        var bytesSinAceptar = generator.GenerarA4(sinAceptar);
+        var bytesAceptado = generator.GenerarA4(aceptado);
 
-        Assert.Null(ex);
+        // La marca "✅ Aceptado por DGI" agrega contenido; el PDF aceptado debe ser más grande.
+        Assert.True(bytesAceptado.Length > bytesSinAceptar.Length,
+            $"Se esperaba PDF aceptado ({bytesAceptado.Length} bytes) > sin aceptar ({bytesSinAceptar.Length} bytes).");
     }
 
     // -----------------------------------------------------------------------
@@ -141,15 +149,19 @@ public class CfePdfGeneratorTests
     }
 
     [Fact]
-    public void GenerarTermico_CfeConReceptor_NoLanzaExcepcion()
+    public void GenerarTermico_CfeConReceptor_PdfEsMayorQueSinReceptor()
     {
-        var cfe = CfeBase();
-        cfe.Receptor = new Receptor { RazonSocial = "Cliente S.A." };
+        var sinReceptor = CfeBase();
+        var conReceptor = CfeBase();
+        conReceptor.Receptor = new Receptor { RazonSocial = "Cliente S.A." };
 
         var generator = new CfePdfGenerator(ConfigValida());
-        var ex = Record.Exception(() => generator.GenerarTermico(cfe));
+        var bytesSinReceptor = generator.GenerarTermico(sinReceptor);
+        var bytesConReceptor = generator.GenerarTermico(conReceptor);
 
-        Assert.Null(ex);
+        // Con receptor se agrega la línea "Cliente: ..." y un separador; el PDF debe ser más grande.
+        Assert.True(bytesConReceptor.Length > bytesSinReceptor.Length,
+            $"Se esperaba PDF térmico con receptor ({bytesConReceptor.Length} bytes) > sin receptor ({bytesSinReceptor.Length} bytes).");
     }
 
     // -----------------------------------------------------------------------

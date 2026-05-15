@@ -51,7 +51,7 @@ UruFacturaSDK/
 │   │   ├── UruFacturaClient.cs         # Fachada principal del SDK
 │   │   ├── UruFacturaClientBuilder.cs  # Builder fluido con WithDefaults()
 │   │   └── UruFacturaClientBuilderPdf.cs # Extensión del builder para PDF (solo paquete completo)
-│   └── UruFacturaSDK.Lite/             # Paquete Lite (sin QuestPDF/SkiaSharp/ZXing)
+│   └── UruFacturaSDK.Lite/             # Paquete Lite (sin FluentReport/SkiaSharp/ZXing)
 │       └── UruFacturaClient.cs         # Constructores de conveniencia (sin PDF por defecto)
 └── tests/
     └── UruFacturaSDK.Tests/            # Tests unitarios xUnit
@@ -315,14 +315,14 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
 
 | Paquete | Cuándo usarlo |
 |---------|--------------|
-| [`UruFacturaSDK`](https://www.nuget.org/packages/UruFacturaSDK/) | Uso general — incluye generación de PDF A4 y térmico (QuestPDF + SkiaSharp + ZXing) |
+| [`UruFacturaSDK`](https://www.nuget.org/packages/UruFacturaSDK/) | Uso general — incluye generación de PDF A4 y térmico (FluentReport + SkiaSharp + ZXing) |
 | [`UruFacturaSDK.Lite`](https://www.nuget.org/packages/UruFacturaSDK.Lite/) | Entornos donde el peso de las dependencias de PDF no es deseable (microservicios, Azure Functions, etc.). Podés inyectar tu propio `ICfePdfGenerator` si lo necesitás. |
 
 ```bash
 # Paquete completo
 dotnet add package UruFacturaSDK
 
-# Paquete Lite (sin QuestPDF / SkiaSharp / ZXing)
+# Paquete Lite (sin FluentReport / SkiaSharp / ZXing)
 dotnet add package UruFacturaSDK.Lite
 ```
 
