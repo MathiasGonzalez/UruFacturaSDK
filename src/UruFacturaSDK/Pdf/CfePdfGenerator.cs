@@ -250,13 +250,14 @@ public class CfePdfGenerator : ICfePdfGenerator
 
                 page.Footer().Row(row =>
                 {
+                    void EstiloFooter(TextStyle s) { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); }
                     row.RelativeItem().Text(text =>
                     {
-                        text.Span("Generado con UruFacturaSDK - ", s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
-                        text.Span("Página ", s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
-                        text.CurrentPageNumber(s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
-                        text.Span(" de ", s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
-                        text.TotalPages(s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
+                        text.Span("Generado con UruFacturaSDK - ", EstiloFooter);
+                        text.Span("Página ", EstiloFooter);
+                        text.CurrentPageNumber(EstiloFooter);
+                        text.Span(" de ", EstiloFooter);
+                        text.TotalPages(EstiloFooter);
                     });
                 });
             });
@@ -265,7 +266,7 @@ public class CfePdfGenerator : ICfePdfGenerator
 
     private static byte[] GenerarDocumentoTermico(Cfe cfe, UruFacturaConfig config, byte[] qrBytes)
     {
-        // Ancho térmico estándar: 80mm ≈ 227 puntos
+        // Ancho térmico estándar: 80mm ≈ 227 puntos; alto generoso para contenido variable
         return Document.Create(doc =>
         {
             doc.Page(page =>
