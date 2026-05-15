@@ -1,6 +1,6 @@
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
+using FluentReport;
+using FluentReport.Core;
+using FluentReport.Styling;
 using SkiaSharp;
 using UruFacturaSDK.Configuration;
 using UruFacturaSDK.Enums;
@@ -22,12 +22,6 @@ public class CfePdfGenerator : ICfePdfGenerator
 {
     private readonly UruFacturaConfig _config;
     private readonly ICfeQrGenerator _qrGenerator;
-
-    static CfePdfGenerator()
-    {
-        // Configurar la licencia comunitaria de QuestPDF
-        QuestPDF.Settings.License = LicenseType.Community;
-    }
 
     /// <summary>
     /// Inicializa el generador usando el motor de QR predeterminado.
@@ -56,8 +50,7 @@ public class CfePdfGenerator : ICfePdfGenerator
         try
         {
             var qrBytes = _qrGenerator.GenerarQrCode(cfe, _config.Ambiente);
-            var document = new CfeDocumentoA4(cfe, _config, qrBytes);
-            return document.GeneratePdf();
+            return GenerarDocumentoA4(cfe, _config, qrBytes);
         }
         catch (Exception ex)
         {
@@ -71,8 +64,7 @@ public class CfePdfGenerator : ICfePdfGenerator
         try
         {
             var qrBytes = _qrGenerator.GenerarQrCode(cfe, _config.Ambiente);
-            var document = new CfeDocumentoTermico(cfe, _config, qrBytes);
-            return document.GeneratePdf();
+            return GenerarDocumentoTermico(cfe, _config, qrBytes);
         }
         catch (Exception ex)
         {
@@ -138,325 +130,233 @@ public class CfePdfGenerator : ICfePdfGenerator
                $"&fecha={CfeFormat.DateCompact(cfe.FechaEmision)}" +
                $"&monto={CfeFormat.DecimalInvariant(cfe.MontoTotal, "F2")}";
     }
-}
 
-// ---------------------------------------------------------------------------
-// Documento PDF A4
-// ---------------------------------------------------------------------------
-
-internal class CfeDocumentoA4 : IDocument
-{
-    private readonly Cfe _cfe;
-    private readonly UruFacturaConfig _config;
-    private readonly byte[] _qrBytes;
-
-    public CfeDocumentoA4(Cfe cfe, UruFacturaConfig config, byte[] qrBytes)
+    private static byte[] GenerarDocumentoA4(Cfe cfe, UruFacturaConfig config, byte[] qrBytes)
     {
-        _cfe = cfe;
-        _config = config;
-        _qrBytes = qrBytes;
-    }
-
-    public DocumentMetadata GetMetadata() => new()
-    {
-        Title = $"CFE {(int)_cfe.Tipo} - {_cfe.Serie}{_cfe.Numero}",
-        Author = _config.RazonSocialEmisor,
-        Creator = "UruFacturaSDK",
-    };
-
-    public DocumentSettings GetSettings() => DocumentSettings.Default;
-
-    public void Compose(IDocumentContainer container)
-    {
-        container.Page(page =>
+        return Document.Create(doc =>
         {
-            page.Size(PageSizes.A4);
-            page.Margin(1.5f, Unit.Centimetre);
-            page.DefaultTextStyle(x => x.FontSize(9).FontFamily("Arial"));
-
-            page.Header().Element(ComposeHeader);
-            page.Content().Element(ComposeContent);
-            page.Footer().Element(ComposeFooter);
-        });
-    }
-
-    private void ComposeHeader(IContainer container)
-    {
-        container.Column(col =>
-        {
-            // Encabezado del emisor
-            col.Item().Row(row =>
+            doc.Page(page =>
             {
-                row.RelativeItem(3).Column(emisor =>
-                {
-                    emisor.Item().Text(_config.RazonSocialEmisor).Bold().FontSize(14);
-                    if (!string.IsNullOrWhiteSpace(_config.NombreComercialEmisor))
-                        emisor.Item().Text(_config.NombreComercialEmisor).FontSize(10);
-                    emisor.Item().Text($"RUT: {_config.RutEmisor}");
-                    emisor.Item().Text(_config.DomicilioFiscal);
-                    emisor.Item().Text($"{_config.Ciudad}, {_config.Departamento}");
-                });
+                page.Size(PageSizes.A4);
+                page.MarginAll(42f); // ~1.5 cm en puntos
 
-                row.RelativeItem(2).AlignRight().Column(tipoDoc =>
+                page.Header().Column(col =>
                 {
-                    tipoDoc.Item()
-                        .Border(1)
-                        .Padding(8)
-                        .AlignCenter()
-                        .Column(c =>
+                    col.Item().Row(row =>
+                    {
+                        row.RelativeItem(3).Column(emisor =>
                         {
-                            c.Item().Text(ObtenerNombreTipo()).Bold().FontSize(12);
-                            c.Item().Text($"N° {_cfe.Serie}{_cfe.Numero:D8}").Bold().FontSize(11);
-                            c.Item().Text($"Fecha: {_cfe.FechaEmision:dd/MM/yyyy}");
+                            emisor.Item().Text(config.RazonSocialEmisor).Bold().FontSize(14);
+                            if (!string.IsNullOrWhiteSpace(config.NombreComercialEmisor))
+                                emisor.Item().Text(config.NombreComercialEmisor).FontSize(10);
+                            emisor.Item().Text($"RUT: {config.RutEmisor}").FontSize(9);
+                            emisor.Item().Text(config.DomicilioFiscal).FontSize(9);
+                            emisor.Item().Text($"{config.Ciudad}, {config.Departamento}").FontSize(9);
                         });
+
+                        row.RelativeItem(2).AlignRight().Column(tipoDoc =>
+                        {
+                            tipoDoc.Item().Border(1).Padding(8).AlignCenter().Column(c =>
+                            {
+                                c.Item().Text(ObtenerNombreTipo(cfe)).Bold().FontSize(12);
+                                c.Item().Text($"N° {cfe.Serie}{cfe.Numero:D8}").Bold().FontSize(11);
+                                c.Item().Text($"Fecha: {cfe.FechaEmision:dd/MM/yyyy}").FontSize(9);
+                            });
+                        });
+                    });
+
+                    col.Item().Line(1, "#9E9E9E");
+                });
+
+                page.Content().Column(col =>
+                {
+                    if (cfe.Receptor != null)
+                    {
+                        col.Item().PaddingVertical(5).Column(rec =>
+                        {
+                            rec.Item().Text("Receptor:").Bold().FontSize(9);
+                            if (!string.IsNullOrWhiteSpace(cfe.Receptor.RazonSocial))
+                                rec.Item().Text(cfe.Receptor.RazonSocial).FontSize(9);
+                            if (!string.IsNullOrWhiteSpace(cfe.Receptor.Documento))
+                                rec.Item().Text($"RUT/Doc: {cfe.Receptor.Documento}").FontSize(9);
+                            if (!string.IsNullOrWhiteSpace(cfe.Receptor.Direccion))
+                                rec.Item().Text(cfe.Receptor.Direccion).FontSize(9);
+                        });
+
+                        col.Item().Line(0.5f, "#F5F5F5");
+                    }
+
+                    col.Item().PaddingTop(10).Table(table =>
+                    {
+                        table.ColumnsDefinition(cols =>
+                        {
+                            cols.ConstantColumn(40);  // Cant
+                            cols.RelativeColumn(5);   // Descripción
+                            cols.RelativeColumn(2);   // P.Unit
+                            cols.RelativeColumn(1);   // IVA
+                            cols.RelativeColumn(2);   // Total
+                        });
+
+                        table.Header(h =>
+                        {
+                            h.Cell().Background("#EEEEEE").Padding(4).AlignCenter().Text("Cant.").Bold().FontSize(9);
+                            h.Cell().Background("#EEEEEE").Padding(4).AlignCenter().Text("Descripción").Bold().FontSize(9);
+                            h.Cell().Background("#EEEEEE").Padding(4).AlignCenter().Text("P.Unit.").Bold().FontSize(9);
+                            h.Cell().Background("#EEEEEE").Padding(4).AlignCenter().Text("IVA").Bold().FontSize(9);
+                            h.Cell().Background("#EEEEEE").Padding(4).AlignCenter().Text("Total").Bold().FontSize(9);
+                        });
+
+                        foreach (var linea in cfe.Detalle)
+                        {
+                            table.Cell().Padding(4).AlignRight().Text(CfeFormat.MonetaryPdf(linea.Cantidad, "F2")).FontSize(9);
+                            table.Cell().Padding(4).Text(linea.NombreItem).FontSize(9);
+                            table.Cell().Padding(4).AlignRight().Text(CfeFormat.MonetaryPdf(linea.PrecioUnitario)).FontSize(9);
+                            table.Cell().Padding(4).AlignRight().Text(ObtenerEtiquetaIva(linea.IndFactIva)).FontSize(9);
+                            table.Cell().Padding(4).AlignRight().Text(CfeFormat.MonetaryPdf(linea.MontoTotal)).FontSize(9);
+                        }
+                    });
+
+                    col.Item().PaddingTop(10).AlignRight().Column(tot =>
+                    {
+                        if (cfe.MontoNetoExento > 0)
+                            tot.Item().Text($"Exento: {CfeFormat.MonetaryPdf(cfe.MontoNetoExento)}").FontSize(9);
+                        if (cfe.MontoNetoMinimo > 0)
+                        {
+                            tot.Item().Text($"Neto IVA 10%: {CfeFormat.MonetaryPdf(cfe.MontoNetoMinimo)}").FontSize(9);
+                            tot.Item().Text($"IVA 10%: {CfeFormat.MonetaryPdf(cfe.IvaMinimo)}").FontSize(9);
+                        }
+                        if (cfe.MontoNetoBasico > 0)
+                        {
+                            tot.Item().Text($"Neto IVA 22%: {CfeFormat.MonetaryPdf(cfe.MontoNetoBasico)}").FontSize(9);
+                            tot.Item().Text($"IVA 22%: {CfeFormat.MonetaryPdf(cfe.IvaBasico)}").FontSize(9);
+                        }
+                        tot.Item().Text($"TOTAL: {CfeFormat.MonetaryPdf(cfe.MontoTotal)}").Bold().FontSize(12);
+                    });
+
+                    col.Item().PaddingTop(20).Row(row =>
+                    {
+                        row.FixedItem(80).Image(qrBytes);
+
+                        row.RelativeItem().PaddingLeft(10).Column(qrInfo =>
+                        {
+                            qrInfo.Item().Text("Representación impresa de CFE").Italic().FontSize(8);
+                            qrInfo.Item().Text("Verifique la vigencia en: efactura.dgi.gub.uy").FontSize(8);
+                            qrInfo.Item().Text($"Ambiente: {config.Ambiente}").FontSize(8);
+                            if (cfe.AceptadoPorDgi)
+                                qrInfo.Item().Text("✅ Aceptado por DGI").FontSize(8).Color("#388E3C");
+                        });
+                    });
+                });
+
+                page.Footer().Row(row =>
+                {
+                    row.RelativeItem().Text(text =>
+                    {
+                        text.Span("Generado con UruFacturaSDK - ", s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
+                        text.Span("Página ", s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
+                        text.CurrentPageNumber(s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
+                        text.Span(" de ", s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
+                        text.TotalPages(s => { s.FontSize = 7; s.Color = ReportColor.FromHex("#9E9E9E"); });
+                    });
                 });
             });
-
-            col.Item().LineHorizontal(1).LineColor(Colors.Grey.Medium);
-        });
+        }).GeneratePdf();
     }
 
-    private void ComposeContent(IContainer container)
+    private static byte[] GenerarDocumentoTermico(Cfe cfe, UruFacturaConfig config, byte[] qrBytes)
     {
-        container.Column(col =>
+        // Ancho térmico estándar: 80mm ≈ 227 puntos
+        return Document.Create(doc =>
         {
-            // Receptor
-            if (_cfe.Receptor != null)
+            doc.Page(page =>
             {
-                col.Item().PaddingVertical(5).Column(rec =>
+                page.Size(227, 800);
+                page.MarginAll(5);
+
+                page.Content().Column(col =>
                 {
-                    rec.Item().Text("Receptor:").Bold();
-                    if (!string.IsNullOrWhiteSpace(_cfe.Receptor.RazonSocial))
-                        rec.Item().Text(_cfe.Receptor.RazonSocial);
-                    if (!string.IsNullOrWhiteSpace(_cfe.Receptor.Documento))
-                        rec.Item().Text($"RUT/Doc: {_cfe.Receptor.Documento}");
-                    if (!string.IsNullOrWhiteSpace(_cfe.Receptor.Direccion))
-                        rec.Item().Text(_cfe.Receptor.Direccion);
-                });
+                    col.Item().AlignCenter().Text(config.RazonSocialEmisor).Bold().FontSize(9);
+                    col.Item().AlignCenter().Text($"RUT: {config.RutEmisor}").FontSize(7);
+                    col.Item().AlignCenter().Text(config.DomicilioFiscal).FontSize(7);
+                    col.Item().Line(0.5f);
 
-                col.Item().LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten3);
-            }
+                    col.Item().AlignCenter().Text(ObtenerNombreTipoTermico(cfe)).Bold().FontSize(8);
+                    col.Item().AlignCenter().Text($"N° {cfe.Serie}{cfe.Numero:D8}").Bold().FontSize(7);
+                    col.Item().AlignCenter().Text($"Fecha: {cfe.FechaEmision:dd/MM/yyyy}").FontSize(7);
+                    col.Item().Line(0.5f);
 
-            // Detalle
-            col.Item().PaddingTop(10).Table(table =>
-            {
-                table.ColumnsDefinition(cols =>
-                {
-                    cols.ConstantColumn(40);  // Cant
-                    cols.RelativeColumn(5);   // Descripción
-                    cols.RelativeColumn(2);   // P.Unit
-                    cols.RelativeColumn(1);   // IVA
-                    cols.RelativeColumn(2);   // Total
-                });
+                    if (cfe.Receptor?.RazonSocial != null)
+                    {
+                        col.Item().Text($"Cliente: {cfe.Receptor.RazonSocial}").FontSize(7);
+                        col.Item().Line(0.5f);
+                    }
 
-                // Encabezado de tabla
-                static IContainer CeldaHeader(IContainer c) =>
-                    c.DefaultTextStyle(x => x.Bold()).Background(Colors.Grey.Lighten2)
-                     .Padding(4).AlignCenter();
+                    foreach (var linea in cfe.Detalle)
+                    {
+                        col.Item().Text(linea.NombreItem).FontSize(7);
+                        col.Item().Row(row =>
+                        {
+                            row.RelativeItem().Text($"  {CfeFormat.MonetaryPdf(linea.Cantidad, "F2")} x {CfeFormat.MonetaryPdf(linea.PrecioUnitario)}").FontSize(7);
+                            row.Item().AlignRight().Text(CfeFormat.MonetaryPdf(linea.MontoTotal)).FontSize(7);
+                        });
+                    }
 
-                table.Header(h =>
-                {
-                    h.Cell().Element(CeldaHeader).Text("Cant.");
-                    h.Cell().Element(CeldaHeader).Text("Descripción");
-                    h.Cell().Element(CeldaHeader).Text("P.Unit.");
-                    h.Cell().Element(CeldaHeader).Text("IVA");
-                    h.Cell().Element(CeldaHeader).Text("Total");
-                });
+                    col.Item().Line(0.5f);
 
-                // Filas de detalle
-                static IContainer Celda(IContainer c) => c.Padding(4).AlignRight();
-                static IContainer CeldaLeft(IContainer c) => c.Padding(4);
+                    if (cfe.MontoNetoExento > 0)
+                        col.Item().Row(r => { r.RelativeItem().Text("Exento:").FontSize(7); r.Item().AlignRight().Text(CfeFormat.MonetaryPdf(cfe.MontoNetoExento)).FontSize(7); });
+                    if (cfe.IvaMinimo > 0)
+                        col.Item().Row(r => { r.RelativeItem().Text("IVA 10%:").FontSize(7); r.Item().AlignRight().Text(CfeFormat.MonetaryPdf(cfe.IvaMinimo)).FontSize(7); });
+                    if (cfe.IvaBasico > 0)
+                        col.Item().Row(r => { r.RelativeItem().Text("IVA 22%:").FontSize(7); r.Item().AlignRight().Text(CfeFormat.MonetaryPdf(cfe.IvaBasico)).FontSize(7); });
 
-                foreach (var linea in _cfe.Detalle)
-                {
-                    table.Cell().Element(Celda).Text(CfeFormat.MonetaryPdf(linea.Cantidad, "F2"));
-                    table.Cell().Element(CeldaLeft).Text(linea.NombreItem);
-                    table.Cell().Element(Celda).Text(CfeFormat.MonetaryPdf(linea.PrecioUnitario));
-                    table.Cell().Element(Celda).Text(ObtenerEtiquetaIva(linea.IndFactIva));
-                    table.Cell().Element(Celda).Text(CfeFormat.MonetaryPdf(linea.MontoTotal));
-                }
-            });
+                    col.Item().Row(r =>
+                    {
+                        r.RelativeItem().Text("TOTAL:").Bold().FontSize(7);
+                        r.Item().AlignRight().Text(CfeFormat.MonetaryPdf(cfe.MontoTotal)).Bold().FontSize(7);
+                    });
 
-            // Totales
-            col.Item().PaddingTop(10).AlignRight().Column(tot =>
-            {
-                if (_cfe.MontoNetoExento > 0)
-                    tot.Item().Text($"Exento: {CfeFormat.MonetaryPdf(_cfe.MontoNetoExento)}");
-                if (_cfe.MontoNetoMinimo > 0)
-                {
-                    tot.Item().Text($"Neto IVA 10%: {CfeFormat.MonetaryPdf(_cfe.MontoNetoMinimo)}");
-                    tot.Item().Text($"IVA 10%: {CfeFormat.MonetaryPdf(_cfe.IvaMinimo)}");
-                }
-                if (_cfe.MontoNetoBasico > 0)
-                {
-                    tot.Item().Text($"Neto IVA 22%: {CfeFormat.MonetaryPdf(_cfe.MontoNetoBasico)}");
-                    tot.Item().Text($"IVA 22%: {CfeFormat.MonetaryPdf(_cfe.IvaBasico)}");
-                }
-                tot.Item().Text($"TOTAL: {CfeFormat.MonetaryPdf(_cfe.MontoTotal)}").Bold().FontSize(12);
-            });
+                    col.Item().Line(0.5f);
 
-            // QR y sello de seguridad
-            col.Item().PaddingTop(20).Row(row =>
-            {
-                row.AutoItem().Width(80).Height(80).Image(_qrBytes);
-
-                row.RelativeItem().PaddingLeft(10).Column(qrInfo =>
-                {
-                    qrInfo.Item().Text("Representación impresa de CFE").Italic().FontSize(8);
-                    qrInfo.Item().Text("Verifique la vigencia en: efactura.dgi.gub.uy").FontSize(8);
-                    qrInfo.Item().Text($"Ambiente: {_config.Ambiente}").FontSize(8);
-                    if (_cfe.AceptadoPorDgi)
-                        qrInfo.Item().Text("✅ Aceptado por DGI").FontSize(8).FontColor(Colors.Green.Darken2);
+                    col.Item().PaddingTop(5).AlignCenter().Row(row =>
+                    {
+                        row.FixedItem(70).Image(qrBytes);
+                    });
+                    col.Item().AlignCenter().Text("Verifique en efactura.dgi.gub.uy").FontSize(6);
                 });
             });
-        });
+        }).GeneratePdf();
     }
 
-    private void ComposeFooter(IContainer container)
+    private static string ObtenerNombreTipo(Cfe cfe) => cfe.Tipo switch
     {
-        container.Row(row =>
-        {
-            row.RelativeItem().Text(text =>
-            {
-                text.Span("Generado con UruFacturaSDK - ").FontSize(7).FontColor(Colors.Grey.Medium);
-                text.Span("Página ").FontSize(7).FontColor(Colors.Grey.Medium);
-                text.CurrentPageNumber().FontSize(7).FontColor(Colors.Grey.Medium);
-                text.Span(" de ").FontSize(7).FontColor(Colors.Grey.Medium);
-                text.TotalPages().FontSize(7).FontColor(Colors.Grey.Medium);
-            });
-        });
-    }
-
-    private string ObtenerNombreTipo() => _cfe.Tipo switch
-    {
-        Enums.TipoCfe.ETicket => "e-Ticket",
-        Enums.TipoCfe.NotaCreditoETicket => "Nota de Crédito e-Ticket",
-        Enums.TipoCfe.NotaDebitoETicket => "Nota de Débito e-Ticket",
-        Enums.TipoCfe.EFactura => "e-Factura",
-        Enums.TipoCfe.NotaCreditoEFactura => "Nota de Crédito e-Factura",
-        Enums.TipoCfe.NotaDebitoEFactura => "Nota de Débito e-Factura",
-        Enums.TipoCfe.EFacturaExportacion => "e-Factura Exportación",
-        Enums.TipoCfe.ERemito => "e-Remito",
-        _ => $"CFE Tipo {(int)_cfe.Tipo}",
+        TipoCfe.ETicket => "e-Ticket",
+        TipoCfe.NotaCreditoETicket => "Nota de Crédito e-Ticket",
+        TipoCfe.NotaDebitoETicket => "Nota de Débito e-Ticket",
+        TipoCfe.EFactura => "e-Factura",
+        TipoCfe.NotaCreditoEFactura => "Nota de Crédito e-Factura",
+        TipoCfe.NotaDebitoEFactura => "Nota de Débito e-Factura",
+        TipoCfe.EFacturaExportacion => "e-Factura Exportación",
+        TipoCfe.ERemito => "e-Remito",
+        _ => $"CFE Tipo {(int)cfe.Tipo}",
     };
 
-    private static string ObtenerEtiquetaIva(Enums.TipoIva iva) => iva switch
+    private static string ObtenerNombreTipoTermico(Cfe cfe) => cfe.Tipo switch
     {
-        Enums.TipoIva.Exento => "EXE",
-        Enums.TipoIva.Minimo => "10%",
-        Enums.TipoIva.Basico => "22%",
-        Enums.TipoIva.Suspendido => "SUS",
+        TipoCfe.ETicket => "e-Ticket",
+        TipoCfe.EFactura => "e-Factura",
+        TipoCfe.NotaCreditoETicket => "NC e-Ticket",
+        TipoCfe.NotaDebitoETicket => "ND e-Ticket",
+        _ => $"CFE {(int)cfe.Tipo}",
+    };
+
+    private static string ObtenerEtiquetaIva(TipoIva iva) => iva switch
+    {
+        TipoIva.Exento => "EXE",
+        TipoIva.Minimo => "10%",
+        TipoIva.Basico => "22%",
+        TipoIva.Suspendido => "SUS",
         _ => "N/A",
     };
 }
 
-// ---------------------------------------------------------------------------
-// Documento PDF Térmico (80mm)
-// ---------------------------------------------------------------------------
-
-internal class CfeDocumentoTermico : IDocument
-{
-    private readonly Cfe _cfe;
-    private readonly UruFacturaConfig _config;
-    private readonly byte[] _qrBytes;
-
-    // Ancho térmico estándar: 80mm ≈ 227 puntos
-    private static readonly PageSize TermicoSize = new(227, 800);
-
-    public CfeDocumentoTermico(Cfe cfe, UruFacturaConfig config, byte[] qrBytes)
-    {
-        _cfe = cfe;
-        _config = config;
-        _qrBytes = qrBytes;
-    }
-
-    public DocumentMetadata GetMetadata() => new()
-    {
-        Title = $"CFE {(int)_cfe.Tipo} - {_cfe.Serie}{_cfe.Numero}",
-        Author = _config.RazonSocialEmisor,
-        Creator = "UruFacturaSDK",
-    };
-
-    public DocumentSettings GetSettings() => new()
-    {
-        ContentDirection = ContentDirection.LeftToRight,
-    };
-
-    public void Compose(IDocumentContainer container)
-    {
-        container.Page(page =>
-        {
-            page.Size(TermicoSize);
-            page.Margin(5);
-            page.DefaultTextStyle(x => x.FontSize(7).FontFamily("Arial"));
-            page.Content().Element(ComposeContent);
-        });
-    }
-
-    private void ComposeContent(IContainer container)
-    {
-        container.Column(col =>
-        {
-            // Encabezado
-            col.Item().AlignCenter().Text(_config.RazonSocialEmisor).Bold().FontSize(9);
-            col.Item().AlignCenter().Text($"RUT: {_config.RutEmisor}");
-            col.Item().AlignCenter().Text(_config.DomicilioFiscal);
-            col.Item().LineHorizontal(0.5f);
-
-            // Tipo y número
-            col.Item().AlignCenter().Text(ObtenerNombreTipo()).Bold().FontSize(8);
-            col.Item().AlignCenter().Text($"N° {_cfe.Serie}{_cfe.Numero:D8}").Bold();
-            col.Item().AlignCenter().Text($"Fecha: {_cfe.FechaEmision:dd/MM/yyyy}");
-            col.Item().LineHorizontal(0.5f);
-
-            // Receptor
-            if (_cfe.Receptor?.RazonSocial != null)
-            {
-                col.Item().Text($"Cliente: {_cfe.Receptor.RazonSocial}");
-                col.Item().LineHorizontal(0.5f);
-            }
-
-            // Detalle
-            foreach (var linea in _cfe.Detalle)
-            {
-                col.Item().Text($"{linea.NombreItem}");
-                col.Item().Row(row =>
-                {
-                    row.RelativeItem().Text($"  {CfeFormat.MonetaryPdf(linea.Cantidad, "F2")} x {CfeFormat.MonetaryPdf(linea.PrecioUnitario)}");
-                    row.AutoItem().Text(CfeFormat.MonetaryPdf(linea.MontoTotal));
-                });
-            }
-
-            col.Item().LineHorizontal(0.5f);
-
-            // Totales
-            if (_cfe.MontoNetoExento > 0)
-                col.Item().Row(r => { r.RelativeItem().Text("Exento:"); r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.MontoNetoExento)); });
-            if (_cfe.IvaMinimo > 0)
-                col.Item().Row(r => { r.RelativeItem().Text("IVA 10%:"); r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.IvaMinimo)); });
-            if (_cfe.IvaBasico > 0)
-                col.Item().Row(r => { r.RelativeItem().Text("IVA 22%:"); r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.IvaBasico)); });
-
-            col.Item().Row(r =>
-            {
-                r.RelativeItem().Text("TOTAL:").Bold();
-                r.AutoItem().Text(CfeFormat.MonetaryPdf(_cfe.MontoTotal)).Bold();
-            });
-
-            col.Item().LineHorizontal(0.5f);
-
-            // QR
-            col.Item().PaddingTop(5).AlignCenter().Width(70).Height(70).Image(_qrBytes);
-            col.Item().AlignCenter().Text("Verifique en efactura.dgi.gub.uy").FontSize(6);
-        });
-    }
-
-    private string ObtenerNombreTipo() => _cfe.Tipo switch
-    {
-        Enums.TipoCfe.ETicket => "e-Ticket",
-        Enums.TipoCfe.EFactura => "e-Factura",
-        Enums.TipoCfe.NotaCreditoETicket => "NC e-Ticket",
-        Enums.TipoCfe.NotaDebitoETicket => "ND e-Ticket",
-        _ => $"CFE {(int)_cfe.Tipo}",
-    };
-}
