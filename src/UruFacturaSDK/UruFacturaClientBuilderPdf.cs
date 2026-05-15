@@ -6,7 +6,7 @@ public sealed partial class UruFacturaClientBuilder
 {
     /// <summary>
     /// Agrega el generador de PDF predeterminado del paquete completo
-    /// (QuestPDF + SkiaSharp + ZXing).
+    /// (FluentReport + SkiaSharp + ZXing).
     /// </summary>
     public UruFacturaClientBuilder WithDefaultPdf() =>
         WithPdfGenerator(new CfePdfGenerator(_config));

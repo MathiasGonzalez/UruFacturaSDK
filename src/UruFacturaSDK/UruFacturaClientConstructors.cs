@@ -11,7 +11,7 @@ public partial class UruFacturaClient
 {
     /// <summary>
     /// Inicializa el cliente con la configuración provista y el generador de PDF predeterminado
-    /// (QuestPDF + SkiaSharp + ZXing).
+    /// (FluentReport + SkiaSharp + ZXing).
     /// </summary>
     /// <param name="config">Configuración del SDK.</param>
     public UruFacturaClient(UruFacturaConfig config)
