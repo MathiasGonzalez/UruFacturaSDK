@@ -1,0 +1,29 @@
+# .NET artifacts
+**/bin/
+**/obj/
+**/out/
+
+# Test results and coverage
+**/TestResults/
+**/*.cobertura.xml
+
+# User secrets and local overrides
+**/appsettings.Development.json
+**/secrets.json
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+
+# NuGet
+**/*.nupkg
+**/nupkg/
+
+# Landing (Astro) assets — not needed in the API image
+landing/
+
+# Documentation and CI config — not needed in the image
+docs/
+.github/
+tests/
