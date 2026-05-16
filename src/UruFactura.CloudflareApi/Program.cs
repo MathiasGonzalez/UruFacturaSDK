@@ -14,7 +14,12 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTimeOffset.UtcNow }))
+   .WithTags("Health")
+   .ExcludeFromDescription();
+
 app.MapCfeEndpoints();
+app.MapReporteDiarioEndpoints();
 app.MapCaeEndpoints();
 
 app.Run();

@@ -41,10 +41,15 @@ jobs:
       packages: write
     outputs:
       image: ${{ steps.meta.outputs.tags }}
-      sha_tag: ghcr.io/${{ github.repository_owner }}/urufacturasdk-api:sha-${{ github.sha }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Compute lowercase image name
+        id: image
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=ghcr.io/${OWNER}/urufacturasdk-api" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -57,7 +62,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/urufacturasdk-api
+          images: ${{ steps.image.outputs.name }}
           tags: |
             type=ref,event=tag
             type=semver,pattern={{version}}
@@ -91,10 +96,17 @@ jobs:
       - uses: actions/checkout@v4
 
       # Stamp the freshly built image SHA into wrangler.toml before deploying.
+      # GHCR requires lowercase image names; repository_owner may be mixed-case
+      # (e.g. MathiasGonzalez), so we lowercase it here explicitly.
+      # docker/metadata-action already handles lowercase for the build job,
+      # but this bash step constructs the image ref manually.
       - name: Update container image in wrangler.toml
+        shell: bash
         run: |
-          IMAGE="ghcr.io/${{ github.repository_owner }}/urufacturasdk-api:sha-${{ github.sha }}"
-          sed -i "s|image *= *\"[^\"]*\"|image = \"$IMAGE\"|" cloudflare/wrangler.toml
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SHA_SHORT="${GITHUB_SHA::7}"
+          IMAGE="ghcr.io/${OWNER}/urufacturasdk-api:sha-${SHA_SHORT}"
+          sed -i "s|image *= *\"[^\"]*\"|image = \"${IMAGE}\"|" cloudflare/wrangler.toml
 
       # Provision required Cloudflare secrets.
       # Each `echo … | wrangler secret put` call creates or rotates the secret.
