@@ -84,7 +84,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 ```
 
@@ -211,7 +211,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 
 // 3. Crear comprobante
