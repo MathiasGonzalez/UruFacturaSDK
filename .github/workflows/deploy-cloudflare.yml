@@ -1,0 +1,116 @@
+name: Deploy to Cloudflare Containers
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggered manually or when a version tag is pushed.
+# Required GitHub secrets (Settings → Secrets and variables → Actions):
+#
+#   CLOUDFLARE_API_TOKEN      — Cloudflare API token with Workers/Containers deploy rights
+#   CLOUDFLARE_ACCOUNT_ID     — Cloudflare account ID
+#
+#   UruFactura secrets forwarded to the container (single-tenant example):
+#   URUFACTURA_RUT_EMISOR
+#   URUFACTURA_RAZON_SOCIAL
+#   URUFACTURA_DOMICILIO_FISCAL
+#   URUFACTURA_CERT_B64           — base64-encoded .p12 certificate
+#   URUFACTURA_CERT_PASSWORD
+#   URUFACTURA_CAES               — JSON array of CAEs (optional)
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      ambiente:
+        description: Ambiente DGI
+        required: true
+        default: Homologacion
+        type: choice
+        options:
+          - Homologacion
+          - Produccion
+
+jobs:
+  # ── 1. Build & push container image ─────────────────────────────────────────
+  build:
+    name: Build & Push Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+      sha_tag: ghcr.io/${{ github.repository_owner }}/urufacturasdk-api:sha-${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/urufacturasdk-api
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/UruFactura.CloudflareApi/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── 2. Provision secrets & deploy to Cloudflare ──────────────────────────────
+  deploy:
+    name: Deploy to Cloudflare
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    environment: cloudflare   # optional: require manual approval in repo settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Stamp the freshly built image SHA into wrangler.toml before deploying.
+      - name: Update container image in wrangler.toml
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/urufacturasdk-api:sha-${{ github.sha }}"
+          sed -i "s|image *= *\"[^\"]*\"|image = \"$IMAGE\"|" cloudflare/wrangler.toml
+
+      # Provision required Cloudflare secrets.
+      # Each `echo … | wrangler secret put` call creates or rotates the secret.
+      # Secrets are injected into the container as env vars at runtime.
+      - name: Provision Cloudflare secrets
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare
+          # Use preCommands to set secrets before the deploy runs.
+          preCommands: |
+            echo "${{ secrets.URUFACTURA_RUT_EMISOR }}"        | wrangler secret put UruFactura__RutEmisor
+            echo "${{ secrets.URUFACTURA_RAZON_SOCIAL }}"      | wrangler secret put UruFactura__RazonSocialEmisor
+            echo "${{ secrets.URUFACTURA_DOMICILIO_FISCAL }}"  | wrangler secret put UruFactura__DomicilioFiscal
+            echo "${{ secrets.URUFACTURA_CERT_B64 }}"          | wrangler secret put UruFactura__CertificadoBase64
+            echo "${{ secrets.URUFACTURA_CERT_PASSWORD }}"     | wrangler secret put UruFactura__PasswordCertificado
+            echo "${{ secrets.URUFACTURA_CAES || '' }}"        | wrangler secret put UruFactura__Caes
+          command: deploy --var UruFactura__Ambiente=${{ github.event.inputs.ambiente || 'Produccion' }}

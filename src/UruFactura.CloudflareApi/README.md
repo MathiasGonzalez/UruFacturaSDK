@@ -69,7 +69,17 @@ Cada solicitud debe incluir el header **`X-Tenant-Id: {tenantId}`**. Sin ese hea
 
 ## Pre-carga de CAEs
 
-Los CAEs se guardan en memoria. Al reiniciar el contenedor se pierden si no están en config.  
+Los CAEs se guardan en **memoria dentro del contenedor**. Al reiniciar el contenedor se pierden si no están en configuración.
+
+### ¿Por qué la config es la fuente de verdad?
+
+En Cloudflare Containers cada **Durable Object** corre exactamente **un** contenedor. Con la arquitectura multi-tenant del `worker.js`, cada `X-Tenant-Id` recibe su propio Durable Object → su propio contenedor → su propio estado en memoria completamente aislado. Esto significa que:
+
+- Las llamadas `POST /cae` (registro en runtime) **afectan solo al contenedor activo** del tenant. Si el contenedor se reinicia, esos CAEs se pierden a menos que estén en la configuración.
+- Las llamadas `GET /cae` devuelven los CAEs del contenedor activo del tenant.
+
+**Recomendación:** configure siempre los CAEs vía `UruFactura__Caes` (o `Tenants:{id}__Caes`) como Cloudflare Secret. Use `POST /cae` solo para actualizaciones temporales o carga dinámica desde BD, complementando la semilla de configuración.
+
 Provea `UruFactura__Caes` (o `Tenants:{id}__Caes`) con un JSON array:
 
 ```json
@@ -146,52 +156,50 @@ docker run -p 8080:8080 \
 
 ## Despliegue en Cloudflare Containers
 
-### 1. Publicar la imagen en GHCR
+### Opción A: GitHub Actions (recomendado)
 
-El workflow `.github/workflows/docker.yml` lo hace automáticamente al hacer push a `main`.  
-También se puede hacer manual:
+El workflow `.github/workflows/deploy-cloudflare.yml` construye la imagen, la publica en GHCR, aprovisiona los secretos en Cloudflare y despliega — todo en un solo paso.
+
+**Configurar secretos en el repositorio** (Settings → Secrets and variables → Actions):
+
+| Secret | Valor |
+|--------|-------|
+| `CLOUDFLARE_API_TOKEN` | Token con permisos Workers/Containers |
+| `CLOUDFLARE_ACCOUNT_ID` | ID de la cuenta Cloudflare |
+| `URUFACTURA_RUT_EMISOR` | RUT del emisor (12 dígitos) |
+| `URUFACTURA_RAZON_SOCIAL` | Razón social del emisor |
+| `URUFACTURA_DOMICILIO_FISCAL` | Domicilio fiscal |
+| `URUFACTURA_CERT_B64` | Certificado .p12 en Base64 |
+| `URUFACTURA_CERT_PASSWORD` | Contraseña del certificado |
+| `URUFACTURA_CAES` | JSON array de CAEs (opcional) |
+
+**Disparar el despliegue:**
+```bash
+# Manual desde la UI de GitHub → Actions → "Deploy to Cloudflare Containers" → Run workflow
+# O automáticamente al hacer push de un tag:
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+### Opción B: Manual con Wrangler
 
 ```bash
+# 1. Construir y publicar la imagen
 docker build -f src/UruFactura.CloudflareApi/Dockerfile -t ghcr.io/<owner>/urufacturasdk-api:latest .
 docker push ghcr.io/<owner>/urufacturasdk-api:latest
-```
 
-### 2. Configurar `cloudflare/wrangler.toml`
-
-```toml
-name = "urufactura-api"
-main = "worker.js"
-compatibility_date = "2025-05-01"
-
-[containers]
-image = "ghcr.io/<owner>/urufacturasdk-api:latest"
-
-[[containers.bindings]]
-name = "CONTAINER"
-```
-
-### 3. Configurar secretos
-
-```bash
+# 2. Desde el directorio cloudflare/
 cd cloudflare
 
-# Certificado como Base64 (recomendado en Cloudflare)
-wrangler secret put UruFactura__CertificadoBase64
-wrangler secret put UruFactura__PasswordCertificado
-
-# Config del emisor
+# 3. Aprovisionar secretos (se pedirá el valor de forma interactiva)
 wrangler secret put UruFactura__RutEmisor
 wrangler secret put UruFactura__RazonSocialEmisor
 wrangler secret put UruFactura__DomicilioFiscal
+wrangler secret put UruFactura__CertificadoBase64
+wrangler secret put UruFactura__PasswordCertificado
+wrangler secret put UruFactura__Caes   # opcional, JSON array
 
-# CAEs iniciales (opcional, JSON array como string)
-wrangler secret put UruFactura__Caes
-```
-
-### 4. Desplegar
-
-```bash
-cd cloudflare
+# 4. Desplegar
 wrangler deploy
 ```
 
@@ -199,13 +207,16 @@ wrangler deploy
 
 ## Multi-tenant en Cloudflare
 
-En modo multi-tenant, configure los secretos por tenant:
+En modo multi-tenant, configure los secretos por tenant. El `worker.js` enruta cada `X-Tenant-Id` a su propio Durable Object → su propio contenedor con estado aislado.
 
 ```bash
+# Para cada tenant:
 wrangler secret put Tenants__empresa-abc__CertificadoBase64
 wrangler secret put Tenants__empresa-abc__PasswordCertificado
 wrangler secret put Tenants__empresa-abc__RutEmisor
-# ... etc
+wrangler secret put Tenants__empresa-abc__RazonSocialEmisor
+wrangler secret put Tenants__empresa-abc__DomicilioFiscal
+wrangler secret put Tenants__empresa-abc__Caes   # opcional
 ```
 
 Y en cada llamada a la API agregue el header:
@@ -214,7 +225,7 @@ Y en cada llamada a la API agregue el header:
 X-Tenant-Id: empresa-abc
 ```
 
-Los clientes SDK se crean de forma diferida (lazy) y se cachean en memoria durante la vida del contenedor.
+Cada tenant tiene su contenedor con CAEs aislados. Los contenedores se crean la primera vez que llega una solicitud para ese tenant y se duermen tras un período de inactividad configurable en el `worker.js` (`sleepAfter`). Consulte la [documentación de Cloudflare Containers](https://developers.cloudflare.com/containers/) para detalles.
 
 ---
 

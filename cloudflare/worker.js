@@ -8,7 +8,18 @@
  *
  * The container listens on port 8080 (ASPNETCORE_HTTP_PORTS=8080).
  * Cloudflare Containers uses Durable Objects to manage container lifecycle;
- * getContainer() returns a handle to the single named instance.
+ * getContainer() returns a handle to the named instance.
+ *
+ * ### Single-tenant
+ * All requests go to a single container named "default".
+ * No X-Tenant-Id header is required.
+ *
+ * ### Multi-tenant (SaaS)
+ * Send X-Tenant-Id: <tenantId> on every request.
+ * Each tenant gets its own Durable Object → its own container → fully isolated
+ * in-memory state (including CAEs).  Container env vars are shared across all
+ * tenant containers, so configure each tenant under Tenants__<id>__* in the
+ * wrangler.toml [vars] section or as Cloudflare Secrets.
  *
  * Docs: https://developers.cloudflare.com/containers/
  */
@@ -30,16 +41,20 @@ export class UruFacturaContainer extends Container {
 
 export default {
   /**
-   * Main fetch handler – forwards every request to the container.
+   * Main fetch handler.
+   *
+   * Routes to a per-tenant container when X-Tenant-Id is present, or to the
+   * shared "default" container for single-tenant deployments.
    *
    * @param {Request} request
    * @param {{ CONTAINER: DurableObjectNamespace }} env
    * @returns {Promise<Response>}
    */
   async fetch(request, env) {
-    // getContainer returns the singleton Durable Object for this Worker.
-    // Cloudflare starts the container on the first request if it is asleep.
-    const container = getContainer(env.CONTAINER);
+    // Use X-Tenant-Id to select the Durable Object name.
+    // Each unique name maps to a separate container instance with isolated memory.
+    const tenantId = request.headers.get("X-Tenant-Id") ?? "default";
+    const container = getContainer(env.CONTAINER, tenantId);
     return container.fetch(request);
   },
 };
