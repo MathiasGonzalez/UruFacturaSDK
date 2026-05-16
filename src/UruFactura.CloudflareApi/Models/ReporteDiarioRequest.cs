@@ -2,13 +2,9 @@ namespace UruFactura.CloudflareApi.Models;
 
 /// <summary>
 /// Payload para enviar el Reporte Diario de CFE a la DGI.
-/// <para>
-/// Cada elemento de <c>Cfes</c> debe incluir el campo <c>Tipo</c> además
-/// de todos los campos requeridos para el tipo de comprobante correspondiente.
-/// </para>
 /// </summary>
+/// <param name="Fecha">Fecha del reporte (debe coincidir con la fecha de emisión de los CFE).</param>
+/// <param name="Cfes">Lista de CFE emitidos en el día. No puede ser nulo ni vacío.</param>
 public record ReporteDiarioRequest(
-    /// <summary>Fecha del reporte (debe coincidir con la fecha de emisión de los CFE).</summary>
-    DateTime       Fecha,
-    /// <summary>Lista de CFE emitidos en el día.</summary>
+    DateTime         Fecha,
     List<CfeRequest> Cfes);

@@ -20,7 +20,12 @@ compatibility_date = "2025-05-01"
 #   ghcr.io/mathiasgonzalez/urufacturasdk-api:latest
 [containers]
 image        = "ghcr.io/mathiasgonzalez/urufacturasdk-api:latest"
-max_instances = 1
+# Set max_instances to the expected number of concurrent tenants.
+# With 1 (the minimum) only one tenant container runs at a time; each new
+# X-Tenant-Id would evict the previous tenant's container and its in-memory
+# CAEs.  Raise this to match your actual tenant count for multi-tenant
+# deployments.  Single-tenant deployments can keep max_instances = 1.
+max_instances = 10
 
 # ── Durable Object binding (required by Cloudflare Containers) ────────────────
 [[durable_objects.bindings]]

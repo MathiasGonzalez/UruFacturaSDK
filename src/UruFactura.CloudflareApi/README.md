@@ -241,6 +241,10 @@ Tenants__empresa-xyz__RutEmisor=210000000002
 
 Cada solicitud debe incluir el header **`X-Tenant-Id: {tenantId}`**. Sin ese header se usa la sección `UruFactura:*`.
 
+> **Restricciones en el tenant ID:** el valor de `X-Tenant-Id` (y la clave en las variables de entorno) **no puede contener `:` ni `__`** (doble guión bajo). Estos caracteres son separadores de sección en el sistema de configuración de .NET — un tenant ID con `:` o `__` rompería silenciosamente la resolución de las claves. Use únicamente letras, dígitos, guión simple (`-`) y guión bajo simple (`_`).
+
+> **Seguridad en modo multi-tenant:** la API en sí misma no implementa autenticación. El `worker.js` de Cloudflare es la capa de entrada pública — **debe validar allí que el caller tiene permiso para usar el `X-Tenant-Id` que envía**, por ejemplo verificando un JWT, API key u otro mecanismo antes de reenviar la solicitud al contenedor. Sin ese control, cualquier cliente que conozca (o adivine) un `X-Tenant-Id` podría emitir CFEs y consultar datos de otro tenant.
+
 ---
 
 ## Pre-carga de CAEs

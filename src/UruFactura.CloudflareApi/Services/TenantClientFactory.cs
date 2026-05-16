@@ -30,6 +30,7 @@ public sealed class TenantClientFactory : IUruFacturaClientFactory, IDisposable
     private readonly ILogger<TenantClientFactory> _logger;
     private readonly ConcurrentDictionary<string, IUruFacturaClient> _clients = new();
     private readonly ConcurrentBag<string> _tempCertPaths = new();
+    private volatile bool _disposed;
 
     public TenantClientFactory(IConfiguration configuration, ILogger<TenantClientFactory> logger)
     {
@@ -40,6 +41,7 @@ public sealed class TenantClientFactory : IUruFacturaClientFactory, IDisposable
     /// <inheritdoc />
     public IUruFacturaClient GetClient(string? tenantId = null)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         var key = string.IsNullOrWhiteSpace(tenantId) ? DefaultKey : tenantId;
         return _clients.GetOrAdd(key, _ => CreateClient(tenantId));
     }
@@ -54,6 +56,18 @@ public sealed class TenantClientFactory : IUruFacturaClientFactory, IDisposable
 
         var certPath = ResolveCertificate(section, tenantId);
 
+        var ambienteStr = section["Ambiente"] ?? "Homologacion";
+        if (!Enum.TryParse<Ambiente>(ambienteStr, ignoreCase: true, out var ambiente))
+            throw new InvalidOperationException(
+                $"Valor inválido '{ambienteStr}' en '{section.Path}:Ambiente' para el tenant '{SafeLog(tenantId)}'. " +
+                $"Valores aceptados: {string.Join(", ", Enum.GetNames<Ambiente>())}.");
+
+        var omitirSslStr = section["OmitirValidacionSsl"] ?? "false";
+        if (!bool.TryParse(omitirSslStr, out var omitirSsl))
+            throw new InvalidOperationException(
+                $"Valor inválido '{omitirSslStr}' en '{section.Path}:OmitirValidacionSsl' para el tenant '{SafeLog(tenantId)}'. " +
+                "Se esperaba 'true' o 'false'.");
+
         var config = new UruFacturaConfig
         {
             RutEmisor             = Require(section, "RutEmisor",            tenantId),
@@ -65,8 +79,8 @@ public sealed class TenantClientFactory : IUruFacturaClientFactory, IDisposable
             Departamento          = section["Departamento"] ?? "MONTEVIDEO",
             RutaCertificado       = certPath,
             PasswordCertificado   = section["PasswordCertificado"] ?? "",
-            Ambiente              = Enum.Parse<Ambiente>(section["Ambiente"] ?? "Homologacion"),
-            OmitirValidacionSsl   = bool.Parse(section["OmitirValidacionSsl"] ?? "false"),
+            Ambiente              = ambiente,
+            OmitirValidacionSsl   = omitirSsl,
         };
 
         var client = UruFacturaClientBuilder.WithDefaults(config).Build();
@@ -79,6 +93,7 @@ public sealed class TenantClientFactory : IUruFacturaClientFactory, IDisposable
     /// <summary>
     /// Resuelve la ruta del certificado para el tenant.
     /// Si <c>CertificadoBase64</c> está presente, escribe un archivo temporal
+    /// con permisos restringidos al propietario (0600 en Linux/macOS)
     /// y devuelve su ruta. De lo contrario usa <c>RutaCertificado</c>.
     /// </summary>
     private string ResolveCertificate(IConfigurationSection section, string? tenantId)
@@ -89,6 +104,12 @@ public sealed class TenantClientFactory : IUruFacturaClientFactory, IDisposable
             var suffix = string.IsNullOrWhiteSpace(tenantId) ? "" : $"_{SafePath(tenantId)}";
             var path = Path.Combine(Path.GetTempPath(), $"urufactura_cert{suffix}.p12");
             File.WriteAllBytes(path, Convert.FromBase64String(base64));
+
+            // Restrict access to the owner only to avoid leaking the PFX to
+            // other processes that can read the shared /tmp directory.
+            if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+                File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
             _tempCertPaths.Add(path);
             _logger.LogDebug("Certificado temporal escrito en {Path} para tenant '{Tenant}'.",
                 path, SafeLog(tenantId));
@@ -161,6 +182,9 @@ public sealed class TenantClientFactory : IUruFacturaClientFactory, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         foreach (var (_, client) in _clients)
             client.Dispose();
 

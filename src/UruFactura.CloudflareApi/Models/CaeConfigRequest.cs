@@ -1,3 +1,4 @@
+using System.Globalization;
 using UruFacturaSDK.Enums;
 using UruFacturaSDK.Models;
 
@@ -25,7 +26,7 @@ public record CaeConfigRequest(
         TipoCfe          = (TipoCfe)Tipo,
         RangoDesde       = RangoDesde,
         RangoHasta       = RangoHasta,
-        FechaVencimiento = DateOnly.Parse(FechaVencimiento),
+        FechaVencimiento = DateOnly.ParseExact(FechaVencimiento, "yyyy-MM-dd", CultureInfo.InvariantCulture),
         UltimoNroUsado   = UltimoNroUsado,
     };
 }

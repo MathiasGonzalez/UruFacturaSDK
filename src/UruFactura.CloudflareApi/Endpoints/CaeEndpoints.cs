@@ -27,7 +27,7 @@ public static class CaeEndpoints
             var client = factory.GetClient(ctx.TenantId());
             var cae = req.ToModel();
             client.Cae.RegistrarCae(cae);
-            return Results.Created($"/cae/{cae.NroSerie}", cae);
+            return Results.Created("/cae", cae);
         })
         .WithTags("CAE")
         .WithName("RegistrarCae")

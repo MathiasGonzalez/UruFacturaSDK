@@ -23,8 +23,10 @@ public static class CfeEndpoints
             [FromBody] CfeRequest req,
             IUruFacturaClientFactory factory) =>
         {
+            if (req.Tipo is null)
+                return Results.BadRequest("El campo 'Tipo' es obligatorio para este endpoint.");
             var client = factory.GetClient(ctx.TenantId());
-            var doc    = CrearCfe(client, req.Tipo);
+            var doc    = CrearCfe(client, req.Tipo.Value);
             MapRequest(doc, req);
             return Results.Text(client.GenerarYFirmar(doc), "application/xml");
         })
@@ -37,8 +39,10 @@ public static class CfeEndpoints
             IUruFacturaClientFactory factory,
             CancellationToken ct) =>
         {
+            if (req.Tipo is null)
+                return Results.BadRequest("El campo 'Tipo' es obligatorio para este endpoint.");
             var client = factory.GetClient(ctx.TenantId());
-            var doc    = CrearCfe(client, req.Tipo);
+            var doc    = CrearCfe(client, req.Tipo.Value);
             MapRequest(doc, req);
             var resp = await client.EnviarCfeAsync(doc, ct);
             return resp.Exitoso ? Results.Ok(resp) : Results.BadRequest(resp);
@@ -51,8 +55,10 @@ public static class CfeEndpoints
             [FromBody] CfeRequest req,
             IUruFacturaClientFactory factory) =>
         {
+            if (req.Tipo is null)
+                return Results.BadRequest("El campo 'Tipo' es obligatorio para este endpoint.");
             var client = factory.GetClient(ctx.TenantId());
-            var doc    = CrearCfe(client, req.Tipo);
+            var doc    = CrearCfe(client, req.Tipo.Value);
             MapRequest(doc, req);
             var pdf = client.GenerarPdfA4(doc);
             return Results.File(pdf, "application/pdf", $"cfe_{doc.Tipo}_{doc.Numero}.pdf");
@@ -65,8 +71,10 @@ public static class CfeEndpoints
             [FromBody] CfeRequest req,
             IUruFacturaClientFactory factory) =>
         {
+            if (req.Tipo is null)
+                return Results.BadRequest("El campo 'Tipo' es obligatorio para este endpoint.");
             var client = factory.GetClient(ctx.TenantId());
-            var doc    = CrearCfe(client, req.Tipo);
+            var doc    = CrearCfe(client, req.Tipo.Value);
             MapRequest(doc, req);
             var pdf = client.GenerarPdfTermico(doc);
             return Results.File(pdf, "application/pdf", $"cfe_{doc.Tipo}_{doc.Numero}_termico.pdf");
@@ -206,11 +214,19 @@ public static class CfeEndpoints
             IUruFacturaClientFactory factory,
             CancellationToken ct) =>
         {
+            if (req.Fecha == default)
+                return Results.BadRequest("El campo 'Fecha' es obligatorio.");
+            if (req.Cfes is null || req.Cfes.Count == 0)
+                return Results.BadRequest("El campo 'Cfes' es obligatorio y no puede estar vacío.");
+
             var client = factory.GetClient(ctx.TenantId());
 
             var cfes = req.Cfes.Select(r =>
             {
-                var doc = CrearCfe(client, r.Tipo);
+                var tipo = r.Tipo
+                    ?? throw new InvalidOperationException(
+                        "Cada elemento de 'Cfes' debe incluir el campo 'Tipo'.");
+                var doc = CrearCfe(client, tipo);
                 MapRequest(doc, r);
                 return doc;
             });

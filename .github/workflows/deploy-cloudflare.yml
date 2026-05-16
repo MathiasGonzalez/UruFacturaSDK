@@ -41,6 +41,9 @@ jobs:
       packages: write
     outputs:
       image: ${{ steps.meta.outputs.tags }}
+      # Single sha-prefixed tag used by the deploy job so we don't reconstruct
+      # the tag independently (avoids fragile SHA length coupling).
+      sha_tag: ${{ steps.sha_tag.outputs.value }}
 
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +53,14 @@ jobs:
         run: |
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "name=ghcr.io/${OWNER}/urufacturasdk-api" >> "$GITHUB_OUTPUT"
+
+      - name: Compute SHA tag for deploy
+        id: sha_tag
+        shell: bash
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SHA_SHORT="${GITHUB_SHA::7}"
+          echo "value=ghcr.io/${OWNER}/urufacturasdk-api:sha-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -95,34 +106,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Stamp the freshly built image SHA into wrangler.toml before deploying.
-      # GHCR requires lowercase image names; repository_owner may be mixed-case
-      # (e.g. MathiasGonzalez), so we lowercase it here explicitly.
-      # docker/metadata-action already handles lowercase for the build job,
-      # but this bash step constructs the image ref manually.
+      - name: Setup Node.js for Wrangler
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      # Stamp the exact SHA tag produced by the build job into wrangler.toml.
+      # Using the build output avoids reconstructing the tag here and keeps both
+      # jobs in sync even if docker/metadata-action's sha format ever changes.
       - name: Update container image in wrangler.toml
-        shell: bash
         run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          SHA_SHORT="${GITHUB_SHA::7}"
-          IMAGE="ghcr.io/${OWNER}/urufacturasdk-api:sha-${SHA_SHORT}"
+          IMAGE="${{ needs.build.outputs.sha_tag }}"
           sed -i "s|image *= *\"[^\"]*\"|image = \"${IMAGE}\"|" cloudflare/wrangler.toml
 
       # Provision required Cloudflare secrets.
-      # Each `echo … | wrangler secret put` call creates or rotates the secret.
-      # Secrets are injected into the container as env vars at runtime.
+      # printf '%s' avoids the trailing newline that `echo` would append, which
+      # would corrupt base64 values (Convert.FromBase64String fails on \n) and
+      # break certificate password comparisons.
       - name: Provision Cloudflare secrets
+        working-directory: cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RUT_EMISOR:       ${{ secrets.URUFACTURA_RUT_EMISOR }}
+          RAZON_SOCIAL:     ${{ secrets.URUFACTURA_RAZON_SOCIAL }}
+          DOMICILIO_FISCAL: ${{ secrets.URUFACTURA_DOMICILIO_FISCAL }}
+          CERT_B64:         ${{ secrets.URUFACTURA_CERT_B64 }}
+          CERT_PASSWORD:    ${{ secrets.URUFACTURA_CERT_PASSWORD }}
+          CAES:             ${{ secrets.URUFACTURA_CAES }}
+        run: |
+          printf '%s' "$RUT_EMISOR"       | wrangler secret put UruFactura__RutEmisor
+          printf '%s' "$RAZON_SOCIAL"     | wrangler secret put UruFactura__RazonSocialEmisor
+          printf '%s' "$DOMICILIO_FISCAL" | wrangler secret put UruFactura__DomicilioFiscal
+          printf '%s' "$CERT_B64"         | wrangler secret put UruFactura__CertificadoBase64
+          printf '%s' "$CERT_PASSWORD"    | wrangler secret put UruFactura__PasswordCertificado
+          # Only create/update the CAES secret when it is explicitly set.
+          # Running `wrangler secret put` with an empty value would overwrite any
+          # value set out-of-band and silently clear the CAE seed for the container.
+          if [ -n "$CAES" ]; then
+            printf '%s' "$CAES" | wrangler secret put UruFactura__Caes
+          fi
+
+      - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: cloudflare
-          # Use preCommands to set secrets before the deploy runs.
-          preCommands: |
-            echo "${{ secrets.URUFACTURA_RUT_EMISOR }}"        | wrangler secret put UruFactura__RutEmisor
-            echo "${{ secrets.URUFACTURA_RAZON_SOCIAL }}"      | wrangler secret put UruFactura__RazonSocialEmisor
-            echo "${{ secrets.URUFACTURA_DOMICILIO_FISCAL }}"  | wrangler secret put UruFactura__DomicilioFiscal
-            echo "${{ secrets.URUFACTURA_CERT_B64 }}"          | wrangler secret put UruFactura__CertificadoBase64
-            echo "${{ secrets.URUFACTURA_CERT_PASSWORD }}"     | wrangler secret put UruFactura__PasswordCertificado
-            echo "${{ secrets.URUFACTURA_CAES || '' }}"        | wrangler secret put UruFactura__Caes
-          command: deploy --var UruFactura__Ambiente=${{ github.event.inputs.ambiente || 'Produccion' }}
+          # Default to Homologacion for both tag pushes and manual dispatches
+          # unless the caller explicitly chooses Produccion in the workflow_dispatch
+          # input.  This prevents a misconfigured tag push from accidentally
+          # deploying to production.
+          command: deploy --var UruFactura__Ambiente=${{ github.event.inputs.ambiente || 'Homologacion' }}
