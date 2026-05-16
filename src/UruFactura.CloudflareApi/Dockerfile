@@ -5,15 +5,16 @@ WORKDIR /src
 # Copy global SDK pin so the build uses the same toolchain version
 COPY global.json .
 
-# Copy the SDK library project and the file-based API app
+# Copy the SDK library project and the Cloudflare API project
 COPY src/UruFacturaSDK/ src/UruFacturaSDK/
-COPY src/UruFactura.Api/ src/UruFactura.Api/
+COPY src/UruFactura.CloudflareApi/ src/UruFactura.CloudflareApi/
 
-# Restore the referenced library project first (improves Docker layer caching)
-RUN dotnet restore src/UruFacturaSDK/UruFacturaSDK.csproj
+# Restore dependencies
+RUN dotnet restore src/UruFactura.CloudflareApi/UruFactura.CloudflareApi.csproj
 
-# Publish the .NET 10 file-based API
-RUN dotnet publish src/UruFactura.Api/Api.cs \
+# Publish
+RUN dotnet publish src/UruFactura.CloudflareApi/UruFactura.CloudflareApi.csproj \
+    --no-restore \
     --configuration Release \
     --output /app/publish
 
@@ -28,4 +29,4 @@ ENV ASPNETCORE_HTTP_PORTS=8080
 
 COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "Api.dll"]
+ENTRYPOINT ["dotnet", "UruFactura.CloudflareApi.dll"]
