@@ -221,11 +221,11 @@ public static class CfeEndpoints
 
             var client = factory.GetClient(ctx.TenantId());
 
-            var cfes = req.Cfes.Select(r =>
+            var cfes = req.Cfes.Select((r, index) =>
             {
                 var tipo = r.Tipo
                     ?? throw new InvalidOperationException(
-                        "Cada elemento de 'Cfes' debe incluir el campo 'Tipo'.");
+                        $"El elemento {index} de 'Cfes' (Número: {r.Numero}) debe incluir el campo 'Tipo'.");
                 var doc = CrearCfe(client, tipo);
                 MapRequest(doc, r);
                 return doc;
