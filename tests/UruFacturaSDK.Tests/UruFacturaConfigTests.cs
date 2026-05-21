@@ -83,4 +83,18 @@ public class UruFacturaConfigTests
         var config = ConfigValida();
         Assert.Equal(30, config.SoapTimeoutSegundos);
     }
+
+    [Fact]
+    public void Validate_SinCiudad_LanzaExcepcion()
+    {
+        var config = ConfigValida() with { Ciudad = "" };
+        Assert.Throws<UruFacturaException>(() => config.Validate());
+    }
+
+    [Fact]
+    public void Validate_SinDepartamento_LanzaExcepcion()
+    {
+        var config = ConfigValida() with { Departamento = "" };
+        Assert.Throws<UruFacturaException>(() => config.Validate());
+    }
 }
