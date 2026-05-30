@@ -111,11 +111,12 @@ async function sendEmail({ from, fromName, to, subject, html, text, env }) {
  * Send via custom email API (Resend, SendGrid compatible).
  */
 async function sendViaCustomApi(env, { from, fromName, to, subject, html, text }) {
+  const authHeader = 'Bearer ' + env.EMAIL_API_KEY;
   const response = await fetch(env.EMAIL_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `******
+      'Authorization': authHeader,
     },
     body: JSON.stringify({
       from: `${fromName} <${from}>`,
