@@ -84,7 +84,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 ```
 
@@ -211,7 +211,7 @@ client.Cae.RegistrarCae(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 
 // 3. Crear comprobante
@@ -256,10 +256,12 @@ await File.WriteAllBytesAsync("eticket_001.pdf", pdf);
 | Recurso | Enlace |
 |---|---|
 | Portal DGI en línea | [https://www.dgi.gub.uy/](https://www.dgi.gub.uy/) |
-| Consulta de esquemas XML CFE | [https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,) |
+| Consulta de esquemas XML CFE (v25.01) | [https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,) |
 | Instructivo técnico de integración | Disponible en el portal DGI en línea → Gestión CFE |
 | AGESIC (autoridades certificantes) | [https://www.agesic.gub.uy/](https://www.agesic.gub.uy/) |
 | Soporte DGI | [https://www.dgi.gub.uy/wdgi/page?2,contacto,index,O,es,0,](https://www.dgi.gub.uy/wdgi/page?2,contacto,index,O,es,0,) |
+
+> 📋 Para mantener el SDK actualizado ante nuevas versiones del formato CFE, ver [NORMATIVA_DGI_UPDATE.md](NORMATIVA_DGI_UPDATE.md).
 
 ---
 

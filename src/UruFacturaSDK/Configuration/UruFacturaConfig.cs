@@ -72,6 +72,12 @@ public record UruFacturaConfig
         if (string.IsNullOrWhiteSpace(DomicilioFiscal))
             errors.Add("DomicilioFiscal es obligatorio.");
 
+        if (string.IsNullOrWhiteSpace(Ciudad))
+            errors.Add("Ciudad es obligatoria.");
+
+        if (string.IsNullOrWhiteSpace(Departamento))
+            errors.Add("Departamento es obligatorio.");
+
         if (string.IsNullOrWhiteSpace(RutaCertificado))
             errors.Add("RutaCertificado es obligatorio.");
 

@@ -20,7 +20,7 @@ UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseña
 
 | Característica | Detalle |
 |---|---|
-| **Generación de CFE** | Crea e-Tickets, e-Facturas, e-Remitos y sus notas de corrección con objetos simples, cumpliendo el formato XML vigente de la DGI. |
+| **Generación de CFE** | Crea e-Tickets, e-Facturas, e-Remitos y sus notas de corrección con objetos simples, cumpliendo el formato XML **v25.01** de la DGI (vigente desde 3/3/2026). |
 | **Firma Digital XAdES-BES** | Módulo integrado para la firma electrónica usando certificados estándar `.p12` / `.pfx`. |
 | **Comunicación SOAP** | Cliente SOAP optimizado para envío de comprobantes, consulta de estados y envío del Reporte Diario. |
 | **Gestión de CAE** | Control inteligente de Constancias de Autorización de Emisión con alertas de vencimiento y rango. |
@@ -35,7 +35,7 @@ UruFacturaSDK/
 ├── src/
 │   ├── UruFacturaSDK/                  # Paquete completo (con PDF)
 │   │   ├── Configuration/              # UruFacturaConfig
-│   │   ├── Enums/                      # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, TipoDocumentoReceptor
+│   │   ├── Enums/                      # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, IndTraslado, TipoDocumentoReceptor
 │   │   ├── Exceptions/                 # CaeException, CfeValidationException, DgiCommunicationException,
 │   │   │                               # FirmaDigitalException, PdfGenerationException, UruFacturaException
 │   │   ├── Models/                     # Cfe, Cae, Receptor, LineaDetalle, RefCfe,
@@ -184,8 +184,8 @@ nc.Detalle.Add(new LineaDetalle
 // Registrar múltiples CAEs a la vez
 client.Cae.RegistrarCaes(new[]
 {
-    new Cae { NroSerie = "CAE2025001", TipoCfe = TipoCfe.ETicket,  RangoDesde = 1, RangoHasta = 1000, FechaVencimiento = new DateTime(2026, 12, 31) },
-    new Cae { NroSerie = "CAE2025002", TipoCfe = TipoCfe.EFactura, RangoDesde = 1, RangoHasta = 500,  FechaVencimiento = new DateTime(2026, 12, 31) },
+    new Cae { NroSerie = "CAE2025001", TipoCfe = TipoCfe.ETicket,  RangoDesde = 1, RangoHasta = 1000, FechaVencimiento = new DateOnly(2026, 12, 31) },
+    new Cae { NroSerie = "CAE2025002", TipoCfe = TipoCfe.EFactura, RangoDesde = 1, RangoHasta = 500,  FechaVencimiento = new DateOnly(2026, 12, 31) },
 });
 
 // Obtener próximo número disponible (thread-safe)
@@ -278,8 +278,26 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
     .WithCaeManager(miCaeManager)
     .WithSoapClient(miSoapMock)
     .WithPdfGenerator(miGeneradorPdf)
+    .WithSigner(miCfeFirmante)          // reemplaza la firma digital (ICfeFirmante)
+    .WithXmlBuilder(miXmlBuilder)       // reemplaza el generador de XML (ICfeXmlBuilder)
     .Build();
 ```
+
+> 🏭 **APIs de alto tráfico:** usá `.WithHttpClient(httpClient)` para inyectar un `HttpClient`
+> gestionado por `IHttpClientFactory` y evitar el agotamiento de sockets (*socket exhaustion*)
+> que ocurre cuando se crean y descartan instancias de `HttpClient` por cada request.
+> Al hacerlo, el SDK no configura el handler interno (certificado de cliente ni `OmitirValidacionSsl`),
+> así que es responsabilidad del caller configurarlos en el handler del `HttpClient` inyectado.
+>
+> ```csharp
+> // Ejemplo en Program.cs (ASP.NET Core)
+> builder.Services.AddHttpClient("DGI");
+> builder.Services.AddSingleton(sp =>
+>     UruFacturaClientBuilder
+>         .WithDefaults(config)
+>         .WithHttpClient(sp.GetRequiredService<IHttpClientFactory>().CreateClient("DGI"))
+>         .Build());
+> ```
 
 ---
 
@@ -307,7 +325,7 @@ await repo.GuardarCaeAsync(new Cae
     TipoCfe          = TipoCfe.ETicket,
     RangoDesde       = 1,
     RangoHasta       = 1000,
-    FechaVencimiento = new DateTime(2026, 12, 31),
+    FechaVencimiento = new DateOnly(2026, 12, 31),
 });
 
 // Al iniciar: cargar y registrar en el manager

@@ -159,6 +159,8 @@ public class CfeXmlBuilderTests
             Serie = "A",
             NroCfe = 10,
             FechaCfe = new DateTime(2025, 6, 1),
+            MontoCfeRef = 1220m,
+            MonedaCfeRef = Moneda.PesoUruguayo,
             Razon = "Anulación de e-Ticket",
         });
 
@@ -356,5 +358,91 @@ public class CfeXmlBuilderTests
         var xml = _builder.Generar(cfe);
 
         Assert.DoesNotContain("GiroNegocio", xml);
+    }
+
+    // --- CFE v25.01 ---
+
+    [Fact]
+    public void Generar_XmlContieneVersionCfe25()
+    {
+        var cfe = CrearCfeCompleto();
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("version=\"25.01\"", xml);
+        Assert.DoesNotContain("version=\"23.01\"", xml);
+    }
+
+    [Fact]
+    public void Generar_RefCfeConCamposV25_EmiteCamposMontoYMoneda()
+    {
+        var cfe = CrearCfeCompleto();
+        cfe.Tipo = TipoCfe.NotaCreditoETicket;
+        cfe.Referencias.Add(new Models.RefCfe
+        {
+            TipoCfe = TipoCfe.ETicket,
+            Serie = "A",
+            NroCfe = 42,
+            FechaCfe = new DateTime(2025, 6, 15),
+            MontoCfeRef = 1220m,
+            MonedaCfeRef = Moneda.PesoUruguayo,
+        });
+
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<MntCFERef>1220.00</MntCFERef>", xml);
+        Assert.Contains("<MonedaCFERef>UYU</MonedaCFERef>", xml);
+        Assert.DoesNotContain("TpoCambioCFERef", xml);
+    }
+
+    [Fact]
+    public void Generar_RefCfeConMonedaExtranjera_EmiteTipoCambioRef()
+    {
+        var cfe = CrearCfeCompleto();
+        cfe.Tipo = TipoCfe.NotaCreditoEFactura;
+        cfe.Receptor = new Models.Receptor
+        {
+            Documento = "219999999018",
+            TipoDocumento = UruFacturaSDK.Enums.TipoDocumentoReceptor.Rut,
+        };
+        cfe.Referencias.Add(new Models.RefCfe
+        {
+            TipoCfe = TipoCfe.EFactura,
+            Serie = "A",
+            NroCfe = 10,
+            FechaCfe = new DateTime(2025, 6, 1),
+            MontoCfeRef = 800m,
+            MonedaCfeRef = Moneda.DolarAmericano,
+            TipoCambioCfeRef = 42.5m,
+        });
+
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<MntCFERef>800.00</MntCFERef>", xml);
+        Assert.Contains("<MonedaCFERef>USD</MonedaCFERef>", xml);
+        Assert.Contains("<TpoCambioCFERef>42.5000</TpoCambioCFERef>", xml);
+    }
+
+    [Fact]
+    public void Generar_RefCfeSinCamposV25_OmiteCamposMontoyMoneda()
+    {
+        // Los e-Remitos con referencias (182) no necesariamente son notas correctivas
+        // que emitan esos campos si no están seteados
+        var cfe = CrearCfeCompleto();
+        cfe.Tipo = TipoCfe.NotaCreditoERemito;
+        cfe.Referencias.Add(new Models.RefCfe
+        {
+            TipoCfe = TipoCfe.ERemito,
+            Serie = "A",
+            NroCfe = 5,
+            FechaCfe = new DateTime(2025, 6, 1),
+            MontoCfeRef = 0m,
+            MonedaCfeRef = Moneda.PesoUruguayo,
+            // Sin TipoCambioCfeRef
+        });
+
+        var xml = _builder.Generar(cfe);
+
+        Assert.Contains("<MntCFERef>0.00</MntCFERef>", xml);
+        Assert.DoesNotContain("TpoCambioCFERef", xml);
     }
 }

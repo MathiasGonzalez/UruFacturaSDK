@@ -1,0 +1,94 @@
+name: Normativa DGI — Recordatorio mensual
+
+on:
+  schedule:
+    # Corre el primer día de cada mes a las 09:00 UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Solo mostrar el issue que se crearía (sin crearlo)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  crear-issue-recordatorio:
+    name: Crear issue de revisión normativa DGI
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Obtener versión CFE implementada
+        id: version
+        run: |
+          # Busca la constante de versión CFE en el XML builder.
+          # El formato esperado es: WriteAttributeString("version", "XX.XX")
+          VERSION=$(grep -oP 'WriteAttributeString\("version",\s*"\K[^"]+' \
+            src/UruFacturaSDK/Xml/CfeXmlBuilder.cs || echo "desconocida")
+          echo "cfe_version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Crear issue de recordatorio
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const hoy = new Date().toISOString().slice(0, 10);
+            const version = '${{ steps.version.outputs.cfe_version }}';
+            const mes = new Date().toLocaleString('es', { month: 'long', year: 'numeric', timeZone: 'America/Montevideo' });
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📋 Revisión normativa DGI — ${mes}`,
+              labels: ['normativa-dgi', 'maintenance'],
+              body: `## Revisión mensual de normativa DGI
+
+            Este issue es generado automáticamente el primer día de cada mes para recordar revisar si la DGI publicó cambios en el formato CFE u otras normativas que requieran actualizar el SDK.
+
+            **Versión CFE implementada actualmente:** \`${version}\`
+            **Fecha de generación:** ${hoy}
+
+            ---
+
+            ## Instrucciones para el agente o desarrollador
+
+            Ejecutar el runbook [docs/NORMATIVA_DGI_UPDATE.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/NORMATIVA_DGI_UPDATE.md) siguiendo estos pasos:
+
+            ### 1. Buscar cambios recientes en la DGI
+
+            Buscar en la web con las siguientes consultas:
+            - \`DGI Uruguay CFE formato versión ${new Date().getFullYear()} cambios\`
+            - \`DGI Uruguay factura electrónica nueva normativa ${new Date().getFullYear()}\`
+            - Revisar: https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,
+
+            ### 2. Evaluar si hay cambios
+
+            - [ ] ¿Nueva versión del formato CFE? (actual: \`${version}\`)
+            - [ ] ¿Nuevos campos obligatorios en Zona A/B/C/D/E/F/G?
+            - [ ] ¿Nuevos tipos de CFE?
+            - [ ] ¿Cambio en endpoints SOAP?
+            - [ ] ¿Cambio en tasas de IVA?
+
+            ### 3. Actuar según resultado
+
+            - **Sin cambios:** Cerrar este issue con el comentario "Sin cambios detectados — normativa vigente al día."
+            - **Con cambios:** Implementar según el runbook, abrir PR, y cerrar este issue con referencia al PR.
+
+            ---
+
+            > 💡 Para más detalles sobre qué revisar y cómo implementar los cambios, ver [docs/NORMATIVA_DGI_UPDATE.md](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/NORMATIVA_DGI_UPDATE.md).
+            `
+            });
+
+      - name: Dry run — mostrar issue
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          echo "=== DRY RUN: Issue que se crearía ==="
+          echo "Título: Revisión normativa DGI — $(date +'%B %Y')"
+          echo "Versión CFE implementada: ${{ steps.version.outputs.cfe_version }}"
+          echo "======================================"
