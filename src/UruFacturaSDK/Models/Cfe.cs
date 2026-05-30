@@ -12,7 +12,7 @@ public class Cfe
     /// <summary>Tipo de comprobante.</summary>
     public TipoCfe Tipo { get; set; }
 
-    /// <summary>Serie del comprobante (letras, opcional según normativa).</summary>
+    /// <summary>Serie del comprobante. Puede ser alfabética o alfanumérica (ej: "A", "1A") desde v25.01.</summary>
     public string? Serie { get; set; }
 
     /// <summary>Número del comprobante.</summary>
@@ -212,6 +212,20 @@ public class Cfe
         // Notas de corrección requieren referencias
         if (Array.Exists(TiposCorreccion, t => t == Tipo) && Referencias.Count == 0)
             errors.Add("Las notas de crédito/débito deben referenciar al menos un CFE.");
+
+        // Desde formato CFE v25.01 las referencias en notas correctivas deben informar
+        // monto y moneda del comprobante referenciado (campos F-C8 y F-C9, DGI obliga desde 15/04/2026).
+        if (Array.Exists(TiposCorreccion, t => t == Tipo))
+        {
+            for (int i = 0; i < Referencias.Count; i++)
+            {
+                var refCfe = Referencias[i];
+                if (refCfe.MontoCfeRef is null)
+                    errors.Add($"Referencia {i + 1}: MontoCfeRef es obligatorio en notas de crédito/débito (CFE v25.01).");
+                if (refCfe.MonedaCfeRef is null)
+                    errors.Add($"Referencia {i + 1}: MonedaCfeRef es obligatorio en notas de crédito/débito (CFE v25.01).");
+            }
+        }
 
         // e-Factura y tipos relacionados requieren datos del receptor
         if (Array.Exists(TiposFactura, t => t == Tipo) && Receptor == null)

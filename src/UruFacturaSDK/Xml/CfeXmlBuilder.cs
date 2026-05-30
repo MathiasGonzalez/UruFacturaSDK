@@ -8,7 +8,7 @@ using UruFacturaSDK.Formatting;
 namespace UruFacturaSDK.Xml;
 
 /// <summary>
-/// Genera el XML de un CFE según el esquema de la DGI de Uruguay (versión 23.01).
+/// Genera el XML de un CFE según el esquema de la DGI de Uruguay (versión 25.01).
 /// </summary>
 public class CfeXmlBuilder : ICfeXmlBuilder
 {
@@ -50,7 +50,7 @@ public class CfeXmlBuilder : ICfeXmlBuilder
     {
         w.WriteStartDocument();
         w.WriteStartElement("CFE", NsUri);
-        w.WriteAttributeString("version", "23.01");
+        w.WriteAttributeString("version", "25.01");
 
         // Identificación del documento
         w.WriteStartElement("Encabezado", NsUri);
@@ -220,6 +220,12 @@ public class CfeXmlBuilder : ICfeXmlBuilder
         WriteElement(w, "Serie", refCfe.Serie);
         WriteElement(w, "NroCFERef", refCfe.NroCfe.ToString());
         WriteElement(w, "FechaCFERef", CfeFormat.DateIso(refCfe.FechaCfe));
+        if (refCfe.MontoCfeRef.HasValue)
+            WriteElement(w, "MntCFERef", CfeFormat.DecimalInvariant(refCfe.MontoCfeRef.Value, "F2"));
+        if (refCfe.MonedaCfeRef.HasValue)
+            WriteElement(w, "MonedaCFERef", ObtenerCodigoIso4217(refCfe.MonedaCfeRef.Value));
+        if (refCfe.TipoCambioCfeRef.HasValue)
+            WriteElement(w, "TpoCambioCFERef", CfeFormat.DecimalInvariant(refCfe.TipoCambioCfeRef.Value, "F4"));
         if (!string.IsNullOrWhiteSpace(refCfe.Razon))
             WriteElement(w, "RazonRef", refCfe.Razon);
         w.WriteEndElement(); // RefDoc
@@ -238,6 +244,19 @@ public class CfeXmlBuilder : ICfeXmlBuilder
     /// </summary>
     private static string ObtenerCodigoMoneda(Moneda moneda) => moneda switch
     {
+        Moneda.DolarAmericano => "USD",
+        Moneda.Euro           => "EUR",
+        _ => throw new ArgumentOutOfRangeException(nameof(moneda),
+                 $"Moneda '{moneda}' sin código ISO 4217 definido."),
+    };
+
+    /// <summary>
+    /// Retorna el código ISO 4217 de 3 letras para todos los valores de <see cref="Moneda"/>,
+    /// incluyendo el peso uruguayo (UYU). Usado en la zona de referencia (F-C9).
+    /// </summary>
+    private static string ObtenerCodigoIso4217(Moneda moneda) => moneda switch
+    {
+        Moneda.PesoUruguayo   => "UYU",
         Moneda.DolarAmericano => "USD",
         Moneda.Euro           => "EUR",
         _ => throw new ArgumentOutOfRangeException(nameof(moneda),

@@ -9,11 +9,12 @@ Referencia rápida sobre el sistema de Comprobantes Fiscales Electrónicos (CFE)
 | Norma | Descripción |
 |---|---|
 | Resolución DGI 798/012 | Marco general de la facturación electrónica |
+| Resolución DGI 2548/023 | Universalización — todos los contribuyentes IVA desde enero 2025 |
 | Decreto 36/020 | Ampliación de obligados a emitir CFE |
 | Decreto 230/021 | Calendario de adhesión obligatoria por facturación |
-| e-CFE v2.x | Esquema XML vigente publicado por DGI |
+| e-CFE v25.01 | Esquema XML vigente (desde 3/3/2026 producción, 15/4/2026 controles estrictos) |
 
-La **adhesión es obligatoria** para contribuyentes IRAE según su facturación anual. Las empresas no alcanzadas pueden adherirse voluntariamente.
+La **adhesión es obligatoria** para todos los contribuyentes de IVA (incluido IVA mínimo) desde enero 2025 (Resolución 2548/023).
 
 ---
 
@@ -182,16 +183,20 @@ exportacion.Detalle.Add(new LineaDetalle
 
 **Escenario:** cliente devuelve una unidad de un e-Ticket anterior.
 
+> ⚠️ **Desde formato CFE v25.01 (obligatorio 3/3/2026):** las referencias en notas de crédito/débito deben incluir `MontoCfeRef` y `MonedaCfeRef` del comprobante original. La DGI aplica controles estrictos desde el 15/4/2026.
+
 ```csharp
 var nc = client.CrearNotaCreditoETicket();
 nc.Numero = 15;
 nc.Referencias.Add(new RefCfe
 {
-    TipoCfe  = TipoCfe.ETicket,
-    Serie    = "A",
-    NroCfe   = 125,                          // número del comprobante original
-    FechaCfe = new DateTime(2025, 5, 10),
-    Razon    = "Devolución — producto dañado",
+    TipoCfe      = TipoCfe.ETicket,
+    Serie        = "A",
+    NroCfe       = 125,                          // número del comprobante original
+    FechaCfe     = new DateTime(2025, 5, 10),
+    MontoCfeRef  = 1979.80m,                     // monto total del comprobante original (F-C8)
+    MonedaCfeRef = Moneda.PesoUruguayo,          // moneda del comprobante original (F-C9)
+    Razon        = "Devolución — producto dañado",
 });
 nc.Detalle.Add(new LineaDetalle
 {

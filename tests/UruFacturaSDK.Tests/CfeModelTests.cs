@@ -86,6 +86,42 @@ public class CfeModelTests
     }
 
     [Fact]
+    public void Validar_NotaCreditoConReferenciaSinMonto_RetornaError()
+    {
+        var cfe = CrearCfeValido();
+        cfe.Tipo = TipoCfe.NotaCreditoETicket;
+        cfe.Referencias.Add(new RefCfe
+        {
+            TipoCfe = TipoCfe.ETicket,
+            Serie = "A",
+            NroCfe = 1,
+            FechaCfe = DateTime.Today,
+            // MontoCfeRef y MonedaCfeRef ausentes
+        });
+        var errores = cfe.Validar();
+        Assert.Contains(errores, e => e.Contains("MontoCfeRef"));
+        Assert.Contains(errores, e => e.Contains("MonedaCfeRef"));
+    }
+
+    [Fact]
+    public void Validar_NotaCreditoConReferenciaCompleta_NoRetornaErroresRef()
+    {
+        var cfe = CrearCfeValido();
+        cfe.Tipo = TipoCfe.NotaCreditoETicket;
+        cfe.Referencias.Add(new RefCfe
+        {
+            TipoCfe = TipoCfe.ETicket,
+            Serie = "A",
+            NroCfe = 1,
+            FechaCfe = DateTime.Today,
+            MontoCfeRef = 200m,
+            MonedaCfeRef = Moneda.PesoUruguayo,
+        });
+        var errores = cfe.Validar();
+        Assert.DoesNotContain(errores, e => e.Contains("MontoCfeRef") || e.Contains("MonedaCfeRef"));
+    }
+
+    [Fact]
     public void CalcularTotales_IvaBasico_CalculaCorrectamente()
     {
         var cfe = CrearCfeValido();
