@@ -22,7 +22,7 @@ export default function Login() {
       login({
         tenantId: form.tenantId || null,
         apiUrl: form.apiUrl || null,
-        razonSocial: form.tenantId || 'Single-tenant',
+        razonSocial: form.tenantId || null,
         connectedAt: new Date().toISOString(),
       });
       navigate('/');

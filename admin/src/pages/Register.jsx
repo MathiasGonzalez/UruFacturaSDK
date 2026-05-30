@@ -37,7 +37,7 @@ export default function Register() {
       rutEmisor: form.rutEmisor,
       domicilioFiscal: form.domicilioFiscal,
       ambiente: form.ambiente,
-      connectedAt: new Date().toISOString(),
+      registeredAt: new Date().toISOString(),
     };
 
     login(tenantData);

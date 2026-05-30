@@ -118,7 +118,7 @@ export default function Caes() {
             </thead>
             <tbody>
               {caes.map((cae, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr key={cae.nroSerie || cae.NroSerie || i} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.5rem' }}>{cae.nroSerie || cae.NroSerie}</td>
                   <td style={{ padding: '0.5rem' }}>{cae.tipoCfe ?? cae.TipoCfe ?? cae.tipo ?? cae.Tipo}</td>
                   <td style={{ padding: '0.5rem', textAlign: 'right' }}>{cae.rangoDesde ?? cae.RangoDesde}</td>
