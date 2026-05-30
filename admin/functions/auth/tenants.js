@@ -2,7 +2,7 @@
  * GET /auth/tenants
  *
  * Lists all tenants owned by the authenticated user.
- * Requires ****** in Authorization header.
+ * Requires Authorization: ****** header.
  *
  * KV binding: AUTH_SESSIONS, TENANTS
  */

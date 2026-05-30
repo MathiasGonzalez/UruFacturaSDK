@@ -87,9 +87,13 @@ async function createToken(email, expiresAt, secret) {
   const payload = base64url(JSON.stringify({ sub: email, exp: expiresAt }));
   const data = `${header}.${payload}`;
 
+  if (!secret) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+
   const key = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(secret || 'dev-secret-change-me'),
+    new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']

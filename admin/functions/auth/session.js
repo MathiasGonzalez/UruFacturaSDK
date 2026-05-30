@@ -2,7 +2,7 @@
  * GET /auth/session
  *
  * Returns current session info and associated tenants.
- * Requires ****** in Authorization header.
+ * Requires Authorization: ****** header.
  *
  * KV binding: AUTH_SESSIONS, TENANTS
  */

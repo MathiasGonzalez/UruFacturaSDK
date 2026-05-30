@@ -15,7 +15,7 @@
  *   MAIL_FROM       — Sender email address
  *   APP_NAME        — Display name in emails
  *   EMAIL_API_URL   — (optional) Custom email provider endpoint
- *   EMAIL_API_KEY   — (optional) ****** for custom provider
+ *   EMAIL_API_KEY   — (optional) API key/secret for custom provider
  *   ALLOWED_ORIGINS — Comma-separated allowed origins for CORS
  */
 
@@ -39,6 +39,14 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/send') {
+      // Authenticate request via EMAIL_API_KEY
+      const apiKey = env.EMAIL_API_KEY;
+      if (apiKey) {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader || authHeader !== `Bearer ${apiKey}`) {
+          return jsonResponse({ error: 'Unauthorized' }, 401, corsHeaders);
+        }
+      }
       return handleSend(request, env, corsHeaders);
     }
 
@@ -132,13 +140,20 @@ async function sendViaCustomApi(env, { from, fromName, to, subject, html, text }
 function buildCorsHeaders(request, env) {
   const origin = request.headers.get('Origin') || '';
   const allowed = (env.ALLOWED_ORIGINS || '*').split(',').map((s) => s.trim());
-  const allowOrigin = allowed.includes('*') || allowed.includes(origin) ? origin || '*' : '';
 
-  return {
-    'Access-Control-Allow-Origin': allowOrigin,
+  const headers = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
+
+  if (allowed.includes('*')) {
+    headers['Access-Control-Allow-Origin'] = origin || '*';
+  } else if (allowed.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+  // If origin is not allowed, omit Access-Control-Allow-Origin header
+
+  return headers;
 }
 
 function jsonResponse(data, status, headers) {

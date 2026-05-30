@@ -37,7 +37,7 @@ Web de administración de tenants para UruFactura. Desplegable en **Cloudflare P
 │    AUTH_SESSIONS  → tokens de sesión (TTL 24h)                   │
 │    TENANTS        → registro de tenants                          │
 └───────────────────────────────┬──────────────────────────────────┘
-                                │ HTTP (X-Tenant-Id + ******
+                                │ HTTP (X-Tenant-Id + Authorization: Bearer <token>)
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │               Cloudflare Worker (urufactura-api)                  │
@@ -65,15 +65,15 @@ Web de administración de tenants para UruFactura. Desplegable en **Cloudflare P
 3. Usuario ingresa código recibido
 4. POST /auth/verify-code → valida código, genera token JWT (HMAC-SHA256)
 5. Token se almacena en localStorage (24h de vida)
-6. Todas las requests posteriores incluyen Authorization: ******
+6. Todas las requests posteriores incluyen Authorization: Bearer <token>
 ```
 
 ## Desarrollo local
 
 ### Prerequisitos
 
-- Node.js 18+
-- .NET 9 SDK
+- Node.js 20+
+- .NET 10 SDK
 - Wrangler CLI: `npm install -g wrangler`
 
 ### Opción 1: Solo frontend (mock auth)
@@ -209,7 +209,7 @@ La admin web se comunica con dos backends:
 
 ```
 X-Tenant-Id: <tenantId>     ← identifica el tenant en la API
-Authorization: ****** ← token de sesión (auth)
+Authorization: Bearer <token> ← token de sesión (auth)
 Content-Type: application/json
 ```
 

@@ -19,10 +19,6 @@ export async function onRequestPost(context) {
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
-
   try {
     const { email } = await request.json();
 
