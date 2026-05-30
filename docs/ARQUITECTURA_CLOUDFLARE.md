@@ -598,5 +598,5 @@ Worker dedicado al envío de emails transaccionales (`cloudflare/email-worker/`)
 Para enviar emails con MailChannels (gratis), agregar registro TXT:
 
 ```
-_mailchannels  TXT  "v=mc1 cfid=<pages-project>.pages.dev"
+_mailchannels  TXT  "v=mc1 cfid=urufactura-admin.pages.dev"
 ```
