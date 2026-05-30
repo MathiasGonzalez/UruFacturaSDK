@@ -2,9 +2,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy global SDK pin so the build uses the same toolchain version
-COPY global.json .
-
 # Copy the SDK library project and the Cloudflare API project
 COPY src/UruFacturaSDK/ src/UruFacturaSDK/
 COPY src/UruFactura.CloudflareApi/ src/UruFactura.CloudflareApi/
