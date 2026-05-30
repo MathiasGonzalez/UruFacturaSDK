@@ -50,6 +50,12 @@
   padding: 0.75rem;
 }
 
+.auth-card button.secondary {
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.5rem;
+}
+
 .auth-link {
   margin-top: 1rem;
   text-align: center;
@@ -64,4 +70,42 @@
   border-radius: var(--radius);
   font-size: 0.85rem;
   margin-bottom: 0.5rem;
+}
+
+.tenant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tenant-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.tenant-item:hover {
+  border-color: var(--primary);
+}
+
+.tenant-item .tenant-id {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.tenant-item .tenant-env {
+  font-size: 0.75rem;
+  background: var(--info-bg, #e3f2fd);
+  color: var(--info-color, #1565c0);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
 }

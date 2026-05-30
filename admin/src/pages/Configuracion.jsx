@@ -1,22 +1,33 @@
 import { useAuth } from '../services/AuthContext.jsx';
 
 export default function Configuracion() {
-  const { tenant } = useAuth();
+  const { session, tenant } = useAuth();
 
   return (
     <div>
       <h1 style={{ marginBottom: '1.5rem' }}>Configuración</h1>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <h3 style={{ marginBottom: '1rem' }}>Sesión</h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            <Row label="Email" value={session?.email} />
+            <Row label="Sesión expira" value={session?.expiresAt ? new Date(session.expiresAt).toLocaleString() : '-'} />
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ marginBottom: '1rem' }}>Datos del Tenant</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
-            <Row label="Tenant ID" value={tenant?.tenantId || '(default)'} />
+            <Row label="Tenant ID" value={tenant?.tenantId || '(no seleccionado)'} />
             <Row label="Razón Social" value={tenant?.razonSocial} />
             <Row label="RUT Emisor" value={tenant?.rutEmisor} />
             <Row label="Domicilio Fiscal" value={tenant?.domicilioFiscal} />
             <Row label="Ambiente" value={tenant?.ambiente} />
-            <Row label="Conectado desde" value={tenant?.connectedAt ? new Date(tenant.connectedAt).toLocaleString() : '-'} />
+            <Row label="Owner" value={tenant?.ownerEmail} />
+            <Row label="Registrado" value={tenant?.createdAt ? new Date(tenant.createdAt).toLocaleString() : '-'} />
           </tbody>
         </table>
       </div>

@@ -6,9 +6,23 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+function getAuthToken() {
+  try {
+    const raw = localStorage.getItem('urufactura_session');
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    return session?.token || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiRequest(path, { method = 'GET', body, tenantId } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (tenantId) headers['X-Tenant-Id'] = tenantId;
+
+  const token = getAuthToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
 
   const res = await fetch(`${BASE_URL}${path}`, {
     method,

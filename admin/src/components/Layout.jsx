@@ -3,7 +3,7 @@ import { useAuth } from '../services/AuthContext.jsx';
 import './Layout.css';
 
 export default function Layout() {
-  const { tenant, logout } = useAuth();
+  const { session, tenant, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -16,16 +16,18 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <h2>UruFactura</h2>
-          <span className="badge info">{tenant?.tenantId || 'default'}</span>
+          {tenant && <span className="badge info">{tenant.tenantId}</span>}
         </div>
         <nav>
           <NavLink to="/" end>📊 Dashboard</NavLink>
           <NavLink to="/emitir">📄 Emitir CFE</NavLink>
           <NavLink to="/caes">🔑 CAEs</NavLink>
           <NavLink to="/configuracion">⚙️ Configuración</NavLink>
+          <NavLink to="/select-tenant">🏢 Cambiar Tenant</NavLink>
         </nav>
         <div className="sidebar-footer">
-          <small>{tenant?.razonSocial}</small>
+          <small>{session?.email}</small>
+          {tenant && <small className="tenant-name">{tenant.razonSocial}</small>}
           <button className="secondary" onClick={handleLogout}>Cerrar sesión</button>
         </div>
       </aside>
