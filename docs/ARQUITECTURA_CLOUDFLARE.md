@@ -29,10 +29,14 @@ Documento técnico que describe la arquitectura desplegada, los requerimientos d
 graph TD
     subgraph Internet
         Client["Aplicaciones cliente<br/>(ERP, POS, Backend)"]
+        Admin["Admin Web<br/>(Cloudflare Pages)"]
     end
 
     subgraph "Cloudflare Edge (global)"
         Worker["Worker (worker.js)<br/>Enrutamiento por tenant"]
+        EmailW["Email Worker<br/>(envío emails)"]
+        PF["Pages Functions<br/>(auth backend)"]
+        KV["KV Storage<br/>(codes, sessions, tenants)"]
     end
 
     subgraph "Cloudflare Containers"
@@ -50,6 +54,10 @@ graph TD
     end
 
     Client -->|HTTPS| Worker
+    Admin -->|HTTPS| PF
+    Admin -->|"HTTPS + X-Tenant-Id"| Worker
+    PF --> KV
+    PF -->|"service binding"| EmailW
     Worker --> DO1
     Worker --> DO2
     Worker --> DO3
@@ -66,9 +74,11 @@ graph TD
     classDef cf fill:#f6821f,color:#fff,stroke:none
     classDef net fill:#512bd4,color:#fff,stroke:none
     classDef ext fill:#555,color:#fff,stroke:none
-    class Worker,DO1,DO2,DO3 cf
+    classDef pages fill:#2563eb,color:#fff,stroke:none
+    class Worker,DO1,DO2,DO3,EmailW cf
     class C1,C2,C3 net
     class DGI,GHCR ext
+    class Admin,PF,KV pages
 ```
 
 ---
@@ -137,6 +147,27 @@ graph LR
 | **Operaciones** | Envío de sobres CFE, consulta de estado, reporte diario |
 | **Autenticación** | Certificado digital X.509 (`.p12`) emitido por Correo Uruguayo |
 
+### 5. Admin Web (`admin/`)
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Rol** | UI de administración de tenants (registro, login, emisión CFE, gestión CAEs) |
+| **Stack** | React 19 + Vite 6 + React Router 7 |
+| **Hosting** | Cloudflare Pages (SPA estática + Pages Functions) |
+| **Auth backend** | Pages Functions (`admin/functions/auth/`) con KV |
+| **Storage** | KV: `AUTH_CODES` (10 min TTL), `AUTH_SESSIONS` (24h), `TENANTS` |
+| **Deploy workflow** | `.github/workflows/deploy-admin.yml` |
+
+### 6. Email Worker (`cloudflare/email-worker/`)
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Rol** | Envío de emails transaccionales (códigos de verificación) |
+| **Runtime** | Cloudflare Workers (V8 isolate) |
+| **Proveedores** | MailChannels (gratis) o API custom (Resend, SendGrid) |
+| **Integración** | Service binding desde Pages Functions o HTTP directo |
+| **Deploy workflow** | `.github/workflows/deploy-email-worker.yml` |
+
 ---
 
 ## Modelo de despliegue
@@ -176,6 +207,9 @@ graph LR
 | Imagen Docker (ASP.NET) | GHCR → Cloudflare Containers | Tag SHA en `wrangler.toml` |
 | Secretos (cert, passwords) | Cloudflare Secrets | `wrangler secret put` |
 | Variables no-sensibles | `wrangler.toml [vars]` | `wrangler deploy` |
+| Admin SPA + Pages Functions | Cloudflare Pages | `wrangler pages deploy` |
+| Email Worker | Cloudflare Workers | `wrangler deploy` |
+| KV Namespaces (auth) | Cloudflare KV | Automático (runtime) |
 
 ---
 
@@ -423,7 +457,9 @@ stateDiagram-v2
 |----------|---------|---------|
 | `test-cloudflare-api.yml` | Push / PR | Build + test (172 tests) + smoke test Docker |
 | `docker.yml` | Push a main / tags | Build y push imagen a GHCR |
-| `deploy-cloudflare.yml` | Tag `v*` / manual | Build → push GHCR → secrets → deploy |
+| `deploy-cloudflare.yml` | Tag `v*` / manual | Build → push GHCR → secrets → deploy Worker + Container |
+| `deploy-admin.yml` | Push a `admin/` en main / manual | Build admin SPA → deploy a Cloudflare Pages |
+| `deploy-email-worker.yml` | Push a `cloudflare/email-worker/` en main / manual | Deploy email worker a Cloudflare Workers |
 
 ### Flujo de despliegue completo
 
@@ -481,3 +517,86 @@ Para desplegar a Producción, use `workflow_dispatch` y seleccione `Produccion` 
 | **SOAP builders con `XmlDocument`** | Previene XSS/injection (CodeQL). Los valores de usuario fluyen por `InnerText` (auto-escapado). |
 | **`printf '%s'` en CI** | `echo` agrega `\n` que corrompe Base64 y passwords al inyectarlos como secretos. |
 | **Default a Homologacion en tag push** | Previene despliegues accidentales a producción. Producción requiere acción manual explícita. |
+
+---
+
+## Admin Web (Cloudflare Pages)
+
+La web de administración de tenants se despliega como **Cloudflare Pages** (SPA React + Vite) con **Pages Functions** como backend de autenticación.
+
+### Componentes
+
+| Componente | Ubicación | Función |
+|------------|-----------|---------|
+| SPA (React + Vite) | `admin/src/` | UI de administración |
+| Pages Functions | `admin/functions/auth/` | Backend de autenticación (KV) |
+| KV: AUTH_CODES | Cloudflare KV | Códigos temporales (TTL 10 min) |
+| KV: AUTH_SESSIONS | Cloudflare KV | Tokens de sesión JWT (TTL 24h) |
+| KV: TENANTS | Cloudflare KV | Registro de tenants |
+
+### Flujo de autenticación
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant SPA as Admin SPA
+    participant PF as Pages Functions
+    participant KV as Cloudflare KV
+    participant EM as Email (MailChannels/Worker)
+
+    U->>SPA: Ingresa email
+    SPA->>PF: POST /auth/send-code
+    PF->>KV: Guardar código (10 min TTL)
+    PF->>EM: Enviar email con código
+    EM-->>U: Email con código 6 dígitos
+    U->>SPA: Ingresa código
+    SPA->>PF: POST /auth/verify-code
+    PF->>KV: Validar código
+    PF->>KV: Crear sesión (24h TTL)
+    PF-->>SPA: JWT token
+    SPA->>SPA: Almacenar token (localStorage)
+```
+
+### Endpoints Auth (Pages Functions)
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/auth/send-code` | POST | Enviar código de verificación |
+| `/auth/verify-code` | POST | Verificar código → obtener JWT |
+| `/auth/register` | POST | Registrar tenant (requiere email verificado) |
+| `/auth/session` | GET | Info de sesión actual |
+| `/auth/tenants` | GET | Listar tenants del usuario |
+
+### Despliegue
+
+- **Automático**: GitHub Actions (`.github/workflows/deploy-admin.yml`) en push a `main` que toque `admin/`
+- **Manual**: `npx wrangler pages deploy dist --project-name urufactura-admin`
+- **Secrets**: `JWT_SECRET`, `EMAIL_API_KEY` (via Cloudflare Pages dashboard o CLI)
+
+---
+
+## Email Worker
+
+Worker dedicado al envío de emails transaccionales (`cloudflare/email-worker/`).
+
+### Características
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Rol** | Envío de emails (códigos de verificación, notificaciones) |
+| **Proveedores** | MailChannels (gratis, SPF requerido) o API custom (Resend, SendGrid) |
+| **Integración** | Service binding desde Pages Functions (`EMAIL_WORKER`) o invocación HTTP directa |
+| **Configuración** | `MAIL_FROM`, `APP_NAME`, `ALLOWED_ORIGINS`, `EMAIL_API_URL` (opcional), `EMAIL_API_KEY` (secret) |
+
+### Despliegue
+
+- **Automático**: GitHub Actions (`.github/workflows/deploy-email-worker.yml`) en push a `main` que toque `cloudflare/email-worker/`
+- **Manual**: `cd cloudflare/email-worker && wrangler deploy`
+
+### Requisito DNS (MailChannels)
+
+Para enviar emails con MailChannels (gratis), agregar registro TXT:
+
+```
+_mailchannels  TXT  "v=mc1 cfid=<pages-project>.pages.dev"
+```

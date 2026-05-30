@@ -123,15 +123,64 @@ Cada tenant obtiene su propio contenedor con estado aislado. Los contenedores se
 
 ---
 
-## Administración futura
+## Admin Web (Cloudflare Pages)
 
-En una versión futura se implementará una **web de administración** donde cada tenant podrá:
+La web de administración (`admin/`) permite gestionar tenants desde el navegador. Se despliega en **Cloudflare Pages** con **Pages Functions** como backend de autenticación.
 
-- Registrarse y gestionar su configuración (RUT, certificados, CAEs).
-- Monitorear el estado de sus CFE emitidos.
-- Rotar certificados digitales.
+### Funcionalidades
 
-Mientras tanto, la gestión de tenants se realiza manualmente a través de variables de entorno / Cloudflare Secrets.
+- **Autenticación por email**: token de 6 dígitos con TTL de 10 min → JWT de sesión (24h)
+- **Registro de tenant**: formulario con validación (tenantId, razón social, RUT, ambiente)
+- **Dashboard**: estado de la API, CAEs activos, advertencias
+- **Emitir CFE**: formulario para los 13 tipos
+- **Gestión de CAEs**: listar, registrar, ver advertencias
+- **Configuración**: datos del tenant y env vars necesarias
+
+### Arquitectura
+
+```
+admin/                    → Cloudflare Pages (SPA + Functions)
+  functions/auth/*        → Pages Functions (auth backend, KV)
+cloudflare/email-worker/  → Worker dedicado envío emails
+cloudflare/worker.js      → Worker router (API multi-tenant)
+src/UruFactura.CloudflareApi → .NET Container (API)
+```
+
+### Despliegue
+
+Deploy automático via GitHub Actions (`.github/workflows/deploy-admin.yml`) o manual:
+
+```bash
+cd admin
+npm run build
+npx wrangler pages deploy dist --project-name urufactura-admin
+```
+
+### Desarrollo local
+
+```bash
+# Terminal 1: API .NET
+cd src/UruFactura.TestApi && dotnet run
+
+# Terminal 2: Admin + Pages Functions (KV local)
+cd admin && npx wrangler pages dev --kv AUTH_CODES --kv AUTH_SESSIONS --kv TENANTS -- npm run dev
+```
+
+## Email Worker
+
+Worker dedicado (`cloudflare/email-worker/`) para envío de emails transaccionales (códigos de verificación). Soporta:
+
+- **MailChannels** (gratis para Workers, requiere SPF DNS record)
+- **API custom** (Resend, SendGrid) via `EMAIL_API_URL` + `EMAIL_API_KEY`
+
+Las Pages Functions pueden usarlo via **service binding** (`EMAIL_WORKER`) o enviar directo por MailChannels.
+
+Deploy automático via `.github/workflows/deploy-email-worker.yml` o manual:
+
+```bash
+cd cloudflare/email-worker
+wrangler deploy
+```
 
 ---
 
