@@ -53,3 +53,9 @@ API_URL = "https://urufactura-api.workers.dev"
 # Para usar un proveedor de email diferente a MailChannels:
 # EMAIL_API_URL = "https://api.resend.com/emails"
 # EMAIL_API_KEY → secret
+
+# ── Service Binding (email worker) ────────────────────────────────────────────
+# Si se despliega el email worker por separado, descomentar para usarlo:
+# [[services]]
+# binding = "EMAIL_WORKER"
+# service = "urufactura-email"

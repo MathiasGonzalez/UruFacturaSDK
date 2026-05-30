@@ -93,7 +93,23 @@ function jsonResponse(data, status, headers) {
 }
 
 async function sendEmail({ from, fromName, to, subject, html, env }) {
-  // Use Cloudflare MailChannels Send API (free for Workers)
+  // Option 1: Use the dedicated email worker via service binding (recommended)
+  // Configure in wrangler.toml: [[services]] binding = "EMAIL_WORKER" service = "urufactura-email"
+  if (env.EMAIL_WORKER) {
+    const response = await env.EMAIL_WORKER.fetch(new Request('https://email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, html }),
+    }));
+    return response.ok;
+  }
+
+  // Option 2: Use a custom email API (Resend, SendGrid) directly
+  if (env.EMAIL_API_URL && env.EMAIL_API_KEY) {
+    return sendViaCustomApi(env, { from, fromName, to, subject, html });
+  }
+
+  // Option 3: Use Cloudflare MailChannels Send API (free for Workers)
   // Docs: https://developers.cloudflare.com/workers/tutorials/send-emails-with-mailchannels/
   const payload = {
     personalizations: [{ to: [{ email: to }] }],
@@ -101,11 +117,6 @@ async function sendEmail({ from, fromName, to, subject, html, env }) {
     subject,
     content: [{ type: 'text/html', value: html }],
   };
-
-  // If a custom email API is configured (e.g., Resend), use that instead
-  if (env.EMAIL_API_URL && env.EMAIL_API_KEY) {
-    return sendViaCustomApi(env, { from, fromName, to, subject, html });
-  }
 
   const response = await fetch('https://api.mailchannels.net/tx/v1/send', {
     method: 'POST',
