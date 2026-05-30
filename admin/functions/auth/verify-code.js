@@ -83,8 +83,8 @@ export async function onRequestOptions(context) {
 }
 
 async function createToken(email, expiresAt, secret) {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payload = btoa(JSON.stringify({ sub: email, exp: expiresAt }));
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = base64url(JSON.stringify({ sub: email, exp: expiresAt }));
   const data = `${header}.${payload}`;
 
   const key = await crypto.subtle.importKey(
@@ -96,9 +96,23 @@ async function createToken(email, expiresAt, secret) {
   );
 
   const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
-  const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  const sig = base64urlFromBuffer(new Uint8Array(signature));
 
   return `${data}.${sig}`;
+}
+
+function base64url(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+function base64urlFromBuffer(buf) {
+  return btoa(String.fromCharCode(...buf))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 function jsonResponse(data, status, headers) {
