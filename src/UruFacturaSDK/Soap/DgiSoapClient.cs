@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
@@ -207,48 +208,101 @@ public class DgiSoapClient : IDgiSoapClient
 
     private static string ConstruirSoapEnvio(string xmlFirmado)
     {
-        return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<soap:Envelope xmlns:soap=""{SoapNs}"">
-  <soap:Body>
-    <enviarCFE xmlns=""http://dgi.gub.uy/efactura"">
-      <cfe><![CDATA[{xmlFirmado}]]></cfe>
-    </enviarCFE>
-  </soap:Body>
-</soap:Envelope>";
+        var (doc, body) = CrearEnvelope();
+
+        var enviarCfe = doc.CreateElement("enviarCFE");
+        enviarCfe.SetAttribute("xmlns", "http://dgi.gub.uy/efactura");
+        body.AppendChild(enviarCfe);
+
+        var cfeEl = doc.CreateElement("cfe");
+        cfeEl.AppendChild(doc.CreateCDataSection(xmlFirmado));
+        enviarCfe.AppendChild(cfeEl);
+
+        return SerializeXml(doc);
     }
 
     private static string ConstruirSoapConsulta(
         string rut, int tipo, string serie, long numero)
     {
-        return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<soap:Envelope xmlns:soap=""{SoapNs}"">
-  <soap:Body>
-    <consultarEstadoCFE xmlns=""http://dgi.gub.uy/efactura"">
-      <rut>{EscapeXml(rut)}</rut>
-      <tipoCFE>{tipo}</tipoCFE>
-      <serie>{EscapeXml(serie)}</serie>
-      <numero>{numero}</numero>
-    </consultarEstadoCFE>
-  </soap:Body>
-</soap:Envelope>";
+        var (doc, body) = CrearEnvelope();
+
+        var consultar = doc.CreateElement("consultarEstadoCFE");
+        consultar.SetAttribute("xmlns", "http://dgi.gub.uy/efactura");
+        body.AppendChild(consultar);
+
+        AddTextEl(doc, consultar, "rut",      rut);
+        AddTextEl(doc, consultar, "tipoCFE",  tipo.ToString(CultureInfo.InvariantCulture));
+        AddTextEl(doc, consultar, "serie",    serie);
+        AddTextEl(doc, consultar, "numero",   numero.ToString(CultureInfo.InvariantCulture));
+
+        return SerializeXml(doc);
     }
 
     private static string ConstruirSoapReporteDiario(
         DateTime fecha, IList<string> cfes)
     {
-        var cfesXml = new StringBuilder();
-        foreach (var xml in cfes)
-            cfesXml.Append($"<cfeFirmado><![CDATA[{xml}]]></cfeFirmado>");
+        var (doc, body) = CrearEnvelope();
 
-        return $@"<?xml version=""1.0"" encoding=""utf-8""?>
-<soap:Envelope xmlns:soap=""{SoapNs}"">
-  <soap:Body>
-    <enviarReporteDiario xmlns=""http://dgi.gub.uy/efactura"">
-      <fecha>{CfeFormat.DateIso(fecha)}</fecha>
-      <cfes>{cfesXml}</cfes>
-    </enviarReporteDiario>
-  </soap:Body>
-</soap:Envelope>";
+        var enviarReporte = doc.CreateElement("enviarReporteDiario");
+        enviarReporte.SetAttribute("xmlns", "http://dgi.gub.uy/efactura");
+        body.AppendChild(enviarReporte);
+
+        AddTextEl(doc, enviarReporte, "fecha", CfeFormat.DateIso(fecha));
+
+        var cfesEl = doc.CreateElement("cfes");
+        foreach (var xml in cfes)
+        {
+            var cfeFirmadoEl = doc.CreateElement("cfeFirmado");
+            cfeFirmadoEl.AppendChild(doc.CreateCDataSection(xml));
+            cfesEl.AppendChild(cfeFirmadoEl);
+        }
+        enviarReporte.AppendChild(cfesEl);
+
+        return SerializeXml(doc);
+    }
+
+    // -------------------------------------------------------------------------
+    // XML helpers
+    // -------------------------------------------------------------------------
+
+    private static (XmlDocument Doc, XmlElement Body) CrearEnvelope()
+    {
+        var doc = new XmlDocument();
+        doc.AppendChild(doc.CreateXmlDeclaration("1.0", "utf-8", null));
+
+        var envelope = doc.CreateElement("soap", "Envelope", SoapNs);
+        doc.AppendChild(envelope);
+
+        var body = doc.CreateElement("soap", "Body", SoapNs);
+        envelope.AppendChild(body);
+
+        return (doc, body);
+    }
+
+    private static void AddTextEl(XmlDocument doc, XmlElement parent, string tag, string text)
+    {
+        var el = doc.CreateElement(tag);
+        el.InnerText = text;
+        parent.AppendChild(el);
+    }
+
+    /// <summary>
+    /// Serializes an <see cref="XmlDocument"/> to a UTF-8 string.
+    /// Using XmlWriter + MemoryStream ensures the XML declaration reflects the
+    /// actual encoding of the string and avoids string-interpolation data flows
+    /// that static analysis tools can misclassify as injection vectors.
+    /// </summary>
+    private static string SerializeXml(XmlDocument doc)
+    {
+        using var ms = new MemoryStream();
+        var settings = new XmlWriterSettings
+        {
+            Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            Indent   = false,
+        };
+        using (var writer = XmlWriter.Create(ms, settings))
+            doc.WriteTo(writer);
+        return Encoding.UTF8.GetString(ms.ToArray());
     }
 
     private HttpClient CrearHttpClient()
@@ -284,9 +338,6 @@ public class DgiSoapClient : IDgiSoapClient
         client.DefaultRequestHeaders.Add("Accept", "text/xml");
         return client;
     }
-
-    private static string EscapeXml(string value) =>
-        System.Security.SecurityElement.Escape(value) ?? string.Empty;
 
     public void Dispose()
     {
