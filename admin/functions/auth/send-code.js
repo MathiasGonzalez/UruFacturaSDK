@@ -94,7 +94,7 @@ async function sendEmail({ from, fromName, to, subject, html, env }) {
   if (env.EMAIL_WORKER) {
     const headers = { 'Content-Type': 'application/json' };
     if (env.EMAIL_API_KEY) {
-      headers['Authorization'] = `****** {env.EMAIL_API_KEY}`;
+      headers['Authorization'] = `Bearer ${env.EMAIL_API_KEY}`;
     }
     const response = await env.EMAIL_WORKER.fetch(new Request('https://email/send', {
       method: 'POST',

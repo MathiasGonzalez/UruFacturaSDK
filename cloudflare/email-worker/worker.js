@@ -41,7 +41,7 @@ export default {
     if (url.pathname === '/send') {
       // Authenticate request via EMAIL_API_KEY (required).
       // Service bindings within Cloudflare bypass the public endpoint;
-      // external HTTP callers must always provide a valid ****** token.
+      // external HTTP callers must always provide a valid Bearer token.
       const apiKey = env.EMAIL_API_KEY;
       if (!apiKey) {
         return jsonResponse(
@@ -51,7 +51,7 @@ export default {
         );
       }
       const authHeader = request.headers.get('Authorization');
-      if (!authHeader || authHeader !== `****** {
+      if (!authHeader || authHeader !== `Bearer ${apiKey}`) {
         return jsonResponse({ error: 'Unauthorized' }, 401, corsHeaders);
       }
       return handleSend(request, env, corsHeaders);
