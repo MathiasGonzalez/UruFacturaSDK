@@ -15,7 +15,7 @@
  *   MAIL_FROM       — Sender email address
  *   APP_NAME        — Display name in emails
  *   EMAIL_API_URL   — (optional) Custom email provider endpoint
- *   EMAIL_API_KEY   — (optional) API key/secret for custom provider
+ *   EMAIL_API_KEY   — API key/secret for request authentication (required)
  *   ALLOWED_ORIGINS — Comma-separated allowed origins for CORS
  */
 
@@ -39,13 +39,20 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/send') {
-      // Authenticate request via EMAIL_API_KEY
+      // Authenticate request via EMAIL_API_KEY (required).
+      // Service bindings within Cloudflare bypass the public endpoint;
+      // external HTTP callers must always provide a valid ****** token.
       const apiKey = env.EMAIL_API_KEY;
-      if (apiKey) {
-        const authHeader = request.headers.get('Authorization');
-        if (!authHeader || authHeader !== `Bearer ${apiKey}`) {
-          return jsonResponse({ error: 'Unauthorized' }, 401, corsHeaders);
-        }
+      if (!apiKey) {
+        return jsonResponse(
+          { error: 'EMAIL_API_KEY not configured' },
+          500,
+          corsHeaders,
+        );
+      }
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || authHeader !== `****** {
+        return jsonResponse({ error: 'Unauthorized' }, 401, corsHeaders);
       }
       return handleSend(request, env, corsHeaders);
     }

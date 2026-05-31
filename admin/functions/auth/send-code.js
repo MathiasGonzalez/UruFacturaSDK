@@ -92,9 +92,13 @@ async function sendEmail({ from, fromName, to, subject, html, env }) {
   // Option 1: Use the dedicated email worker via service binding (recommended)
   // Configure in wrangler.toml: [[services]] binding = "EMAIL_WORKER" service = "urufactura-email"
   if (env.EMAIL_WORKER) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (env.EMAIL_API_KEY) {
+      headers['Authorization'] = `****** {env.EMAIL_API_KEY}`;
+    }
     const response = await env.EMAIL_WORKER.fetch(new Request('https://email/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ to, subject, html }),
     }));
     return response.ok;
