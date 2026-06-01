@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../UruFacturaSDK/UruFacturaSDK.csproj" />
+    <ProjectReference Include="../UruFactura/UruFactura.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -29,7 +29,7 @@ jobs:
           # Busca la constante de versión CFE en el XML builder.
           # El formato esperado es: WriteAttributeString("version", "XX.XX")
           VERSION=$(grep -oP 'WriteAttributeString\("version",\s*"\K[^"]+' \
-            src/UruFacturaSDK/Xml/CfeXmlBuilder.cs || echo "desconocida")
+            src/UruFactura/Xml/CfeXmlBuilder.cs || echo "desconocida")
           echo "cfe_version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Crear issue de recordatorio

@@ -15,16 +15,16 @@ hero:
       link: getting-started/installation/
       icon: right-arrow
       variant: primary
-    - text: UruFacturaSDK en NuGet
-      link: https://www.nuget.org/packages/UruFacturaSDK/
+    - text: UruFactura en NuGet
+      link: https://www.nuget.org/packages/UruFactura/
       icon: external
       variant: secondary
-    - text: UruFacturaSDK.Lite en NuGet
-      link: https://www.nuget.org/packages/UruFacturaSDK.Lite/
+    - text: UruFactura.Lite en NuGet
+      link: https://www.nuget.org/packages/UruFactura.Lite/
       icon: external
       variant: secondary
     - text: Ver en GitHub
-      link: https://github.com/MathiasGonzalez/UruFacturaSDK
+      link: https://github.com/MathiasGonzalez/UruFactura
       icon: external
       variant: minimal
 ---
@@ -57,26 +57,26 @@ Ambos paquetes están disponibles en NuGet Gallery:
 <Tabs>
   <TabItem label="Paquete completo (con PDF)">
   ```bash
-  dotnet add package UruFacturaSDK
+  dotnet add package UruFactura
   ```
   </TabItem>
   <TabItem label="Lite (sin QuestPDF / SkiaSharp)">
   ```bash
-  dotnet add package UruFacturaSDK.Lite
+  dotnet add package UruFactura.Lite
   ```
   </TabItem>
   <TabItem label="Package Manager">
   ```powershell
-  Install-Package UruFacturaSDK
+  Install-Package UruFactura
   # o Lite:
-  Install-Package UruFacturaSDK.Lite
+  Install-Package UruFactura.Lite
   ```
   </TabItem>
   <TabItem label="PackageReference">
   ```xml
-  <PackageReference Include="UruFacturaSDK" Version="*" />
+  <PackageReference Include="UruFactura" Version="*" />
   <!-- o Lite: -->
-  <PackageReference Include="UruFacturaSDK.Lite" Version="*" />
+  <PackageReference Include="UruFactura.Lite" Version="*" />
   ```
   </TabItem>
 </Tabs>
@@ -86,9 +86,9 @@ Ambos paquetes están disponibles en NuGet Gallery:
 ## Tu primer e-Ticket
 
 ```csharp
-using UruFacturaSDK;
-using UruFacturaSDK.Models;
-using UruFacturaSDK.Enums;
+using UruFactura;
+using UruFactura.Models;
+using UruFactura.Enums;
 
 // 1. Configurar el cliente
 var config = new UruFacturaConfig
@@ -187,13 +187,13 @@ if (respuesta.Exitoso)
     href="reference/api/"
   />
   <LinkCard
-    title="📦 UruFacturaSDK en NuGet"
+    title="📦 UruFactura en NuGet"
     description="Paquete completo con PDF. Versiones publicadas, dependencias y descargas."
-    href="https://www.nuget.org/packages/UruFacturaSDK/"
+    href="https://www.nuget.org/packages/UruFactura/"
   />
   <LinkCard
-    title="📦 UruFacturaSDK.Lite en NuGet"
+    title="📦 UruFactura.Lite en NuGet"
     description="Paquete sin dependencias de PDF, ideal para microservicios y Azure Functions."
-    href="https://www.nuget.org/packages/UruFacturaSDK.Lite/"
+    href="https://www.nuget.org/packages/UruFactura.Lite/"
   />
 </CardGrid>

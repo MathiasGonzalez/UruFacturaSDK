@@ -1,7 +1,7 @@
 # UruFactura.CloudflareApi
 
 API HTTP para facturación electrónica DGI Uruguay, diseñada para correr en [Cloudflare Containers](https://developers.cloudflare.com/containers/).  
-Construida sobre **UruFacturaSDK** y ASP.NET Core 10 Minimal API.
+Construida sobre **UruFactura** y ASP.NET Core 10 Minimal API.
 
 ---
 

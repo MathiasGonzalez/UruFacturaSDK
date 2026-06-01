@@ -25,30 +25,30 @@ jobs:
       - name: Extract versions from csproj
         id: version
         run: |
-          VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/UruFacturaSDK/UruFacturaSDK.csproj)
-          VERSION_LITE=$(grep -oP '(?<=<Version>)[^<]+' src/UruFacturaSDK.Lite/UruFacturaSDK.Lite.csproj)
+          VERSION=$(grep -oP '(?<=<Version>)[^<]+' src/UruFactura/UruFactura.csproj)
+          VERSION_LITE=$(grep -oP '(?<=<Version>)[^<]+' src/UruFactura.Lite/UruFactura.Lite.csproj)
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "VERSION_LITE=$VERSION_LITE" >> "$GITHUB_OUTPUT"
 
       - name: Restore dependencies
-        run: dotnet restore UruFacturaSDK.slnx
+        run: dotnet restore UruFactura.slnx
 
       - name: Build
-        run: dotnet build UruFacturaSDK.slnx --no-restore --configuration Release
+        run: dotnet build UruFactura.slnx --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test UruFacturaSDK.slnx --no-build --configuration Release --verbosity normal
+        run: dotnet test UruFactura.slnx --no-build --configuration Release --verbosity normal
 
-      - name: Pack UruFacturaSDK
+      - name: Pack UruFactura
         run: >
-          dotnet pack src/UruFacturaSDK/UruFacturaSDK.csproj
+          dotnet pack src/UruFactura/UruFactura.csproj
           --no-build
           --configuration Release
           --output ./nupkg
 
-      - name: Pack UruFacturaSDK.Lite
+      - name: Pack UruFactura.Lite
         run: >
-          dotnet pack src/UruFacturaSDK.Lite/UruFacturaSDK.Lite.csproj
+          dotnet pack src/UruFactura.Lite/UruFactura.Lite.csproj
           --no-build
           --configuration Release
           --output ./nupkg

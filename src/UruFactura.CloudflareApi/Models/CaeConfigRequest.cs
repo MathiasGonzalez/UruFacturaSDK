@@ -1,6 +1,6 @@
 using System.Globalization;
-using UruFacturaSDK.Enums;
-using UruFacturaSDK.Models;
+using UruFactura.Enums;
+using UruFactura.Models;
 
 namespace UruFactura.CloudflareApi.Models;
 
@@ -20,7 +20,7 @@ public record CaeConfigRequest(
     string FechaVencimiento,
     long   UltimoNroUsado = 0)
 {
-    public Cae ToModel() => new()
+    public UruFactura.Models.Cae ToModel() => new()
     {
         NroSerie         = NroSerie,
         TipoCfe          = (TipoCfe)Tipo,

@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy the SDK library project and the Cloudflare API project
-COPY src/UruFacturaSDK/ src/UruFacturaSDK/
+COPY src/UruFactura/ src/UruFactura/
 COPY src/UruFactura.CloudflareApi/ src/UruFactura.CloudflareApi/
 
 # Restore dependencies

@@ -14,15 +14,15 @@ on:
     branches: ["main"]
     paths:
       - "src/UruFactura.CloudflareApi/**"
-      - "src/UruFacturaSDK/**"
-      - "src/UruFacturaSDK.Lite/**"
+      - "src/UruFactura/**"
+      - "src/UruFactura.Lite/**"
       - ".github/workflows/test-cloudflare-api.yml"
   pull_request:
     branches: ["main"]
     paths:
       - "src/UruFactura.CloudflareApi/**"
-      - "src/UruFacturaSDK/**"
-      - "src/UruFacturaSDK.Lite/**"
+      - "src/UruFactura/**"
+      - "src/UruFactura.Lite/**"
       - ".github/workflows/test-cloudflare-api.yml"
   workflow_dispatch:
 
@@ -43,19 +43,19 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore
-        run: dotnet restore UruFacturaSDK.slnx
+        run: dotnet restore UruFactura.slnx
 
       - name: Build
-        run: dotnet build UruFacturaSDK.slnx --no-restore --configuration Release
+        run: dotnet build UruFactura.slnx --no-restore --configuration Release
 
       - name: Test
         run: >
-          dotnet test UruFacturaSDK.slnx
+          dotnet test UruFactura.slnx
           --no-build
           --configuration Release
           --verbosity normal
           --collect:"XPlat Code Coverage"
-          --settings tests/UruFacturaSDK.Tests/coverlet.runsettings
+          --settings tests/UruFactura.Tests/coverlet.runsettings
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4

@@ -23,7 +23,7 @@ Documento técnico que describe la arquitectura desplegada, los requerimientos d
 
 ## Visión general
 
-**UruFactura.CloudflareApi** es una API HTTP que expone las capacidades del SDK de facturación electrónica uruguaya (`UruFacturaSDK`) como un servicio desplegable en [Cloudflare Containers](https://developers.cloudflare.com/containers/). Soporta operación single-tenant y multi-tenant (SaaS) desde la misma imagen Docker.
+**UruFactura.CloudflareApi** es una API HTTP que expone las capacidades del SDK de facturación electrónica uruguaya (`UruFactura`) como un servicio desplegable en [Cloudflare Containers](https://developers.cloudflare.com/containers/). Soporta operación single-tenant y multi-tenant (SaaS) desde la misma imagen Docker.
 
 ```mermaid
 graph TD
@@ -109,7 +109,7 @@ graph TD
 | **Framework** | ASP.NET Core 10 Minimal API |
 | **Puerto** | 8080 (`ASPNETCORE_HTTP_PORTS`) |
 | **Imagen base** | `mcr.microsoft.com/dotnet/aspnet:10.0` (Alpine) |
-| **Dependencia principal** | `UruFacturaSDK` (firma XML, SOAP, PDF, gestión de CAEs) |
+| **Dependencia principal** | `UruFactura` (firma XML, SOAP, PDF, gestión de CAEs) |
 
 ```mermaid
 graph LR
@@ -175,7 +175,7 @@ graph LR
 ```mermaid
 graph LR
     subgraph "GitHub"
-        REPO["Repositorio<br/>UruFacturaSDK"]
+        REPO["Repositorio<br/>UruFactura"]
         GHA["GitHub Actions"]
         GHCR["GHCR<br/>(Container Registry)"]
     end

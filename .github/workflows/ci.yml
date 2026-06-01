@@ -23,24 +23,24 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore UruFacturaSDK.slnx
+        run: dotnet restore UruFactura.slnx
 
       - name: Build
-        run: dotnet build UruFacturaSDK.slnx --no-restore --configuration Release
+        run: dotnet build UruFactura.slnx --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test UruFacturaSDK.slnx --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --settings tests/UruFacturaSDK.Tests/coverlet.runsettings
+        run: dotnet test UruFactura.slnx --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --settings tests/UruFactura.Tests/coverlet.runsettings
 
-      - name: Pack UruFacturaSDK (verify)
+      - name: Pack UruFactura (verify)
         run: >
-          dotnet pack src/UruFacturaSDK/UruFacturaSDK.csproj
+          dotnet pack src/UruFactura/UruFactura.csproj
           --no-build
           --configuration Release
           --output /tmp/nupkg-ci
 
-      - name: Pack UruFacturaSDK.Lite (verify)
+      - name: Pack UruFactura.Lite (verify)
         run: >
-          dotnet pack src/UruFacturaSDK.Lite/UruFacturaSDK.Lite.csproj
+          dotnet pack src/UruFactura.Lite/UruFactura.Lite.csproj
           --no-build
           --configuration Release
           --output /tmp/nupkg-ci
