@@ -5,6 +5,8 @@
 [![CI](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml)
 [![Publish NuGet](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml)
 [![Deploy Landing](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml)
+[![Deploy Admin](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-admin.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-admin.yml)
+[![Deploy Cloudflare](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-cloudflare.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-cloudflare.yml)
 [![NuGet](https://img.shields.io/nuget/v/UruFacturaSDK.svg)](https://www.nuget.org/packages/UruFacturaSDK/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/UruFacturaSDK.svg)](https://www.nuget.org/packages/UruFacturaSDK/)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
@@ -392,12 +394,57 @@ public class MiCaeRepository : ICaeRepository
 
 ---
 
+## ☁️ Despliegue en Cloudflare
+
+El ecosistema UruFactura incluye una solución completa para Cloudflare:
+
+```
+cloudflare/
+├── worker.js              → Worker multi-tenant (router)
+├── wrangler.toml          → Config de Containers + Secrets
+└── email-worker/          → Worker de envío de emails
+     ├── worker.js
+     └── wrangler.toml
+
+admin/                     → Web de administración (Cloudflare Pages)
+├── src/                   → SPA React + Vite
+├── functions/auth/        → Pages Functions (auth backend)
+└── wrangler.toml          → Config KV + Secrets
+
+src/UruFactura.CloudflareApi/ → API .NET (Container)
+src/UruFactura.TestApi/       → API local con Scalar UI
+```
+
+### Workflows CI/CD
+
+| Workflow | Qué despliega |
+|----------|---------------|
+| `deploy-cloudflare.yml` | Worker + Container .NET → Cloudflare |
+| `deploy-admin.yml` | Admin SPA + Functions → Cloudflare Pages |
+| `deploy-email-worker.yml` | Email Worker → Cloudflare Workers |
+
+### Desarrollo local
+
+```bash
+# API (con Scalar UI)
+cd src/UruFactura.TestApi && dotnet run
+
+# Admin + auth (Pages Functions con KV local)
+cd admin && npx wrangler pages dev --kv AUTH_CODES --kv AUTH_SESSIONS --kv TENANTS -- npm run dev
+```
+
+> 📖 Documentación completa: [docs/ARQUITECTURA_CLOUDFLARE.md](docs/ARQUITECTURA_CLOUDFLARE.md) y [admin/README.md](admin/README.md)
+
+---
+
 ## 📚 Documentación adicional
 
 | Documento | Descripción |
 |-----------|-------------|
 | [FACTURACION_URUGUAY.md](docs/FACTURACION_URUGUAY.md) | Marco normativo, ejemplos por tipo de empresa y consideraciones fiscales |
 | [CERTIFICACION_DGI.md](docs/CERTIFICACION_DGI.md) | Proceso de homologación y puesta en producción paso a paso |
+| [ARQUITECTURA_CLOUDFLARE.md](docs/ARQUITECTURA_CLOUDFLARE.md) | Arquitectura completa del despliegue en Cloudflare (Worker, Containers, Admin, Email) |
+| [admin/README.md](admin/README.md) | Web de administración: setup local, deploy, auth flow, integración con API |
 
 ---
 
