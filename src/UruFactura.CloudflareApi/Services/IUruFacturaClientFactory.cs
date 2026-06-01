@@ -1,4 +1,4 @@
-using UruFacturaSDK;
+using UruFactura;
 
 namespace UruFactura.CloudflareApi.Services;
 

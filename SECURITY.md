@@ -1,4 +1,4 @@
-# Política de Seguridad — UruFacturaSDK
+# Política de Seguridad — UruFactura
 
 ## Versiones con soporte de seguridad
 
@@ -13,7 +13,7 @@ Solo la rama principal (`main`) y el paquete NuGet publicado más reciente recib
 
 ## Reportar una vulnerabilidad
 
-Usá el canal de **[Private Vulnerability Reporting](https://github.com/MathiasGonzalez/UruFacturaSDK/security/advisories/new)** de GitHub para reportar vulnerabilidades de forma confidencial.
+Usá el canal de **[Private Vulnerability Reporting](https://github.com/MathiasGonzalez/UruFactura/security/advisories/new)** de GitHub para reportar vulnerabilidades de forma confidencial.
 
 **Por favor, no reportes vulnerabilidades de seguridad en issues públicos.**
 

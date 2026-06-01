@@ -1,18 +1,18 @@
-# UruFacturaSDK 🇺🇾
+# UruFactura 🇺🇾
 
 **La vía rápida hacia la Facturación Electrónica en Uruguay**
 
-[![CI](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/ci.yml)
-[![Publish NuGet](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/publish.yml)
-[![Deploy Landing](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-pages.yml)
-[![Deploy Admin](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-admin.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-admin.yml)
-[![Deploy Cloudflare](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-cloudflare.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFacturaSDK/actions/workflows/deploy-cloudflare.yml)
-[![NuGet](https://img.shields.io/nuget/v/UruFacturaSDK.svg)](https://www.nuget.org/packages/UruFacturaSDK/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/UruFacturaSDK.svg)](https://www.nuget.org/packages/UruFacturaSDK/)
+[![CI](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/ci.yml)
+[![Publish NuGet](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/publish.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/publish.yml)
+[![Deploy Landing](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/deploy-pages.yml)
+[![Deploy Admin](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/deploy-admin.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/deploy-admin.yml)
+[![Deploy Cloudflare](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/deploy-cloudflare.yml/badge.svg)](https://github.com/MathiasGonzalez/UruFactura/actions/workflows/deploy-cloudflare.yml)
+[![NuGet](https://img.shields.io/nuget/v/UruFactura.svg)](https://www.nuget.org/packages/UruFactura/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/UruFactura.svg)](https://www.nuget.org/packages/UruFactura/)
 [![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> 📖 **Documentación completa:** [mathiasgonzalez.github.io/UruFacturaSDK](https://mathiasgonzalez.github.io/UruFacturaSDK/)
+> 📖 **Documentación completa:** [mathiasgonzalez.github.io/UruFactura](https://mathiasgonzalez.github.io/UruFactura/)
 
 UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseñada para simplificar la integración de sistemas locales con el ecosistema de la DGI. Olvídate de lidiar con la complejidad manual de los sobres SOAP o la estructura rígida de los esquemas XML; esta herramienta actúa como un puente amigable entre tu lógica de negocio y los requisitos impositivos uruguayos.
 
@@ -33,9 +33,9 @@ UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseña
 ## 📦 Estructura del Proyecto
 
 ```
-UruFacturaSDK/
+UruFactura/
 ├── src/
-│   ├── UruFacturaSDK/                  # Paquete completo (con PDF)
+│   ├── UruFactura/                  # Paquete completo (con PDF)
 │   │   ├── Configuration/              # UruFacturaConfig
 │   │   ├── Enums/                      # TipoCfe, TipoIva, FormaPago, Moneda, Ambiente, IndTraslado, TipoDocumentoReceptor
 │   │   ├── Exceptions/                 # CaeException, CfeValidationException, DgiCommunicationException,
@@ -54,10 +54,10 @@ UruFacturaSDK/
 │   │   ├── UruFacturaClient.cs         # Fachada principal del SDK
 │   │   ├── UruFacturaClientBuilder.cs  # Builder fluido con WithDefaults()
 │   │   └── UruFacturaClientBuilderPdf.cs # Extensión del builder para PDF (solo paquete completo)
-│   └── UruFacturaSDK.Lite/             # Paquete Lite (sin FluentReport/SkiaSharp/ZXing)
+│   └── UruFactura.Lite/             # Paquete Lite (sin FluentReport/SkiaSharp/ZXing)
 │       └── UruFacturaClient.cs         # Constructores de conveniencia (sin PDF por defecto)
 └── tests/
-    └── UruFacturaSDK.Tests/            # Tests unitarios xUnit
+    └── UruFactura.Tests/            # Tests unitarios xUnit
 ```
 
 ---
@@ -91,7 +91,7 @@ using var client = new UruFacturaClient(config);
 
 // O usando el builder fluido (recomendado para DI o tests):
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .WithDefaultPdf()   // omitir si usás UruFacturaSDK.Lite
+    .WithDefaultPdf()   // omitir si usás UruFactura.Lite
     .Build();
 ```
 
@@ -100,7 +100,7 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
 ### 2. Crear y enviar un e-Ticket
 
 ```csharp
-using UruFacturaSDK.Models; // Cae, LineaDetalle, Receptor, RefCfe
+using UruFactura.Models; // Cae, LineaDetalle, Receptor, RefCfe
 
 // Registrar CAE
 client.Cae.RegistrarCae(new Cae
@@ -272,7 +272,7 @@ inyectar dependencias personalizadas (p.ej. mocks en tests o transporte SOAP pro
 ```csharp
 // Caso más habitual — todas las implementaciones predeterminadas:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .WithDefaultPdf()   // solo disponible en UruFacturaSDK (no en Lite)
+    .WithDefaultPdf()   // solo disponible en UruFactura (no en Lite)
     .Build();
 
 // Reemplazar solo lo que necesitás:
@@ -452,15 +452,15 @@ cd admin && npx wrangler pages dev --kv AUTH_CODES --kv AUTH_SESSIONS --kv TENAN
 
 | Paquete | Cuándo usarlo |
 |---------|--------------|
-| [`UruFacturaSDK`](https://www.nuget.org/packages/UruFacturaSDK/) | Uso general — incluye generación de PDF A4 y térmico (FluentReport + SkiaSharp + ZXing) |
-| [`UruFacturaSDK.Lite`](https://www.nuget.org/packages/UruFacturaSDK.Lite/) | Entornos donde el peso de las dependencias de PDF no es deseable (microservicios, Azure Functions, etc.). Podés inyectar tu propio `ICfePdfGenerator` si lo necesitás. |
+| [`UruFactura`](https://www.nuget.org/packages/UruFactura/) | Uso general — incluye generación de PDF A4 y térmico (FluentReport + SkiaSharp + ZXing) |
+| [`UruFactura.Lite`](https://www.nuget.org/packages/UruFactura.Lite/) | Entornos donde el peso de las dependencias de PDF no es deseable (microservicios, Azure Functions, etc.). Podés inyectar tu propio `ICfePdfGenerator` si lo necesitás. |
 
 ```bash
 # Paquete completo
-dotnet add package UruFacturaSDK
+dotnet add package UruFactura
 
 # Paquete Lite (sin FluentReport / SkiaSharp / ZXing)
-dotnet add package UruFacturaSDK.Lite
+dotnet add package UruFactura.Lite
 ```
 
 ---
@@ -468,7 +468,7 @@ dotnet add package UruFacturaSDK.Lite
 ## 🧪 Tests
 
 ```bash
-dotnet test tests/UruFacturaSDK.Tests/
+dotnet test tests/UruFactura.Tests/
 ```
 
 ---

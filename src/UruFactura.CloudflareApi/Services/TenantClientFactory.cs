@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using UruFacturaSDK;
-using UruFacturaSDK.Configuration;
-using UruFacturaSDK.Enums;
+using UruFactura;
+using UruFactura.Configuration;
+using UruFactura.Enums;
 using UruFactura.CloudflareApi.Models;
 
 namespace UruFactura.CloudflareApi.Services;

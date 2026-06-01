@@ -1,6 +1,6 @@
 # Runbook: Actualización de normativa DGI
 
-Guía estructurada para que agentes (Copilot, CI, desarrolladores) evalúen si hay cambios normativos de la DGI que requieran actualizar UruFacturaSDK.
+Guía estructurada para que agentes (Copilot, CI, desarrolladores) evalúen si hay cambios normativos de la DGI que requieran actualizar UruFactura.
 
 ---
 
@@ -29,7 +29,7 @@ Al ejecutar este runbook, el agente debe responder cada punto y actuar si es nec
 ### 2.1 Versión del formato CFE
 
 - [ ] ¿La DGI publicó una nueva versión del esquema CFE? (actualmente implementada: **v25.01**)
-  - Si sí: actualizar `version="xx.xx"` en `src/UruFacturaSDK/Xml/CfeXmlBuilder.cs` (línea con `WriteAttributeString("version", ...)`)
+  - Si sí: actualizar `version="xx.xx"` en `src/UruFactura/Xml/CfeXmlBuilder.cs` (línea con `WriteAttributeString("version", ...)`)
   - Actualizar el comentario del `summary` de la clase `CfeXmlBuilder`
 
 ### 2.2 Nuevos campos o cambios en campos existentes
@@ -50,28 +50,28 @@ Para cada cambio de campo en el nuevo formato, evaluar:
 
 | Cambio | Archivo |
 |--------|---------|
-| Nuevo campo en el XML | `src/UruFacturaSDK/Xml/CfeXmlBuilder.cs` |
-| Nuevo campo en modelo | `src/UruFacturaSDK/Models/Cfe.cs`, `RefCfe.cs`, `Receptor.cs`, `LineaDetalle.cs` |
-| Nuevo valor de enum | `src/UruFacturaSDK/Enums/*.cs` |
-| Nueva validación de negocio | `src/UruFacturaSDK/Models/Cfe.cs` (método `Validar`) |
-| Nuevo campo obligatorio de config | `src/UruFacturaSDK/Configuration/UruFacturaConfig.cs` |
+| Nuevo campo en el XML | `src/UruFactura/Xml/CfeXmlBuilder.cs` |
+| Nuevo campo en modelo | `src/UruFactura/Models/Cfe.cs`, `RefCfe.cs`, `Receptor.cs`, `LineaDetalle.cs` |
+| Nuevo valor de enum | `src/UruFactura/Enums/*.cs` |
+| Nueva validación de negocio | `src/UruFactura/Models/Cfe.cs` (método `Validar`) |
+| Nuevo campo obligatorio de config | `src/UruFactura/Configuration/UruFacturaConfig.cs` |
 
 ### 2.3 Nuevos tipos de CFE
 
 - [ ] ¿La DGI habilitó nuevos tipos de comprobante?
-  - Si sí: agregar en `src/UruFacturaSDK/Enums/TipoCfe.cs`
-  - Agregar método de creación en `src/UruFacturaSDK/UruFacturaClient.cs`
+  - Si sí: agregar en `src/UruFactura/Enums/TipoCfe.cs`
+  - Agregar método de creación en `src/UruFactura/UruFacturaClient.cs`
   - Actualizar arrays `TiposCorreccion`, `TiposFactura`, `TiposRemito` en `Cfe.cs` según corresponda
 
 ### 2.4 Cambios en endpoints SOAP
 
 - [ ] ¿Cambiaron las URLs de los servicios SOAP de la DGI (homologación o producción)?
-  - Si sí: actualizar `DgiSoapBaseUrl` en `src/UruFacturaSDK/Configuration/UruFacturaConfig.cs`
+  - Si sí: actualizar `DgiSoapBaseUrl` en `src/UruFactura/Configuration/UruFacturaConfig.cs`
 
 ### 2.5 Cambios en tasas de IVA
 
 - [ ] ¿La DGI modificó alguna tasa de IVA?
-  - Si sí: actualizar constantes en `src/UruFacturaSDK/Models/Cfe.cs` (método `CalcularTotales`)
+  - Si sí: actualizar constantes en `src/UruFactura/Models/Cfe.cs` (método `CalcularTotales`)
   - Actualizar tabla en `docs/FACTURACION_URUGUAY.md`
 
 ---
@@ -84,11 +84,11 @@ Cuando se detecta un cambio que requiere actualización:
 2. **Editar el modelo** si se agregan campos (nullables si son opcionales, con documentación XML `<summary>`).
 3. **Editar el builder XML** para emitir o no emitir los nuevos campos según el modelo.
 4. **Agregar validaciones de negocio** en `Cfe.Validar()` si el campo es obligatorio bajo ciertas condiciones.
-5. **Escribir tests** en `tests/UruFacturaSDK.Tests/`:
+5. **Escribir tests** en `tests/UruFactura.Tests/`:
    - Test que verifica que el XML emite el nuevo campo cuando está seteado.
    - Test que verifica que **no** se emite cuando no corresponde.
    - Test de validación si se agrega lógica en `Validar()`.
-6. **Correr los tests**: `dotnet test UruFacturaSDK.slnx`
+6. **Correr los tests**: `dotnet test UruFactura.slnx`
 7. **Actualizar docs**:
    - `docs/FACTURACION_URUGUAY.md`: normativa, ejemplos de código
    - `docs/CERTIFICACION_DGI.md`: si cambian procesos de homologación
@@ -111,5 +111,5 @@ Cuando se detecta un cambio que requiere actualización:
 - Al correr este runbook, reportar primero si **hay o no hay cambios** que requieran acción.
 - Si no hay cambios: no modificar código ni documentación.
 - Si hay cambios: abrir un PR con los cambios y marcar los ítems completados del checklist.
-- Siempre correr `dotnet test UruFacturaSDK.slnx` antes de dar por terminada la tarea.
+- Siempre correr `dotnet test UruFactura.slnx` antes de dar por terminada la tarea.
 - El workflow `.github/workflows/normativa-dgi-check.yml` crea automáticamente un issue mensual de recordatorio para ejecutar este runbook.

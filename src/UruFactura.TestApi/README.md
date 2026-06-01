@@ -28,7 +28,7 @@ Usa la misma configuración que CloudflareApi (ver `appsettings.json`). Soporta:
 ```
 UruFactura.TestApi
   └── referencia → UruFactura.CloudflareApi
-                      └── referencia → UruFacturaSDK
+                      └── referencia → UruFactura
 ```
 
 TestApi no duplica lógica: importa endpoints, servicios y modelos de CloudflareApi directamente.

@@ -27,8 +27,8 @@ UruFactura SDK se distribuye en dos variantes NuGet:
 
 | Paquete | Descripción | Cuándo usarlo |
 |---------|-------------|--------------|
-| **`UruFacturaSDK`** | Paquete completo con generación de PDF A4 y térmico (QuestPDF + SkiaSharp + ZXing) | Uso general |
-| **`UruFacturaSDK.Lite`** | Sin dependencias de PDF. Incluye `ICfePdfGenerator` para inyectar tu propio generador | Microservicios, Azure Functions, entornos con restricciones de peso |
+| **`UruFactura`** | Paquete completo con generación de PDF A4 y térmico (QuestPDF + SkiaSharp + ZXing) | Uso general |
+| **`UruFactura.Lite`** | Sin dependencias de PDF. Incluye `ICfePdfGenerator` para inyectar tu propio generador | Microservicios, Azure Functions, entornos con restricciones de peso |
 
 ---
 
@@ -37,28 +37,28 @@ UruFactura SDK se distribuye en dos variantes NuGet:
 <Tabs>
   <TabItem label="Paquete completo">
   ```bash
-  dotnet add package UruFacturaSDK
+  dotnet add package UruFactura
   ```
   </TabItem>
   <TabItem label="Paquete Lite">
   ```bash
-  dotnet add package UruFacturaSDK.Lite
+  dotnet add package UruFactura.Lite
   ```
   </TabItem>
   <TabItem label="Package Manager Console">
   ```powershell
-  Install-Package UruFacturaSDK
+  Install-Package UruFactura
   # o para la versión Lite:
-  Install-Package UruFacturaSDK.Lite
+  Install-Package UruFactura.Lite
   ```
   </TabItem>
   <TabItem label="PackageReference (csproj)">
   ```xml
   <!-- Paquete completo -->
-  <PackageReference Include="UruFacturaSDK" Version="*" />
+  <PackageReference Include="UruFactura" Version="*" />
 
   <!-- Paquete Lite -->
-  <PackageReference Include="UruFacturaSDK.Lite" Version="*" />
+  <PackageReference Include="UruFactura.Lite" Version="*" />
   ```
   </TabItem>
 </Tabs>
@@ -80,7 +80,7 @@ dotnet list package
 Deberías ver algo como:
 
 ```
-> UruFacturaSDK    1.0.0
+> UruFactura    1.0.0
 ```
 
 ---
@@ -92,10 +92,10 @@ Deberías ver algo como:
 1. **Importar los namespaces necesarios**
 
    ```csharp
-   using UruFacturaSDK;
-   using UruFacturaSDK.Configuration;
-   using UruFacturaSDK.Models;
-   using UruFacturaSDK.Enums;
+   using UruFactura;
+   using UruFactura.Configuration;
+   using UruFactura.Models;
+   using UruFactura.Enums;
    ```
 
 2. **Crear la configuración del emisor**
@@ -186,7 +186,7 @@ builder.Services.AddSingleton<IUruFacturaClient>(sp =>
 {
     var config = sp.GetRequiredService<UruFacturaConfig>();
     return UruFacturaClientBuilder.WithDefaults(config)
-        .WithDefaultPdf()   // omitir si usás UruFacturaSDK.Lite
+        .WithDefaultPdf()   // omitir si usás UruFactura.Lite
         .Build();
 });
 ```

@@ -20,9 +20,9 @@ Configurar → Registrar CAE → Crear CFE → Generar XML → Firmar → Enviar
 ## Paso 1: Setup inicial
 
 ```csharp
-using UruFacturaSDK;
-using UruFacturaSDK.Models;
-using UruFacturaSDK.Enums;
+using UruFactura;
+using UruFactura.Models;
+using UruFactura.Enums;
 
 var config = new UruFacturaConfig
 {
@@ -41,7 +41,7 @@ var config = new UruFacturaConfig
 
 // Alternativa recomendada con el builder fluido:
 using var client = UruFacturaClientBuilder.WithDefaults(config)
-    .WithDefaultPdf()   // disponible solo en UruFacturaSDK (no en Lite)
+    .WithDefaultPdf()   // disponible solo en UruFactura (no en Lite)
     .Build();
 ```
 
@@ -210,9 +210,9 @@ Console.WriteLine($"Estado DGI: {estado.Mensaje}");
 ## Código completo de ejemplo
 
 ```csharp
-using UruFacturaSDK;
-using UruFacturaSDK.Models;
-using UruFacturaSDK.Enums;
+using UruFactura;
+using UruFactura.Models;
+using UruFactura.Enums;
 
 // Configurar
 var config = new UruFacturaConfig

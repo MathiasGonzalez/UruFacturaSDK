@@ -93,7 +93,7 @@ using var client = UruFacturaClientBuilder.WithDefaults(config)
 | `WithSoapClient(IDgiSoapClient)` | Reemplaza el cliente SOAP hacia DGI |
 | `WithHttpClient(HttpClient)` | Inyecta un `HttpClient` externo (recomendado en APIs de alto tráfico con `IHttpClientFactory`) |
 | `WithPdfGenerator(ICfePdfGenerator?)` | Establece el generador de PDF (puede ser `null`) |
-| `WithDefaultPdf()` | Agrega el generador PDF predeterminado (solo `UruFacturaSDK`, no Lite) |
+| `WithDefaultPdf()` | Agrega el generador PDF predeterminado (solo `UruFactura`, no Lite) |
 | `Build()` | Construye y retorna el `UruFacturaClient` |
 
 ---

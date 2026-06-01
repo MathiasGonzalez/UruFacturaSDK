@@ -1,6 +1,6 @@
 # Certificación DGI y puesta en producción
 
-Guía paso a paso para obtener la habilitación de la DGI y comenzar a emitir CFE con UruFacturaSDK.
+Guía paso a paso para obtener la habilitación de la DGI y comenzar a emitir CFE con UruFactura.
 
 ---
 

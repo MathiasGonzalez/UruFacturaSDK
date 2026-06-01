@@ -39,7 +39,7 @@ function rehypePreMermaid() {
 // https://astro.build/config
 export default defineConfig({
   site: 'https://mathiasgonzalez.github.io',
-  base: '/UruFacturaSDK',
+  base: '/UruFactura',
   markdown: {
     rehypePlugins: [rehypePreMermaid],
   },
@@ -56,11 +56,11 @@ export default defineConfig({
         replacesTitle: false,
       },
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/MathiasGonzalez/UruFacturaSDK' },
-        { icon: 'external', label: 'NuGet', href: 'https://www.nuget.org/packages/UruFacturaSDK/' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/MathiasGonzalez/UruFactura' },
+        { icon: 'external', label: 'NuGet', href: 'https://www.nuget.org/packages/UruFactura/' },
       ],
       editLink: {
-        baseUrl: 'https://github.com/MathiasGonzalez/UruFacturaSDK/edit/main/landing/',
+        baseUrl: 'https://github.com/MathiasGonzalez/UruFactura/edit/main/landing/',
       },
       customCss: ['./src/styles/custom.css'],
       sidebar: [
@@ -90,7 +90,7 @@ export default defineConfig({
           tag: 'meta',
           attrs: {
             property: 'og:image',
-            content: 'https://mathiasgonzalez.github.io/UruFacturaSDK/og-image.png',
+            content: 'https://mathiasgonzalez.github.io/UruFactura/og-image.png',
           },
         },
       ],

@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using UruFactura.CloudflareApi.Models;
 using UruFactura.CloudflareApi.Services;
-using UruFacturaSDK;
-using UruFacturaSDK.Enums;
-using UruFacturaSDK.Models;
+using UruFactura;
+using UruFactura.Enums;
+using UruFactura.Models;
 
 namespace UruFactura.CloudflareApi.Endpoints;
 

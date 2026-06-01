@@ -1,5 +1,5 @@
-using UruFacturaSDK.Enums;
-using UruFacturaSDK.Models;
+using UruFactura.Enums;
+using UruFactura.Models;
 
 namespace UruFactura.CloudflareApi.Models;
 
