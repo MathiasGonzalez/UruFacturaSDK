@@ -8,7 +8,7 @@ using UruFactura.Formatting;
 namespace UruFactura.Xml;
 
 /// <summary>
-/// Genera el XML de un CFE según el esquema de la DGI de Uruguay (versión 25.01).
+/// Genera el XML de un CFE según el esquema de la DGI de Uruguay (versión 25.2).
 /// </summary>
 public class CfeXmlBuilder : ICfeXmlBuilder
 {
@@ -50,7 +50,7 @@ public class CfeXmlBuilder : ICfeXmlBuilder
     {
         w.WriteStartDocument();
         w.WriteStartElement("CFE", NsUri);
-        w.WriteAttributeString("version", "25.01");
+        w.WriteAttributeString("version", "25.2");
 
         // Identificación del documento
         w.WriteStartElement("Encabezado", NsUri);

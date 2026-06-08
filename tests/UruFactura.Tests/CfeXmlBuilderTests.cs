@@ -360,7 +360,7 @@ public class CfeXmlBuilderTests
         Assert.DoesNotContain("GiroNegocio", xml);
     }
 
-    // --- CFE v25.01 ---
+    // --- CFE v25.2 ---
 
     [Fact]
     public void Generar_XmlContieneVersionCfe25()
@@ -368,7 +368,7 @@ public class CfeXmlBuilderTests
         var cfe = CrearCfeCompleto();
         var xml = _builder.Generar(cfe);
 
-        Assert.Contains("version=\"25.01\"", xml);
+        Assert.Contains("version=\"25.2\"", xml);
         Assert.DoesNotContain("version=\"23.01\"", xml);
     }
 

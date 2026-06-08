@@ -12,7 +12,7 @@ Referencia rápida sobre el sistema de Comprobantes Fiscales Electrónicos (CFE)
 | Resolución DGI 2548/023 | Universalización — todos los contribuyentes IVA desde enero 2025 |
 | Decreto 36/020 | Ampliación de obligados a emitir CFE |
 | Decreto 230/021 | Calendario de adhesión obligatoria por facturación |
-| e-CFE v25.01 | Esquema XML vigente (desde 3/3/2026 producción, 15/4/2026 controles estrictos) |
+| e-CFE v25.2 | Esquema XML vigente |
 
 La **adhesión es obligatoria** para todos los contribuyentes de IVA (incluido IVA mínimo) desde enero 2025 (Resolución 2548/023).
 

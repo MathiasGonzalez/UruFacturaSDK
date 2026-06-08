@@ -22,7 +22,7 @@ UruFactura SDK es una librería open-source **.NET 10 C#** de alto nivel diseña
 
 | Característica | Detalle |
 |---|---|
-| **Generación de CFE** | Crea e-Tickets, e-Facturas, e-Remitos y sus notas de corrección con objetos simples, cumpliendo el formato XML **v25.01** de la DGI (vigente desde 3/3/2026). |
+| **Generación de CFE** | Crea e-Tickets, e-Facturas, e-Remitos y sus notas de corrección con objetos simples, cumpliendo el formato XML **v25.2** de la DGI. |
 | **Firma Digital XAdES-BES** | Módulo integrado para la firma electrónica usando certificados estándar `.p12` / `.pfx`. |
 | **Comunicación SOAP** | Cliente SOAP optimizado para envío de comprobantes, consulta de estados y envío del Reporte Diario. |
 | **Gestión de CAE** | Control inteligente de Constancias de Autorización de Emisión con alertas de vencimiento y rango. |

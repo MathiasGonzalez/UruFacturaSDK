@@ -28,7 +28,7 @@ Al ejecutar este runbook, el agente debe responder cada punto y actuar si es nec
 
 ### 2.1 Versión del formato CFE
 
-- [ ] ¿La DGI publicó una nueva versión del esquema CFE? (actualmente implementada: **v25.01**)
+- [ ] ¿La DGI publicó una nueva versión del esquema CFE? (actualmente implementada: **v25.2**)
   - Si sí: actualizar `version="xx.xx"` en `src/UruFactura/Xml/CfeXmlBuilder.cs` (línea con `WriteAttributeString("version", ...)`)
   - Actualizar el comentario del `summary` de la clase `CfeXmlBuilder`
 
@@ -101,6 +101,7 @@ Cuando se detecta un cambio que requiere actualización:
 
 | Fecha | Versión CFE | Cambios implementados |
 |-------|-------------|----------------------|
+| 2026-06-08 | v25.2 | Versión XML 25.01→25.2 tras revisión normativa DGI de junio 2026 |
 | 2026-05-21 | v25.01 | Versión XML 23.01→25.01; campos F-C8 (MntCFERef), F-C9 (MonedaCFERef), F-C10 (TpoCambioCFERef) en RefCfe; validación de Ciudad y Departamento del emisor; validación de MontoCfeRef/MonedaCfeRef en notas correctivas |
 | — | v23.01 | Versión base inicial |
 

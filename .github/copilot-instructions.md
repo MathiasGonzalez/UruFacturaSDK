@@ -2,7 +2,7 @@
 
 ## Contexto del proyecto
 
-UruFactura es una librería .NET 10 C# para integrar sistemas con la facturación electrónica de la DGI (Dirección General Impositiva) de Uruguay. Implementa el formato CFE (Comprobante Fiscal Electrónico) v25.01.
+UruFactura es una librería .NET 10 C# para integrar sistemas con la facturación electrónica de la DGI (Dirección General Impositiva) de Uruguay. Implementa el formato CFE (Comprobante Fiscal Electrónico) v25.2.
 
 ---
 
