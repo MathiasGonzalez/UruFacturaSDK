@@ -256,7 +256,7 @@ await File.WriteAllBytesAsync("eticket_001.pdf", pdf);
 | Recurso | Enlace |
 |---|---|
 | Portal DGI en línea | [https://www.dgi.gub.uy/](https://www.dgi.gub.uy/) |
-| Consulta de esquemas XML CFE (v25.01) | [https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,) |
+| Consulta de esquemas XML CFE (v25.2) | [https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,](https://www.dgi.gub.uy/wdgi/page?2,factura-electronica,index,O,es,0,) |
 | Instructivo técnico de integración | Disponible en el portal DGI en línea → Gestión CFE |
 | AGESIC (autoridades certificantes) | [https://www.agesic.gub.uy/](https://www.agesic.gub.uy/) |
 | Soporte DGI | [https://www.dgi.gub.uy/wdgi/page?2,contacto,index,O,es,0,](https://www.dgi.gub.uy/wdgi/page?2,contacto,index,O,es,0,) |
